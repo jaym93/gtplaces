@@ -1,5 +1,5 @@
 <?php
    $db_host = "db.cip.gatech.edu";
-   $db_username = "mobile";
-   $db_password = "k!ll3r@pps";
+   $db_username = "gtplaces";
+   $db_password = "QG3Zj3JrhNcSNsaC";
 ?>

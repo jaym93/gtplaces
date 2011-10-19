@@ -5,7 +5,7 @@ include_once("Zend/Db.php");
 require_once("Zend/Db/Table.php");
 include_once("../db_config.php");
 
-$params = array("host" => $db_host, "username" => $db_username, "password" => $db_password, "dbname" => "gtplaces");
+$params = array("host" => $db_host, "username" => $db_username, "password" => $db_password, "dbname" => "CORE_gtplaces");
 $db = Zend_Db::factory("Pdo_Mysql", $params);
 
 require_once("FirePHPCore/fb.php");
