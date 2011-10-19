@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<api>
+	<description>
+		<![CDATA[This is an API to interact with all the simple and complex items that is provided thirdpartywise]]>
+	</description>
+
+	<command id='all' security='public'>
+      <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude and image url]]></description>
+      <index>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/all]]></description>
+         <action file='gtplaces.php'><![CDATA[getAllBuildings();]]></action>
+      </index>
+   </command>
+
+	<command id='idnames' security='public'>
+		<description><![CDATA[Returns filtered list of all buildings(building id,name,address,latitude,longitude and list of tags)]]></description>
+		<index>
+			<description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/idnames/name,address,image_url (Returns list of all buildings with building name,address and image url)]]></description>
+			<action file='gtplaces.php'><![CDATA[getNames();]]></action>
+		</index>
+	</command>	
+
+	<command id='building_tags' security='public'>
+      <description><![CDATA[Returns list of all (building id,tagname) pairs]]></description>
+      <index>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/building_tags]]></description>
+         <action file='gtplaces.php'><![CDATA[getBuildingTags();]]></action>
+      </index>
+   </command>
+
+	<command id='tagname' security='public'>
+      <description><![CDATA[Returns list of buildings which match the tag]]></description>
+      <get>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/tagname/&lt;tagname&gt;]]></description>
+         <action file='gtplaces.php'><![CDATA[searchTagByName($_REST['tagname']);]]></action>
+      </get>
+   </command>
+	<command id='bname' security='public'>
+      <description><![CDATA[Returns list of buildings which match the building name]]></description>
+      <index>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/bname/&lt;buildingname&gt;]]></description>
+         <action file='gtplaces.php'><![CDATA[searchByBuildingName($_REST['bname']);]]></action>
+      </index>
+   </command>
+	<command id='add_tag' security='public'>
+      <description><![CDATA[Post request to 'Add a tag'.Parameters: bid,tag (building id and tag name) ]]></description>
+      <post>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/add_tag/]]></description>
+         <action file='gtplaces.php'><![CDATA[addTag($_POST['bid'],$_POST['tag']);]]></action>
+      </post>
+   </command>
+   <command id='tnames' security='public'>
+      <description><![CDATA[Returns list of all (tag id,building id,tagname,user who created the tag,number of tags,number of flags)]]></description>
+      <index>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/tnames]]></description>
+         <action file='gtplaces.php'><![CDATA[getTagNames();]]></action>
+      </index>
+   </command>
+	 <command id='tag_list' security='public'>
+      <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude,image url and list of tags]]></description>
+      <index>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/tag_list]]></description>
+         <action file='gtplaces.php'><![CDATA[getTagsList();]]></action>
+      </index>
+   </command>
+	<command id='flag' security='public'>
+      <description><![CDATA[Post request to 'Flag a tag'.Parameters: bid,tag (Building id and tagname)]]></description>
+      <post>
+         <description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/flag]]></description>
+         <action file='gtplaces.php'><![CDATA[flagTag($_POST['bid'],$_POST['tag']);]]></action>
+      </post>
+   </command>
+</api>
