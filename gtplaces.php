@@ -1,20 +1,22 @@
 <?php
 
+$path = 'zend/gui/library';
+set_include_path($path . PATH_SEPARATOR . get_include_path());
+$path = 'zend/share/pear';
+set_include_path($path . PATH_SEPARATOR . get_include_path());
 require_once("Zend/Json.php");
 include_once("Zend/Db.php");
 require_once("Zend/Db/Table.php");
-include_once("../db_config.php");
-
-$params = array("host" => $db_host, "username" => $db_username, "password" => $db_password, "dbname" => "CORE_gtplaces");
-$db = Zend_Db::factory("Pdo_Mysql", $params);
-
 require_once("FirePHPCore/fb.php");
 //$firephp = FirePHP::getInstance(true);
+include_once("db_config.php");
+
+$params = array("host" => $db_host, "username" => $db_username, "password" => $db_password, "dbname" => $db_database);
+$db = Zend_Db::factory("Pdo_Mysql", $params);
 
 class Buildings extends Zend_Db_Table_Abstract {
 
 	protected $_name = "buildings";
-
 	
 	public function getIdsNames() {
 		$select = $this->select()->from($this, array("b_id", "name"));
@@ -47,12 +49,12 @@ class Buildings extends Zend_Db_Table_Abstract {
 	}
 
 	public function getAll() {
-		$row_values = array();
+ 		$row_values = array();
 		foreach ($this->fetchAll() as $row) {
 			array_push($row_values, $row->toArray());
 		}
 		$ze = Zend_Json::encode($row_values);
-		return $ze;
+		echo $ze;
 	}
 
 	public function getRow($bid) {
@@ -70,15 +72,6 @@ class Tags extends Zend_Db_Table_Abstract {
 
 $building = new Buildings(array("db" => $db));
 $tag = new Tags(array("db" => $db));
-
-function temp() {
-	$sl = $tag->find($_GET["bid"], $_GET["tag"]);
-	if ($sl->count()) {
-		echo Zend_Json::encode($sl->toArray());
-	} else {
-		echo $sl->count();
-	}
-}
 
 function getNames() {
 	global $building;
@@ -98,7 +91,6 @@ function getBuildingTags() {
    $rvals = $db->select()->from("tags", array("b_id","tag_name"));
    $stmt = $rvals->query();
    $row_values = array();
-
    foreach ($stmt->fetchAll() as $row) {
       fb($row);
       array_push($row_values, $row);
@@ -156,6 +148,7 @@ function addTag($bid,$tagname) {
          $row->save();
       }
    }
+	getTagNames();
 }
 
 function getTagNames() {
@@ -267,8 +260,7 @@ function flagTag($bid,$tagname) {
 
 function getAllBuildings() {
    global $building;
-   fb("No id given or id is $get", "All");
-   echo $building->getAll();
+   $building->getAll();
 }
  
 ?>

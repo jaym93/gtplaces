@@ -4,7 +4,7 @@
 	<library name="jquery"/>
    <library name="jquery.mobile"/>
    <library name="gtmob"/>
-	<javascript file="gtplaceslist.js"/>
+	<javascript file="gtplaces.js"/>
    <css file="css/list.css"/>
    <css file="css/reset.css"/>
    <css file="css/placeinfo.css"/>	
