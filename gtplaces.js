@@ -502,9 +502,8 @@ function confirmFlagTag() {
     
 	$("#confirmFlagPopup #btnFlag").unbind('click');
     $("#confirmFlagPopup #btnFlag").click(function() {
-		tag = "'" + tag + "'";
 		console.log(tag);
-        $.post("../../api/gtplaces/tags/" + tag + "flag", { "bid": currentPlaceID}, function(data) {
+        $.post("../../api/gtplaces/tags/" + tag + "/flag", { "bid": currentPlaceID}, function(data) {
 		    // console.log("flagged tag: " + tag);
 		    
 		    $("#confirmFlagPopup").hide();
