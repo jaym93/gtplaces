@@ -1,0 +1,10 @@
+[JobQueue 23.06.2010 15:04:16 SYSTEM] Job Queue daemon started at pid 30960 
+[JobQueue 23.06.2010 20:54:36 SYSTEM] Job Queue daemon started at pid 8049 
+[JobQueue 19.07.2010 22:50:17 SYSTEM] Job Queue daemon started at pid 26304 
+[JobQueue 21.07.2010 11:11:09 SYSTEM] Job Queue daemon started at pid 3219 
+[JobQueue 21.07.2010 11:15:11 SYSTEM] Job Queue daemon started at pid 3233 
+[JobQueue 30.07.2010 10:06:33 SYSTEM] Job Queue daemon started at pid 28900 
+[JobQueue 11.09.2010 23:37:11 SYSTEM] Job Queue daemon started at pid 3222 
+[JobQueue 14.10.2010 10:25:44 SYSTEM] Job Queue daemon started at pid 3272 
+[JobQueue 04.11.2010 22:16:36 SYSTEM] Job Queue daemon started at pid 17882 
+[JobQueue 12.02.2011 20:18:40 ERROR] Unable to start Job Queue Daemon: Error initializing database at sqlite:file=jobqueue.db. Unable to init DB schema: database or disk is full Unable to fetch row 
