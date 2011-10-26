@@ -1,0 +1,538 @@
+--- php-5.3.0/Zend/zend_execute_API.c	2009-06-05 21:50:32.000000000 +0300
++++ php-5.3.0/Zend/zend_execute_API.c	2009-08-19 09:18:28.000000000 +0300
+@@ -17,7 +17,7 @@
+    +----------------------------------------------------------------------+
+ */
+ 
+-/* $Id: zend_execute_API.c,v 1.331.2.20.2.24.2.78 2009/06/05 18:50:32 mattwil Exp $ */
++/* $Id$ */
+ 
+ #include <stdio.h>
+ #include <signal.h>
+@@ -837,6 +837,12 @@
+ 	for (i=0; i<fci->param_count; i++) {
+ 		zval *param;
+ 
++        	if(EX(function_state).function->type == ZEND_INTERNAL_FUNCTION 
++			&& !ARG_SHOULD_BE_SENT_BY_REF(EX(function_state).function, i + 1)
++			&& PZVAL_IS_REF(*fci->params[i])) {
++			SEPARATE_ZVAL(fci->params[i]);
++		}
++
+ 		if (ARG_SHOULD_BE_SENT_BY_REF(EX(function_state).function, i + 1)
+ 			&& !PZVAL_IS_REF(*fci->params[i])) {
+ 
+@@ -1148,6 +1154,7 @@
+ 		zval *local_retval_ptr=NULL;
+ 		zval **original_return_value_ptr_ptr = EG(return_value_ptr_ptr);
+ 		zend_op **original_opline_ptr = EG(opline_ptr);
++		int orig_interactive = CG(interactive);
+ 
+ 		EG(return_value_ptr_ptr) = &local_retval_ptr;
+ 		EG(active_op_array) = new_op_array;
+@@ -1155,9 +1162,11 @@
+ 		if (!EG(active_symbol_table)) {
+ 			zend_rebuild_symbol_table(TSRMLS_C);
+ 		}
++		CG(interactive) = 0;
+ 
+ 		zend_execute(new_op_array TSRMLS_CC);
+ 
++		CG(interactive) = orig_interactive;
+ 		if (local_retval_ptr) {
+ 			if (retval_ptr) {
+ 				COPY_PZVAL_TO_ZVAL(*retval_ptr, local_retval_ptr);
+@@ -1216,6 +1225,7 @@
+ {
+ 	zend_op *opline, *end;
+ 	zend_op *ret_opline;
++	int orig_interactive;
+ 
+ 	if (!(CG(active_op_array)->fn_flags & ZEND_ACC_INTERACTIVE)
+ 		|| CG(active_op_array)->backpatch_count>0
+@@ -1271,7 +1281,10 @@
+ 	
+ 	EG(return_value_ptr_ptr) = NULL;
+ 	EG(active_op_array) = CG(active_op_array);
++	orig_interactive = CG(interactive);
++	CG(interactive) = 0;
+ 	zend_execute(CG(active_op_array) TSRMLS_CC);
++	CG(interactive) = orig_interactive;
+ 
+ 	if (EG(exception)) {
+ 		zend_exception_error(EG(exception), E_ERROR TSRMLS_CC);
+--- php-5.3.0/Zend/zend_vm_execute.h	2009-06-07 18:46:51.000000000 +0300
++++ php-5.3.0/Zend/zend_vm_execute.h	2009-08-19 09:20:16.000000000 +0300
+@@ -330,16 +330,12 @@
+ 			EX_T(opline->result.u.var).var.fcall_returned_reference = EX(function_state).function->common.return_reference;
+ 		}
+ 
+-#if 1
+ 		if (zend_execute == execute && !EG(exception)) {
+ 			EX(call_opline) = opline;
+ 			ZEND_VM_ENTER();
+ 		} else {
+ 			zend_execute(EG(active_op_array) TSRMLS_CC);
+ 		}
+-#else
+-		zend_execute(EG(active_op_array) TSRMLS_CC);
+-#endif
+ 
+ 		EG(opline_ptr) = &EX(opline);
+ 		EG(active_op_array) = EX(op_array);
+@@ -699,6 +695,10 @@
+ 			ZEND_VM_CONTINUE();
+ 		case ZEND_USER_OPCODE_RETURN:
+ 			return zend_leave_helper_SPEC(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++		case ZEND_USER_OPCODE_ENTER:
++			ZEND_VM_ENTER();
++		case ZEND_USER_OPCODE_LEAVE:
++			ZEND_VM_LEAVE();
+ 		case ZEND_USER_OPCODE_DISPATCH:
+ 			ZEND_VM_DISPATCH(EX(opline)->opcode, EX(opline));
+ 		default:
+@@ -2108,28 +2108,33 @@
+ 			ALLOC_ZVAL(tmp);
+ 			INIT_PZVAL_COPY(tmp, array_ptr);
+ 			array_ptr = tmp;
++			if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
++				ce = Z_OBJCE_P(array_ptr);
++				if (ce && ce->get_iterator) {
++					Z_DELREF_P(array_ptr);
++				}
++			}
+ 		} else if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
+ 			ce = Z_OBJCE_P(array_ptr);
+ 			if (!ce || !ce->get_iterator) {
+ 				Z_ADDREF_P(array_ptr);
+ 			}
++		} else if (IS_CONST == IS_CONST ||
++		           ((IS_CONST == IS_CV || IS_CONST == IS_VAR) &&
++		            !Z_ISREF_P(array_ptr) &&
++		            Z_REFCOUNT_P(array_ptr) > 1)) {
++			zval *tmp;
++
++			ALLOC_ZVAL(tmp);
++			INIT_PZVAL_COPY(tmp, array_ptr);
++			zval_copy_ctor(tmp);
++			array_ptr = tmp;
+ 		} else {
+-			if ((IS_CONST == IS_CV || IS_CONST == IS_VAR) &&
+-			    !Z_ISREF_P(array_ptr) &&
+-			    Z_REFCOUNT_P(array_ptr) > 1) {
+-				zval *tmp;
+-
+-				ALLOC_ZVAL(tmp);
+-				INIT_PZVAL_COPY(tmp, array_ptr);
+-				zval_copy_ctor(tmp);
+-				array_ptr = tmp;
+-			} else {
+-				Z_ADDREF_P(array_ptr);
+-			}
++			Z_ADDREF_P(array_ptr);
+ 		}
+ 	}
+ 
+-	if (IS_CONST != IS_TMP_VAR && ce && ce->get_iterator) {
++	if (ce && ce->get_iterator) {
+ 		iter = ce->get_iterator(ce, array_ptr, opline->extended_value & ZEND_FE_RESET_REFERENCE TSRMLS_CC);
+ 
+ 		if (iter && !EG(exception)) {
+@@ -5370,28 +5375,33 @@
+ 			ALLOC_ZVAL(tmp);
+ 			INIT_PZVAL_COPY(tmp, array_ptr);
+ 			array_ptr = tmp;
++			if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
++				ce = Z_OBJCE_P(array_ptr);
++				if (ce && ce->get_iterator) {
++					Z_DELREF_P(array_ptr);
++				}
++			}
+ 		} else if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
+ 			ce = Z_OBJCE_P(array_ptr);
+ 			if (!ce || !ce->get_iterator) {
+ 				Z_ADDREF_P(array_ptr);
+ 			}
++		} else if (IS_TMP_VAR == IS_CONST ||
++		           ((IS_TMP_VAR == IS_CV || IS_TMP_VAR == IS_VAR) &&
++		            !Z_ISREF_P(array_ptr) &&
++		            Z_REFCOUNT_P(array_ptr) > 1)) {
++			zval *tmp;
++
++			ALLOC_ZVAL(tmp);
++			INIT_PZVAL_COPY(tmp, array_ptr);
++			zval_copy_ctor(tmp);
++			array_ptr = tmp;
+ 		} else {
+-			if ((IS_TMP_VAR == IS_CV || IS_TMP_VAR == IS_VAR) &&
+-			    !Z_ISREF_P(array_ptr) &&
+-			    Z_REFCOUNT_P(array_ptr) > 1) {
+-				zval *tmp;
+-
+-				ALLOC_ZVAL(tmp);
+-				INIT_PZVAL_COPY(tmp, array_ptr);
+-				zval_copy_ctor(tmp);
+-				array_ptr = tmp;
+-			} else {
+-				Z_ADDREF_P(array_ptr);
+-			}
++			Z_ADDREF_P(array_ptr);
+ 		}
+ 	}
+ 
+-	if (IS_TMP_VAR != IS_TMP_VAR && ce && ce->get_iterator) {
++	if (ce && ce->get_iterator) {
+ 		iter = ce->get_iterator(ce, array_ptr, opline->extended_value & ZEND_FE_RESET_REFERENCE TSRMLS_CC);
+ 
+ 		if (iter && !EG(exception)) {
+@@ -8278,7 +8288,9 @@
+ 	} else {
+ 		zval *valptr;
+ 
+-		if (!(opline->extended_value & ZEND_ARG_SEND_SILENT)) {
++		if ((opline->extended_value & ZEND_ARG_COMPILE_TIME_BOUND) ?
++			!(opline->extended_value & ZEND_ARG_SEND_SILENT) :
++			!ARG_MAY_BE_SENT_BY_REF(EX(fbc), opline->op2.u.opline_num)) {
+ 			zend_error(E_STRICT, "Only variables should be passed by reference");
+ 		}
+ 		ALLOC_ZVAL(valptr);
+@@ -8304,6 +8316,10 @@
+ 		zend_error_noreturn(E_ERROR, "Only variables can be passed by reference");
+ 	}
+ 
++      	if (EX(function_state).function->type == ZEND_INTERNAL_FUNCTION && !ARG_SHOULD_BE_SENT_BY_REF(EX(fbc), opline->op2.u.opline_num)) {
++               return zend_send_by_var_helper_SPEC_VAR(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++        }
++
+ 	SEPARATE_ZVAL_TO_MAKE_IS_REF(varptr_ptr);
+ 	varptr = *varptr_ptr;
+ 	Z_ADDREF_P(varptr);
+@@ -8715,28 +8731,33 @@
+ 			ALLOC_ZVAL(tmp);
+ 			INIT_PZVAL_COPY(tmp, array_ptr);
+ 			array_ptr = tmp;
++			if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
++				ce = Z_OBJCE_P(array_ptr);
++				if (ce && ce->get_iterator) {
++					Z_DELREF_P(array_ptr);
++				}
++			}
+ 		} else if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
+ 			ce = Z_OBJCE_P(array_ptr);
+ 			if (!ce || !ce->get_iterator) {
+ 				Z_ADDREF_P(array_ptr);
+ 			}
++		} else if (IS_VAR == IS_CONST ||
++		           ((IS_VAR == IS_CV || IS_VAR == IS_VAR) &&
++		            !Z_ISREF_P(array_ptr) &&
++		            Z_REFCOUNT_P(array_ptr) > 1)) {
++			zval *tmp;
++
++			ALLOC_ZVAL(tmp);
++			INIT_PZVAL_COPY(tmp, array_ptr);
++			zval_copy_ctor(tmp);
++			array_ptr = tmp;
+ 		} else {
+-			if ((IS_VAR == IS_CV || IS_VAR == IS_VAR) &&
+-			    !Z_ISREF_P(array_ptr) &&
+-			    Z_REFCOUNT_P(array_ptr) > 1) {
+-				zval *tmp;
+-
+-				ALLOC_ZVAL(tmp);
+-				INIT_PZVAL_COPY(tmp, array_ptr);
+-				zval_copy_ctor(tmp);
+-				array_ptr = tmp;
+-			} else {
+-				Z_ADDREF_P(array_ptr);
+-			}
++			Z_ADDREF_P(array_ptr);
+ 		}
+ 	}
+ 
+-	if (IS_VAR != IS_TMP_VAR && ce && ce->get_iterator) {
++	if (ce && ce->get_iterator) {
+ 		iter = ce->get_iterator(ce, array_ptr, opline->extended_value & ZEND_FE_RESET_REFERENCE TSRMLS_CC);
+ 
+ 		if (iter && !EG(exception)) {
+@@ -22128,7 +22149,9 @@
+ 	} else {
+ 		zval *valptr;
+ 
+-		if (!(opline->extended_value & ZEND_ARG_SEND_SILENT)) {
++		if ((opline->extended_value & ZEND_ARG_COMPILE_TIME_BOUND) ?
++			!(opline->extended_value & ZEND_ARG_SEND_SILENT) :
++			!ARG_MAY_BE_SENT_BY_REF(EX(fbc), opline->op2.u.opline_num)) {
+ 			zend_error(E_STRICT, "Only variables should be passed by reference");
+ 		}
+ 		ALLOC_ZVAL(valptr);
+@@ -22154,6 +22177,10 @@
+ 		zend_error_noreturn(E_ERROR, "Only variables can be passed by reference");
+ 	}
+ 
++      	if (EX(function_state).function->type == ZEND_INTERNAL_FUNCTION && !ARG_SHOULD_BE_SENT_BY_REF(EX(fbc), opline->op2.u.opline_num)) {
++               return zend_send_by_var_helper_SPEC_CV(ZEND_OPCODE_HANDLER_ARGS_PASSTHRU);
++        }
++
+ 	SEPARATE_ZVAL_TO_MAKE_IS_REF(varptr_ptr);
+ 	varptr = *varptr_ptr;
+ 	Z_ADDREF_P(varptr);
+@@ -22555,28 +22582,33 @@
+ 			ALLOC_ZVAL(tmp);
+ 			INIT_PZVAL_COPY(tmp, array_ptr);
+ 			array_ptr = tmp;
++			if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
++				ce = Z_OBJCE_P(array_ptr);
++				if (ce && ce->get_iterator) {
++					Z_DELREF_P(array_ptr);
++				}
++			}
+ 		} else if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
+ 			ce = Z_OBJCE_P(array_ptr);
+ 			if (!ce || !ce->get_iterator) {
+ 				Z_ADDREF_P(array_ptr);
+ 			}
++		} else if (IS_CV == IS_CONST ||
++		           ((IS_CV == IS_CV || IS_CV == IS_VAR) &&
++		            !Z_ISREF_P(array_ptr) &&
++		            Z_REFCOUNT_P(array_ptr) > 1)) {
++			zval *tmp;
++
++			ALLOC_ZVAL(tmp);
++			INIT_PZVAL_COPY(tmp, array_ptr);
++			zval_copy_ctor(tmp);
++			array_ptr = tmp;
+ 		} else {
+-			if ((IS_CV == IS_CV || IS_CV == IS_VAR) &&
+-			    !Z_ISREF_P(array_ptr) &&
+-			    Z_REFCOUNT_P(array_ptr) > 1) {
+-				zval *tmp;
+-
+-				ALLOC_ZVAL(tmp);
+-				INIT_PZVAL_COPY(tmp, array_ptr);
+-				zval_copy_ctor(tmp);
+-				array_ptr = tmp;
+-			} else {
+-				Z_ADDREF_P(array_ptr);
+-			}
++			Z_ADDREF_P(array_ptr);
+ 		}
+ 	}
+ 
+-	if (IS_CV != IS_TMP_VAR && ce && ce->get_iterator) {
++	if (ce && ce->get_iterator) {
+ 		iter = ce->get_iterator(ce, array_ptr, opline->extended_value & ZEND_FE_RESET_REFERENCE TSRMLS_CC);
+ 
+ 		if (iter && !EG(exception)) {
+--- php-5.3.0/Zend/zend_vm_def.h	2009-06-07 18:46:51.000000000 +0300
++++ php-5.3.0/Zend/zend_vm_def.h	2009-08-19 09:19:15.000000000 +0300
+@@ -18,7 +18,7 @@
+    +----------------------------------------------------------------------+
+ */
+ 
+-/* $Id: zend_vm_def.h,v 1.59.2.29.2.48.2.95 2009/06/07 15:46:51 mattwil Exp $ */
++/* $Id$ */
+ 
+ /* If you change this file, please regenerate the zend_vm_execute.h and
+  * zend_vm_opcodes.h files by running:
+@@ -2328,16 +2328,12 @@
+ 			EX_T(opline->result.u.var).var.fcall_returned_reference = EX(function_state).function->common.return_reference;
+ 		}
+ 
+-#ifndef ZEND_VM_EXPORT
+ 		if (zend_execute == execute && !EG(exception)) {
+ 			EX(call_opline) = opline;
+ 			ZEND_VM_ENTER();
+ 		} else {
+ 			zend_execute(EG(active_op_array) TSRMLS_CC);
+ 		}
+-#else
+-		zend_execute(EG(active_op_array) TSRMLS_CC);
+-#endif
+ 
+ 		EG(opline_ptr) = &EX(opline);
+ 		EG(active_op_array) = EX(op_array);
+@@ -2662,7 +2658,9 @@
+ 	} else {
+ 		zval *valptr;
+ 
+-		if (!(opline->extended_value & ZEND_ARG_SEND_SILENT)) {
++		if ((opline->extended_value & ZEND_ARG_COMPILE_TIME_BOUND) ?
++			!(opline->extended_value & ZEND_ARG_SEND_SILENT) :
++			!ARG_MAY_BE_SENT_BY_REF(EX(fbc), opline->op2.u.opline_num)) {
+ 			zend_error(E_STRICT, "Only variables should be passed by reference");
+ 		}
+ 		ALLOC_ZVAL(valptr);
+@@ -2688,6 +2686,10 @@
+ 		zend_error_noreturn(E_ERROR, "Only variables can be passed by reference");
+ 	}
+ 
++      	if (EX(function_state).function->type == ZEND_INTERNAL_FUNCTION && !ARG_SHOULD_BE_SENT_BY_REF(EX(fbc), opline->op2.u.opline_num)) {
++               ZEND_VM_DISPATCH_TO_HELPER(zend_send_by_var_helper);
++        }
++
+ 	SEPARATE_ZVAL_TO_MAKE_IS_REF(varptr_ptr);
+ 	varptr = *varptr_ptr;
+ 	Z_ADDREF_P(varptr);
+@@ -3571,28 +3573,33 @@
+ 			ALLOC_ZVAL(tmp);
+ 			INIT_PZVAL_COPY(tmp, array_ptr);
+ 			array_ptr = tmp;
++			if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
++				ce = Z_OBJCE_P(array_ptr);
++				if (ce && ce->get_iterator) {
++					Z_DELREF_P(array_ptr);
++				}
++			}
+ 		} else if (Z_TYPE_P(array_ptr) == IS_OBJECT) {
+ 			ce = Z_OBJCE_P(array_ptr);
+ 			if (!ce || !ce->get_iterator) {
+ 				Z_ADDREF_P(array_ptr);
+ 			}
++		} else if (OP1_TYPE == IS_CONST || 
++		           ((OP1_TYPE == IS_CV || OP1_TYPE == IS_VAR) &&
++		            !Z_ISREF_P(array_ptr) &&
++		            Z_REFCOUNT_P(array_ptr) > 1)) {
++			zval *tmp;
++
++			ALLOC_ZVAL(tmp);
++			INIT_PZVAL_COPY(tmp, array_ptr);
++			zval_copy_ctor(tmp);
++			array_ptr = tmp;
+ 		} else {
+-			if ((OP1_TYPE == IS_CV || OP1_TYPE == IS_VAR) &&
+-			    !Z_ISREF_P(array_ptr) &&
+-			    Z_REFCOUNT_P(array_ptr) > 1) {
+-				zval *tmp;
+-
+-				ALLOC_ZVAL(tmp);
+-				INIT_PZVAL_COPY(tmp, array_ptr);
+-				zval_copy_ctor(tmp);
+-				array_ptr = tmp;
+-			} else {
+-				Z_ADDREF_P(array_ptr);
+-			}
++			Z_ADDREF_P(array_ptr);
+ 		}
+ 	}
+ 
+-	if (OP1_TYPE != IS_TMP_VAR && ce && ce->get_iterator) {
++	if (ce && ce->get_iterator) {
+ 		iter = ce->get_iterator(ce, array_ptr, opline->extended_value & ZEND_FE_RESET_REFERENCE TSRMLS_CC);
+ 
+ 		if (iter && !EG(exception)) {
+@@ -4351,6 +4358,10 @@
+ 			ZEND_VM_CONTINUE();
+ 		case ZEND_USER_OPCODE_RETURN:
+ 			ZEND_VM_DISPATCH_TO_HELPER(zend_leave_helper);
++		case ZEND_USER_OPCODE_ENTER:
++			ZEND_VM_ENTER();
++		case ZEND_USER_OPCODE_LEAVE:
++			ZEND_VM_LEAVE();
+ 		case ZEND_USER_OPCODE_DISPATCH:
+ 			ZEND_VM_DISPATCH(EX(opline)->opcode, EX(opline));
+ 		default:
+--- php-5.3.0/ext/standard/array.c	2009-05-15 20:03:03.000000000 +0300
++++ php-5.3.0/ext/standard/array.c	2009-08-19 09:34:33.000000000 +0300
+@@ -21,7 +21,7 @@
+    +----------------------------------------------------------------------+
+ */
+ 
+-/* $Id: array.c,v 1.308.2.21.2.37.2.56 2009/05/15 17:03:03 moriyoshi Exp $ */
++/* $Id$ */
+ 
+ #include "php.h"
+ #include "php_ini.h"
+@@ -629,6 +629,7 @@
+ PHP_FUNCTION(usort)
+ {
+ 	zval *array;
++	int refcount;
+ 	PHP_ARRAY_CMP_FUNC_VARS;
+ 
+ 	PHP_ARRAY_CMP_FUNC_BACKUP();
+@@ -638,12 +639,31 @@
+ 		return;
+ 	}
+ 
++	/* Clear the is_ref flag, so the attemts to modify the array in user
++	 * comaprison function will create a copy of array and won't affect the
++	 * original array. The fact of modification is detected using refcount
++	 * comparison. The result of sorting in such case is undefined and the
++	 * function returns FALSE.
++	 */
++	Z_UNSET_ISREF_P(array);
++	refcount = Z_REFCOUNT_P(array);
++
+ 	if (zend_hash_sort(Z_ARRVAL_P(array), zend_qsort, php_array_user_compare, 1 TSRMLS_CC) == FAILURE) {
+-		PHP_ARRAY_CMP_FUNC_RESTORE();
+-		RETURN_FALSE;
++		RETVAL_FALSE;
++	} else {
++		if (refcount > Z_REFCOUNT_P(array)) {
++			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Array was modified by the user comparison function");
++			RETVAL_FALSE;
++		} else {
++			RETVAL_TRUE;
++		}
++	}
++	
++	if (Z_REFCOUNT_P(array) > 1) {
++		Z_SET_ISREF_P(array);
+ 	}
++
+ 	PHP_ARRAY_CMP_FUNC_RESTORE();
+-	RETURN_TRUE;
+ }
+ /* }}} */
+ 
+@@ -652,6 +672,7 @@
+ PHP_FUNCTION(uasort)
+ {
+ 	zval *array;
++	int refcount;
+ 	PHP_ARRAY_CMP_FUNC_VARS;
+ 
+ 	PHP_ARRAY_CMP_FUNC_BACKUP();
+@@ -661,12 +682,31 @@
+ 		return;
+ 	}
+ 
++	/* Clear the is_ref flag, so the attemts to modify the array in user
++	 * comaprison function will create a copy of array and won't affect the
++	 * original array. The fact of modification is detected using refcount
++	 * comparison. The result of sorting in such case is undefined and the
++	 * function returns FALSE.
++	 */
++	Z_UNSET_ISREF_P(array);
++	refcount = Z_REFCOUNT_P(array);
++
+ 	if (zend_hash_sort(Z_ARRVAL_P(array), zend_qsort, php_array_user_compare, 0 TSRMLS_CC) == FAILURE) {
+-		PHP_ARRAY_CMP_FUNC_RESTORE();
+-		RETURN_FALSE;
++		RETVAL_FALSE;
++	} else {
++		if (refcount > Z_REFCOUNT_P(array)) {
++			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Array was modified by the user comparison function");
++			RETVAL_FALSE;
++		} else {
++			RETVAL_TRUE;
++		}
++	}
++
++	if (Z_REFCOUNT_P(array) > 1) {
++		Z_SET_ISREF_P(array);
+ 	}
++
+ 	PHP_ARRAY_CMP_FUNC_RESTORE();
+-	RETURN_TRUE;
+ }
+ /* }}} */
+ 
+@@ -2305,6 +2345,7 @@
+ 	array_init_size(return_value, init_size);
+ 
+ 	for (i = 0; i < argc; i++) {
++		SEPARATE_ZVAL(args[i]);
+ 		if (!replace) {
+ 			php_array_merge(Z_ARRVAL_P(return_value), Z_ARRVAL_PP(args[i]), recursive TSRMLS_CC);
+ 		} else if (recursive && i > 0) { /* First array will be copied directly instead */

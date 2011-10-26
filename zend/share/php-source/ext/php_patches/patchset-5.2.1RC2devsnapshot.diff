@@ -1,0 +1,129 @@
+Index: php-src_5_2_0/sapi/apache/mod_php5.c
+===================================================================
+--- php-src_5_2_0.orig/sapi/apache/mod_php5.c
++++ php-src_5_2_0/sapi/apache/mod_php5.c
+@@ -22,6 +22,8 @@
+ #include "php_apache_http.h"
+ #include "http_conf_globals.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ #ifdef NETWARE
+ #define SIGPIPE SIGINT
+ #endif
+@@ -946,6 +948,7 @@ static void php_init_handler(server_rec 
+ 	{
+ 		TSRMLS_FETCH();
+ 		if (PG(expose_php)) {
++			ap_add_version_component("Zend Core/" APOLLO_VERSION);
+ 			ap_add_version_component("PHP/" PHP_VERSION);
+ 		}
+ 	}
+Index: php-src_5_2_0/sapi/apache2handler/sapi_apache2.c
+===================================================================
+--- php-src_5_2_0.orig/sapi/apache2handler/sapi_apache2.c
++++ php-src_5_2_0/sapi/apache2handler/sapi_apache2.c
+@@ -53,6 +53,8 @@
+ 
+ #include "php_apache.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ /* UnixWare and Netware define shutdown to _shutdown, which causes problems later
+  * on when using a structure member named shutdown. Since this source
+  * file does not use the system call shutdown, it is safe to #undef it.K
+@@ -352,6 +354,7 @@ static void php_apache_add_version(apr_p
+ {
+ 	TSRMLS_FETCH();
+ 	if (PG(expose_php)) {
++		ap_add_version_component(p, "Zend Core/" APOLLO_VERSION);
+ 		ap_add_version_component(p, "PHP/" PHP_VERSION);
+ 	}
+ }
+Index: php-src_5_2_0/sapi/cgi/cgi_main.c
+===================================================================
+--- php-src_5_2_0.orig/sapi/cgi/cgi_main.c
++++ php-src_5_2_0/sapi/cgi/cgi_main.c
+@@ -142,6 +142,7 @@ static const opt_struct OPTIONS[] = {
+ 	{'?', 0, "usage"},/* help alias (both '?' and 'usage') */
+ 	{'v', 0, "version"},
+ 	{'z', 1, "zend-extension"},
++ 	{'R', 1, "repeat"},
+ 	{'-', 0, NULL} /* end of args */
+ };
+ 
+@@ -1002,6 +1003,9 @@ int main(int argc, char *argv[])
+ 	int status = 0;
+ #endif
+ #endif /* PHP_FASTCGI */
++	int benchmark = 0;
++	int repeats = 1;
++	struct timeval start, end;
+ 
+ #if 0 && defined(PHP_DEBUG)
+ 	/* IIS is always making things more difficult.  This allows
+@@ -1330,6 +1334,10 @@ consult the installation file that came 
+ 	zend_first_try {
+ 		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
+ 			switch (c) {
++				case 'R': 
++				        benchmark = 1;
++						repeats = atoi(php_optarg);
++						break;
+ 				case 'h':
+ 				case '?':
+ 					no_headers = 1;
+@@ -1344,6 +1352,9 @@ consult the installation file that came 
+ 		}
+ 		php_optind = orig_optind;
+ 		php_optarg = orig_optarg;
++		if (benchmark) {
++			gettimeofday(&start, NULL);
++		}
+ 
+ #if PHP_FASTCGI
+ 		/* start of FAST CGI loop */
+@@ -1696,11 +1707,12 @@ fastcgi_request_done:
+ 
+ 		}
+ 
++		repeats--;
+ #if PHP_FASTCGI
+-			if (!fastcgi) break;
++			if (!fastcgi && repeats <= 0) break;
+ 			/* only fastcgi will get here */
+ 			requests++;
+-			if (max_requests && (requests == max_requests)) {
++			if (fastcgi && max_requests && (requests == max_requests)) {
+ 				fcgi_finish_request(&request);
+ #ifndef PHP_WIN32
+ 				if (bindpath) {
+@@ -1709,6 +1721,9 @@ fastcgi_request_done:
+ #endif
+ 				break;
+ 			}
++			php_optind = orig_optind;
++			php_optarg = orig_optarg;
++
+ 			/* end of fastcgi loop */
+ 		}
+ #endif
+@@ -1723,6 +1738,18 @@ fastcgi_request_done:
+ 		exit_status = 255;
+ 	} zend_end_try();
+ 
++	if (benchmark) {
++		gettimeofday(&end, NULL);
++		end.tv_sec -= start.tv_sec;
++		if (end.tv_usec >= start.tv_usec) {
++			end.tv_usec -= start.tv_usec;
++		} else {
++			end.tv_sec -= 1;
++			end.tv_usec = end.tv_usec + 1000000 - start.tv_usec;
++		}
++		fprintf(stderr, "\nElapsed time: %d.%06d sec\n", end.tv_sec, start.tv_usec);
++	}
++
+ 	SG(server_context) = NULL;
+ 	php_module_shutdown(TSRMLS_C);
+ 	sapi_shutdown();

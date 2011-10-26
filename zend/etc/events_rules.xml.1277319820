@@ -1,0 +1,246 @@
+<?xml version='1.0' encoding="UTF-8"?>
+<rules>
+  <rule event-type="function-error" enabled="true" break="true" id="1219564775" >
+    <rule-name>Function Error</rule-name>
+    <rule-description>Triggered when one of the watched functions returns FALSE</rule-description>
+    <conditions>
+      <condition operation="string-in-list" attribute="function-name" >curl_exec|fopen|file_get_contents|file_put_contents|fsockopen|ftp_connect|ftp_ssl_connect|ldap_connect|pcntl_exec|socket_connect|stream_socket_client</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="function-error" enabled="true" break="true" id="1219564776" >
+    <rule-name>Database Error</rule-name>
+    <rule-description>Triggered when one of the watched database functions returns FALSE</rule-description>
+    <conditions>
+      <condition operation="string-in-list" attribute="function-name" >mssql_connect|mssql_execute|mssql_query|mssql_unbuffered_query|mysql_connect|mysql_db_query|mysql_query|mysql_unbuffered_query|mysqli_connect|mysqli_execute|mysqli_master_query|mysqli_multi_query|mysqli_query|mysqli_real_connect|mysqli_real_query|mysqli_rpl_query_type|mysqli_send_query|mysqli_slave_query|mysqli_stmt_execute|oci_connect|ociexecute|oci_execute|ocilogon|oci_new_connect|odbc_connect|odbc_exec|odbc_execute|ora_exec|PDO::exec|PDO::prepare|PDO::query|pg_connect|pg_exec|pg_query|pg_send_query|sqlite_array_query|sqlite_exec|sqlite_query|sqlite_single_query|sqlite_unbuffered_query|db2_connect|db2_exec|db2_execute|db2_prepare</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="function-slow-exec" enabled="true" break="true" id="1219644335" >
+    <rule-name>Severe Slow Function Execution</rule-name>
+    <rule-description>Triggered when one of the watched functions runs longer than the specified duration </rule-description>
+    <conditions>
+      <condition operation="string-in-list" attribute="function-name" >curl_exec|curl_multi_exec|dom_xpath_query|exec|fopen|file_get_contents|file_put_contents|fsockopen|ftp_connect|ftp_ssl_connect|ldap_connect|pcntl_exec|shell_exec|socket_connect|stream_socket_client|SoapClient::__call|SoapClient::__soapCall</condition>
+      <condition operation="number-greater-than" attribute="exec-time" >2000</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="function-slow-exec" enabled="true" break="true" id="1219644360" >
+    <rule-name>Slow Function Execution</rule-name>
+    <rule-description>Triggered when one of the watched functions runs longer than the specified duration </rule-description>
+    <conditions>
+      <condition operation="string-in-list" attribute="function-name" >curl_exec|curl_multi_exec|dom_xpath_query|exec|fopen|file_get_contents|file_put_contents|fsockopen|ftp_connect|ftp_ssl_connect|ldap_connect|pcntl_exec|shell_exec|socket_connect|stream_socket_client|SoapClient::__call|SoapClient::__soapCall</condition>
+      <condition operation="number-greater-than" attribute="exec-time" >500</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="function-slow-exec" enabled="true" break="true" id="1219644362" >
+    <rule-name>Severe Slow Query Execution</rule-name>
+    <rule-description>Triggered when one of the watched database functions runs longer than the specified duration </rule-description>
+    <conditions>
+      <condition operation="string-in-list" attribute="function-name" >mssql_execute|mssql_query|mssql_unbuffered_query|mysql_db_query|mysql_query|mysql_unbuffered_query|mysqli_execute|mysqli_master_query|mysqli_multi_query|mysqli_query|mysqli_real_connect|mysqli_real_query|mysqli_send_query|mysqli_slave_query|mysqli_stmt_execute|ociexecute|oci_execute|odbc_exec|odbc_execute|ora_exec|PDO::exec|PDO::query|PDOStatement::fetchAll|pg_exec|pg_query|pg_send_query|sqlite_array_query|sqlite_exec|sqlite_query|sqlite_single_query|sqlite_unbuffered_query|db2_exec|db2_execute</condition>
+      <condition operation="number-greater-than" attribute="exec-time" >2000</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="function-slow-exec" enabled="true" break="true" id="1219644361" >
+    <rule-name>Slow Query Execution</rule-name>
+    <rule-description>Triggered when one of the watched database functions runs longer than the specified duration </rule-description>
+    <conditions>
+      <condition operation="string-in-list" attribute="function-name" >mssql_execute|mssql_query|mssql_unbuffered_query|mysql_db_query|mysql_query|mysql_unbuffered_query|mysqli_execute|mysqli_master_query|mysqli_multi_query|mysqli_query|mysqli_real_connect|mysqli_real_query|mysqli_send_query|mysqli_slave_query|mysqli_stmt_execute|ociexecute|oci_execute|odbc_exec|odbc_execute|ora_exec|PDO::exec|PDO::query|PDOStatement::fetchAll|pg_exec|pg_query|pg_send_query|sqlite_array_query|sqlite_exec|sqlite_query|sqlite_single_query|sqlite_unbuffered_query|db2_exec|db2_execute</condition>
+      <condition operation="number-greater-than" attribute="exec-time" >500</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-slow-exec" enabled="true" break="true" id="1219644398" >
+    <rule-name>Severe Slow Request Execution (Absolute)</rule-name>
+    <rule-description>Triggered when a PHP request's runtime is longer than the specified duration </rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="exec-time" >2000</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-slow-exec" enabled="true" break="true" id="1219644415" >
+    <rule-name>Slow Request Execution (Absolute)</rule-name>
+    <rule-description>Triggered when a PHP request's runtime is longer than the specified duration </rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="exec-time" >500</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-relative-slow-exec" enabled="true" break="true" id="1219644453" >
+    <rule-name>Severe Slow Request Execution (Relative)</rule-name>
+    <rule-description>Triggered when a PHP request's runtime exceeds the average duration by the percentage specified (measured per URL) </rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="exec-time-percent-change" >60</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-relative-slow-exec" enabled="true" break="true" id="1219644483" >
+    <rule-name>Slow Request Execution (Relative)</rule-name>
+    <rule-description>Triggered when a PHP request's runtime exceeds the average duration by the percentage specified (measured per URL)</rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="exec-time-percent-change" >30</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-large-mem-usage" enabled="true" break="true" id="1219644576" >
+    <rule-name>Severe High Memory Usage (Absolute)</rule-name>
+    <rule-description>Triggered when a PHP request consumes more than the specified amount of memory</rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="mem-usage" >8192</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-large-mem-usage" enabled="true" break="true" id="1219644587" >
+    <rule-name>High Memory Usage (Absolute)</rule-name>
+    <rule-description>Triggered when a PHP request consumes more than the specified amount of memory</rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="mem-usage" >5120</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-relative-large-mem-usage" enabled="true" break="true" id="1219644550" >
+    <rule-name>Severe High Memory Usage (Relative)</rule-name>
+    <rule-description>Triggered when a PHP request consumes more than average amount of memory by the percentage specified (measured per URL)</rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="mem-usage-percent-change" >60</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-relative-large-mem-usage" enabled="true" break="true" id="1219645249" >
+    <rule-name>High Memory Usage (Relative)</rule-name>
+    <rule-description>Triggered when a PHP request consumes more than average amount of memory by the percentage specified (measured per URL)</rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="mem-usage-percent-change" >30</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="request-relative-large-out-size" enabled="true" break="true" id="1219645518" >
+    <rule-name>Inconsistent Output Size</rule-name>
+    <rule-description>Triggered when a PHP request's output size deviates from the average by the percentage specified (measured per URL)</rule-description>
+    <conditions>
+      <condition operation="number-greater-than" attribute="out-size-percent-change" >60</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="java-exception" enabled="true" break="true" id="1219645541" >
+    <rule-name>Uncaught Java Exception</rule-name>
+    <rule-description>Triggered when Java code called through the Java Bridge failed due to an uncaught exception</rule-description>
+    <conditions/>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="custom" enabled="true" break="true" id="1219645574" >
+    <rule-name>Custom Event</rule-name>
+    <rule-description>Triggered when the API function 'zend_monitor_custom_event' is called from inside PHP code</rule-description>
+    <conditions/>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="zend-error" enabled="true" break="true" id="1219645607" >
+    <rule-name>Fatal PHP Error</rule-name>
+    <rule-description>Triggered when a PHP error of one of the selected error levels is reported</rule-description>
+    <conditions>
+      <condition operation="bitwise-and" attribute="error-type" >85</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="zend-error" enabled="true" break="true" id="1219645630" >
+    <rule-name>PHP Error</rule-name>
+    <rule-description>Triggered when a PHP error of one of the selected error levels is reported</rule-description>
+    <conditions>
+      <condition operation="bitwise-and" attribute="error-type" >6134</condition>
+    </conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="jq-job-exec-error" enabled="true" break="true" id="1" >
+    <rule-name>Job Execution Error</rule-name>
+    <rule-description>Triggered when the system is unable to run a queued or
+scheduled job</rule-description>
+    <conditions>When the system was unable to run a job</conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="jq-job-logical-failure" enabled="true" break="true" id="2" >
+    <rule-name>Job Logical Failure</rule-name>
+    <rule-description>Triggered when a job is reported as "failed" using the
+ZendJobQueue::setCurreentJobStatus() method</rule-description>
+    <conditions>When a job reports logical failure</conditions>
+    <event-actions>
+      <action type="severity" >severe</action>
+    </event-actions>
+  </rule>
+  <rule event-type="jq-job-exec-delay" enabled="true" break="true" id="3" >
+    <rule-name>Job Execution Delay</rule-name>
+    <rule-description>Triggered when a job starts in delay</rule-description>
+    <conditions>When a job start time exceeds the planned start time by the
+predefined number of seconds</conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="jq-daemon-high-concurrency" enabled="true" break="true" id="4" >
+    <rule-name>Job Queue High Concurrency Level</rule-name>
+    <rule-description>Triggered when the Job Queue daemon is at or close to its
+maximal concurrent job limit</rule-description>
+    <conditions>When queue utilization is close to or at it's limit</conditions>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <rule event-type="tracer-write-file-fail" enabled="true" break="true" id="5" >
+    <rule-name>Failed Writing Code Tracing Data</rule-name>
+    <rule-description>Triggered when Code Tracing fails to write trace data to disk</rule-description>
+    <conditions/>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule>
+  <!--
+  <rule event-type="tracer-dump-truncated" enabled="true" break="true" id="6" >
+    <rule-name>Tracer - Trace data truncated</rule-name>
+    <rule-description>Triggered when tracing data exceeds the configured buffer limit</rule-description>
+    <conditions/>
+    <event-actions>
+      <action type="severity" >normal</action>
+    </event-actions>
+  </rule> -->
+</rules>

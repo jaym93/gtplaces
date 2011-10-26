@@ -1,0 +1,73 @@
+--- php-5.2.11/Zend/zend_alloc.c	2009-10-23 14:07:47.000000000 -0700
++++ php-5.2.11/Zend/zend_alloc.c	2009-11-16 12:14:28.906250000 -0800
+@@ -667,6 +667,14 @@
+ 	__asm {
+ 		bsr eax, _size
+ 	}
++#elif defined(__GNUC__) && defined(__powerpc64__)
++	unsigned int n;
++	asm ("cntlzd %0,%1" : "=r" (n) : "r" (_size));
++	return 63 - n;
++#elif defined(__GNUC__) && defined(__powerpc__)
++        unsigned int n;
++        asm ("cntlzw %0,%1" : "=r" (n) : "r" (_size));
++        return 31 - n;
+ #else
+ 	unsigned int n = 0;
+ 	while (_size != 0) {
+@@ -693,6 +701,8 @@
+ 	__asm {
+ 		bsf eax, _size
+    }
++#elif defined(__GNUC__) && (defined(__powerpc64__) || defined(__powerpc__))
++	return zend_mm_high_bit(_size & (-_size)); 
+ #else
+ 	static const int offset[16] = {4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0};
+ 	unsigned int n;
+@@ -2369,8 +2379,45 @@
+         return res;
+ }
+ 
+-#else
++#elif defined(__GNUC__) && defined(__powerpc64__)
++static inline size_t safe_address(size_t nmemb, size_t size, size_t offset)
++{
++        size_t res;
++        unsigned long overflow;
++
++        __asm__ ("mulld %0,%4,%3\n\tmulhdu %1,%4,%3\n\taddc %0,%5,%0\n\tadde %1,%1,%1"
++             : "=r"(res), "=r" (overflow)
++             : "%0"(res),
++               "r"(nmemb),
++               "r"(size),
++               "r"(offset));
++
++        if (UNEXPECTED(overflow)) {
++                zend_error_noreturn(E_ERROR, "Possible integer overflow in memory allocation (%zu * %zu + %zu)", nmemb, size, offset);
++                return 0;
++        }
++        return res;
++}
++#elif defined(__GNUC__) && defined(__powerpc__)
++static inline size_t safe_address(size_t nmemb, size_t size, size_t offset)
++{
++        size_t res;
++        unsigned long overflow;
+ 
++        __asm__ ("mullw %0,%4,%3\n\tmulhwu %1,%4,%3\n\taddc %0,%5,%0\n\tadde %1,%1,%1"
++             : "=r"(res), "=r" (overflow)
++             : "%0"(res),
++               "r"(nmemb),
++               "r"(size),
++               "r"(offset));
++
++        if (UNEXPECTED(overflow)) {
++                zend_error_noreturn(E_ERROR, "Possible integer overflow in memory allocation (%zu * %zu + %zu)", nmemb, size, offset);
++                return 0;
++        }
++        return res;
++}
++#else
+ static inline size_t safe_address(size_t nmemb, size_t size, size_t offset)
+ {
+ 	size_t res = nmemb * size + offset;

@@ -1,0 +1,657 @@
+Index: 5_2_4RC1/sapi/apache/mod_php5.c
+===================================================================
+--- 5_2_4RC1.orig/sapi/apache/mod_php5.c
++++ 5_2_4RC1/sapi/apache/mod_php5.c
+@@ -22,6 +22,8 @@
+ #include "php_apache_http.h"
+ #include "http_conf_globals.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ #ifdef NETWARE
+ #define SIGPIPE SIGINT
+ #endif
+@@ -949,6 +951,7 @@ static void php_init_handler(server_rec 
+ 	{
+ 		TSRMLS_FETCH();
+ 		if (PG(expose_php)) {
++			ap_add_version_component("Zend Core/" APOLLO_VERSION);
+ 			ap_add_version_component("PHP/" PHP_VERSION);
+ 		}
+ 	}
+Index: 5_2_4RC1/sapi/apache2handler/sapi_apache2.c
+===================================================================
+--- 5_2_4RC1.orig/sapi/apache2handler/sapi_apache2.c
++++ 5_2_4RC1/sapi/apache2handler/sapi_apache2.c
+@@ -53,6 +53,8 @@
+ 
+ #include "php_apache.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ /* UnixWare and Netware define shutdown to _shutdown, which causes problems later
+  * on when using a structure member named shutdown. Since this source
+  * file does not use the system call shutdown, it is safe to #undef it.K
+@@ -372,6 +374,7 @@ static void php_apache_add_version(apr_p
+ {
+ 	TSRMLS_FETCH();
+ 	if (PG(expose_php)) {
++		ap_add_version_component(p, "Zend Core/" APOLLO_VERSION);
+ 		ap_add_version_component(p, "PHP/" PHP_VERSION);
+ 	}
+ }
+Index: 5_2_4RC1/sapi/cgi/cgi_main.c
+===================================================================
+--- 5_2_4RC1.orig/sapi/cgi/cgi_main.c
++++ 5_2_4RC1/sapi/cgi/cgi_main.c
+@@ -141,6 +141,7 @@ static const opt_struct OPTIONS[] = {
+ 	{'?', 0, "usage"},/* help alias (both '?' and 'usage') */
+ 	{'v', 0, "version"},
+ 	{'z', 1, "zend-extension"},
++ 	{'R', 1, "repeat"},
+ 	{'-', 0, NULL} /* end of args */
+ };
+ 
+@@ -1141,6 +1142,9 @@ int main(int argc, char *argv[])
+ 	int status = 0;
+ #endif
+ #endif /* PHP_FASTCGI */
++	int benchmark = 0;
++	int repeats = 1;
++	struct timeval start, end;
+ 
+ #if 0 && defined(PHP_DEBUG)
+ 	/* IIS is always making things more difficult.  This allows
+@@ -1430,6 +1434,10 @@ consult the installation file that came 
+ 	zend_first_try {
+ 		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
+ 			switch (c) {
++				case 'R': 
++				        benchmark = 1;
++						repeats = atoi(php_optarg);
++						break;
+ 				case 'h':
+ 				case '?':
+ #if PHP_FASTCGI
+@@ -1447,6 +1455,9 @@ consult the installation file that came 
+ 		}
+ 		php_optind = orig_optind;
+ 		php_optarg = orig_optarg;
++		if (benchmark) {
++			gettimeofday(&start, NULL);
++		}
+ 
+ #if PHP_FASTCGI
+ 		/* start of FAST CGI loop */
+@@ -1830,11 +1841,12 @@ fastcgi_request_done:
+ 
+ 		}
+ 
++		repeats--;
+ #if PHP_FASTCGI
+-			if (!fastcgi) break;
++			if (!fastcgi && repeats <= 0) break;
+ 			/* only fastcgi will get here */
+ 			requests++;
+-			if (max_requests && (requests == max_requests)) {
++			if (fastcgi && max_requests && (requests == max_requests)) {
+ 				fcgi_finish_request(&request);
+ 				if (bindpath) {
+ 					free(bindpath);
+@@ -1845,6 +1857,9 @@ fastcgi_request_done:
+ 				}
+ 				break;
+ 			}
++			php_optind = orig_optind;
++			php_optarg = orig_optarg;
++
+ 			/* end of fastcgi loop */
+ 		}
+ 		fcgi_shutdown();
+@@ -1860,6 +1875,18 @@ fastcgi_request_done:
+ 		exit_status = 255;
+ 	} zend_end_try();
+ 
++	if (benchmark) {
++		gettimeofday(&end, NULL);
++		end.tv_sec -= start.tv_sec;
++		if (end.tv_usec >= start.tv_usec) {
++			end.tv_usec -= start.tv_usec;
++		} else {
++			end.tv_sec -= 1;
++			end.tv_usec = end.tv_usec + 1000000 - start.tv_usec;
++		}
++		fprintf(stderr, "\nElapsed time: %d.%06d sec\n", end.tv_sec, start.tv_usec);
++	}
++
+ 	SG(server_context) = NULL;
+ 	php_module_shutdown(TSRMLS_C);
+ 	sapi_shutdown();
+Index: 5_2_4RC1/Zend/zend_execute.c
+===================================================================
+--- 5_2_4RC1.orig/Zend/zend_execute.c
++++ 5_2_4RC1/Zend/zend_execute.c
+@@ -735,10 +735,11 @@ static inline void zend_assign_to_variab
+  			if (variable_ptr != value) {
+  				zend_uint refcount = variable_ptr->refcount;
+  				zval garbage;
+- 
++#ifndef ZEND_WIN32
+  				if (type != IS_TMP_VAR) {
+  					value->refcount++;
+  				}
++#endif
+  				garbage = *variable_ptr;
+  				*variable_ptr = *value;
+  				variable_ptr->refcount = refcount;
+@@ -746,7 +747,9 @@ static inline void zend_assign_to_variab
+  				zend_error(E_STRICT, "Implicit cloning object of class '%s' because of 'zend.ze1_compatibility_mode'", class_name);
+  				variable_ptr->value.obj = Z_OBJ_HANDLER_P(value, clone_obj)(value TSRMLS_CC);
+  				if (type != IS_TMP_VAR) {
++#ifndef ZEND_WIN32
+  					value->refcount--;
++#endif
+  				}
+  				zendi_zval_dtor(garbage);
+  			}
+@@ -774,17 +777,20 @@ static inline void zend_assign_to_variab
+ 		if (variable_ptr!=value) {
+ 			zend_uint refcount = variable_ptr->refcount;
+ 			zval garbage;
+-
++#ifndef ZEND_WIN32
+ 			if (type!=IS_TMP_VAR) {
+ 				value->refcount++;
+ 			}
++#endif
+ 			garbage = *variable_ptr;
+ 			*variable_ptr = *value;
+ 			variable_ptr->refcount = refcount;
+ 			variable_ptr->is_ref = 1;
+ 			if (type!=IS_TMP_VAR) {
+ 				zendi_zval_copy_ctor(*variable_ptr);
++#ifndef ZEND_WIN32
+ 				value->refcount--;
++#endif
+ 			}
+ 			zendi_zval_dtor(garbage);
+ 		}
+Index: 5_2_4RC1/win32/build/config.w32
+===================================================================
+--- 5_2_4RC1.orig/win32/build/config.w32
++++ 5_2_4RC1/win32/build/config.w32
+@@ -316,6 +316,8 @@ ADD_SOURCES("regex", "regcomp.c regerror
+ 
+ STDOUT.WriteBlankLines(1);
+ 
++ARG_ENABLE("memory-limit", "dummy", "no");
++
+ /* Can we build with IPv6 support? */
+ ARG_ENABLE("ipv6", "Disable IPv6 support (default is turn it on if available)", "yes");
+ 
+Index: 5_2_4RC1/zend-endian-uni.diff
+===================================================================
+--- /dev/null
++++ 5_2_4RC1/zend-endian-uni.diff
+@@ -0,0 +1,57 @@
++Index: Zend/zend_strtod.c
++===================================================================
++RCS file: /repository/ZendEngine2/zend_strtod.c,v
++retrieving revision 1.17.2.2.2.10
++diff -u -p -d -r1.17.2.2.2.10 zend_strtod.c
++--- Zend/zend_strtod.c	26 Apr 2007 23:13:25 -0000	1.17.2.2.2.10
+++++ Zend/zend_strtod.c	29 May 2007 13:14:31 -0000
++@@ -135,7 +135,7 @@ typedef unsigned long int uint32_t;
++ # endif
++ #endif
++ 
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__
++ #define IEEE_BIG_ENDIAN
++ #else
++ #define IEEE_LITTLE_ENDIAN
++Index: ext/date/lib/parse_tz.c
++===================================================================
++RCS file: /repository/php-src/ext/date/lib/parse_tz.c,v
++retrieving revision 1.20.2.6.2.12
++diff -u -p -d -r1.20.2.6.2.12 parse_tz.c
++--- ext/date/lib/parse_tz.c	25 Jan 2007 14:38:45 -0000	1.20.2.6.2.12
+++++ ext/date/lib/parse_tz.c	29 May 2007 13:14:31 -0000
++@@ -33,7 +33,7 @@
++ #endif
++ #include "timezonedb.h"
++ 
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__ 
++ #define timelib_conv_int(l) (l)
++ #else
++ #define timelib_conv_int(l) ((l & 0x000000ff) << 24) + ((l & 0x0000ff00) << 8) + ((l & 0x00ff0000) >> 8) + ((l & 0xff000000) >> 24)
++Index: ext/hash/hash_tiger.c
++===================================================================
++RCS file: /repository/php-src/ext/hash/hash_tiger.c,v
++retrieving revision 1.4.2.4.2.2
++diff -u -p -d -r1.4.2.4.2.2 hash_tiger.c
++--- ext/hash/hash_tiger.c	8 Jan 2007 22:29:25 -0000	1.4.2.4.2.2
+++++ ext/hash/hash_tiger.c	29 May 2007 13:14:32 -0000
++@@ -91,7 +91,7 @@
++ #define split_ex(str) \
++ 	x0=str[0]; x1=str[1]; x2=str[2]; x3=str[3]; \
++ 	x4=str[4]; x5=str[5]; x6=str[6]; x7=str[7];
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__ 
++ #	define split(str) \
++ 	{ \
++ 		int i; \
++@@ -144,7 +144,7 @@ static inline void TigerFinalize(PHP_TIG
++ 		memset(&context->buffer[context->length], 0, 56 - context->length);
++ 	}
++ 
++-#ifndef WORDS_BIGENDIAN	
+++#ifndef __BIG_ENDIAN__ 
++ 	memcpy(&context->buffer[56], &context->passed, sizeof(php_hash_uint64));
++ #else
++ 	context->buffer[56] = (unsigned char) (context->passed & 0xff);
+Index: 5_2_4RC1/ext/standard/formatted_print.c
+===================================================================
+--- 5_2_4RC1.orig/ext/standard/formatted_print.c
++++ 5_2_4RC1/ext/standard/formatted_print.c
+@@ -174,7 +174,7 @@ php_sprintf_appenduint(char **buffer, in
+ 
+ 	PRINTF_DEBUG(("sprintf: appenduint(%x, %x, %x, %d, %d, '%c', %d)\n",
+ 				  *buffer, pos, size, number, width, padding, alignment));
+-	magn = (unsigned long) number;
++	magn = (unsigned int) number;
+ 
+ 	/* Can't right-pad 0's on integers */
+ 	if (alignment == 0 && padding == '0') padding = ' ';
+Index: 5_2_4RC1/ext/odbc/config.m4
+===================================================================
+--- 5_2_4RC1.orig/ext/odbc/config.m4
++++ 5_2_4RC1/ext/odbc/config.m4
+@@ -99,75 +99,6 @@ AC_DEFUN([PHP_ODBC_FIND_EMPRESS_BCS_LIBS
+ dnl
+ dnl configure options
+ dnl
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(adabas,,
+-[  --with-adabas[=DIR]     Include Adabas D support [/usr/local]])
+-
+-  if test "$PHP_ADABAS" != "no"; then
+-    AC_MSG_CHECKING([for Adabas support])
+-    if test "$PHP_ADABAS" = "yes"; then
+-      PHP_ADABAS=/usr/local
+-    fi
+-    PHP_ADD_INCLUDE($PHP_ADABAS/incl)
+-    PHP_ADD_LIBPATH($PHP_ADABAS/$PHP_LIBDIR)
+-    ODBC_OBJS="$PHP_ADABAS/$PHP_LIBDIR/odbclib.a"
+-    ODBC_LIB="$abs_builddir/ext/odbc/libodbc_adabas.a"
+-    $srcdir/build/shtool mkdir -f -p ext/odbc
+-    rm -f "$ODBC_LIB"
+-    cp "$ODBC_OBJS" "$ODBC_LIB"
+-    PHP_ADD_LIBRARY(sqlptc)
+-    PHP_ADD_LIBRARY(sqlrte)
+-    PHP_ADD_LIBRARY_WITH_PATH(odbc_adabas, $abs_builddir/ext/odbc)
+-    ODBC_TYPE=adabas
+-    ODBC_INCDIR=$PHP_ADABAS/incl
+-    PHP_ODBC_CHECK_HEADER(sqlext.h)
+-    AC_DEFINE(HAVE_ADABAS,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(sapdb,,
+-[  --with-sapdb[=DIR]      Include SAP DB support [/usr/local]])
+-
+-  if test "$PHP_SAPDB" != "no"; then
+-    AC_MSG_CHECKING([for SAP DB support])
+-    if test "$PHP_SAPDB" = "yes"; then
+-      PHP_SAPDB=/usr/local
+-    fi
+-    PHP_ADD_INCLUDE($PHP_SAPDB/incl)
+-    PHP_ADD_LIBPATH($PHP_SAPDB/$PHP_LIBDIR)
+-    PHP_ADD_LIBRARY(sqlod)
+-    ODBC_TYPE=sapdb
+-    AC_DEFINE(HAVE_SAPDB,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(solid,,
+-[  --with-solid[=DIR]      Include Solid support [/usr/local/solid]])
+-
+-  if test "$PHP_SOLID" != "no"; then
+-    AC_MSG_CHECKING(for Solid support)
+-    if test "$PHP_SOLID" = "yes"; then
+-      PHP_SOLID=/usr/local/solid
+-    fi
+-    ODBC_INCDIR=$PHP_SOLID/include
+-    ODBC_LIBDIR=$PHP_SOLID/$PHP_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_TYPE=solid
+-    if test -f $ODBC_LIBDIR/soc*35.a; then
+-      AC_DEFINE(HAVE_SOLID_35,1,[ ])
+-    elif test -f $ODBC_LIBDIR/scl*30.a; then
+-      AC_DEFINE(HAVE_SOLID_30,1,[ ])
+-    elif test -f $ODBC_LIBDIR/scl*23.a; then
+-      AC_DEFINE(HAVE_SOLID,1,[ ])
+-    fi
+-    AC_MSG_RESULT([$ext_output])
+-    PHP_ODBC_FIND_SOLID_LIBS($ODBC_LIBDIR)
+-  fi
+-fi
+ 
+ if test -z "$ODBC_TYPE"; then
+ PHP_ARG_WITH(ibm-db2,,
+@@ -206,276 +137,6 @@ You need to source your DB2 environment 
+   fi
+ fi
+ 
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(ODBCRouter,,
+-[  --with-ODBCRouter[=DIR] Include ODBCRouter.com support [/usr]])
+-
+-  if test "$PHP_ODBCROUTER" != "no"; then
+-    AC_MSG_CHECKING(for ODBCRouter.com support)
+-    if test "$PHP_ODBCROUTER" = "yes"; then
+-      PHP_ODBCROUTER=/usr
+-    fi
+-    ODBC_INCDIR=$PHP_ODBCROUTER/include
+-    ODBC_LIBDIR=$PHP_ODBCROUTER/lib
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LIBS=-lodbcsdk
+-    ODBC_TYPE=ODBCRouter
+-    AC_DEFINE(HAVE_ODBC_ROUTER,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(empress,,
+-[  --with-empress[=DIR]    Include Empress support [\$EMPRESSPATH]
+-                          (Empress Version >= 8.60 required)])
+-
+-  if test "$PHP_EMPRESS" != "no"; then
+-    AC_MSG_CHECKING(for Empress support)
+-    if test "$PHP_EMPRESS" = "yes"; then
+-      ODBC_INCDIR=$EMPRESSPATH/include/odbc
+-      ODBC_LIBDIR=$EMPRESSPATH/shlib
+-    else
+-      ODBC_INCDIR=$PHP_EMPRESS/include/odbc
+-      ODBC_LIBDIR=$PHP_EMPRESS/shlib
+-    fi
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_TYPE=empress
+-    AC_DEFINE(HAVE_EMPRESS,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-    PHP_ODBC_FIND_EMPRESS_LIBS($ODBC_LIBDIR)
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(empress-bcs,,
+-[  --with-empress-bcs[=DIR]
+-                          Include Empress Local Access support [\$EMPRESSPATH]
+-                          (Empress Version >= 8.60 required)])
+-
+-  if test "$PHP_EMPRESS_BCS" != "no"; then
+-    AC_MSG_CHECKING(for Empress local access support)
+-    if test "$PHP_EMPRESS_BCS" = "yes"; then
+-      ODBC_INCDIR=$EMPRESSPATH/include/odbc
+-      ODBC_LIBDIR=$EMPRESSPATH/shlib
+-    else
+-      ODBC_INCDIR=$PHP_EMPRESS_BCS/include/odbc
+-      ODBC_LIBDIR=$PHP_EMPRESS_BCS/shlib
+-    fi
+-    CC="empocc -bcs";export CC;
+-    LD="empocc -bcs";export LD;
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    LIST=`empocc -listlines -bcs -o a a.c`
+-
+-    NEWLIST=
+-    for I in $LIST
+-    do
+-      case $I in
+-        $EMPRESSPATH/odbccl/lib/* | \
+-        $EMPRESSPATH/rdbms/lib/* | \
+-        $EMPRESSPATH/common/lib/*)
+-              NEWLIST="$NEWLIST $I"
+-              ;;
+-      esac
+-    done
+-    ODBC_LIBS="-lempphpbcs -lms -lmscfg -lbasic -lbasic_os -lnlscstab -lnlsmsgtab -lm -ldl -lcrypt"
+-    ODBC_TYPE=empress-bcs
+-    AC_DEFINE(HAVE_EMPRESS,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-    PHP_ODBC_FIND_EMPRESS_BCS_LIBS($ODBC_LIBDIR)
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(birdstep,,
+-[  --with-birdstep[=DIR]   Include Birdstep support [/usr/local/birdstep]])
+-  
+-  if test "$PHP_BIRDSTEP" != "no"; then
+-    AC_MSG_CHECKING(for Birdstep support)
+-    if test "$PHP_BIRDSTEP" = "yes"; then
+-        ODBC_INCDIR=/usr/local/birdstep/include
+-        ODBC_LIBDIR=/usr/local/birdstep/lib
+-    else
+-        ODBC_INCDIR=$PHP_BIRDSTEP/include
+-        ODBC_LIBDIR=$PHP_BIRDSTEP/$PHP_LIBDIR
+-    fi
+-   
+-    case $host_alias in
+-      *aix*[)]
+-        AC_DEFINE(AIX,1,[ ]);;
+-      *hpux*[)]
+-        AC_DEFINE(HPUX,1,[ ]);;
+-      *linux*[)]
+-        AC_DEFINE(LINUX,1,[ ]);;
+-      *qnx*[)]
+-        AC_DEFINE(NEUTRINO,1,[ ]);;
+-      i?86-*-solaris*[)]
+-        AC_DEFINE(ISOLARIS,1,[ ]);;
+-      sparc-*-solaris*[)]
+-        AC_DEFINE(SOLARIS,1,[ ]);;
+-      *unixware*[)]
+-        AC_DEFINE(UNIXWARE,1,[ ]);;
+-    esac
+-
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_TYPE=birdstep
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_LIBS="-lCadm -lCdict -lCenc -lCrdm -lCrpc -lCrdbc -lCrm -lCuapi -lutil"
+-
+-    if test -f "$ODBC_LIBDIR/libCrdbc32.$SHLIB_SUFFIX_NAME"; then
+-      ODBC_LIBS="-lCrdbc32 -lCadm32 -lCncp32 -lCrm32 -lCsql32 -lCdict32 -lCrdm32 -lCrpc32 -lutil"
+-    elif test -f "$ODBC_LIBDIR/libCrdbc.$SHLIB_SUFFIX_NAME"; then
+-      ODBC_LIBS="-lCrdbc -lCadm -lCncp -lCrm -lCsql -lCdict -lCrdm -lCrpc -lutil"
+-    fi
+-
+-    AC_DEFINE(HAVE_BIRDSTEP,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(custom-odbc,,
+-[  --with-custom-odbc[=DIR]
+-                          Include user defined ODBC support. DIR is ODBC install base
+-                          directory [/usr/local]. Make sure to define CUSTOM_ODBC_LIBS and
+-                          have some odbc.h in your include dirs. f.e. you should define 
+-                          following for Sybase SQL Anywhere 5.5.00 on QNX, prior to
+-                          running this configure script:
+-                              CPPFLAGS=\"-DODBC_QNX -DSQLANY_BUG\"
+-                              LDFLAGS=-lunix
+-                              CUSTOM_ODBC_LIBS=\"-ldblib -lodbc\"])
+-
+-  if test "$PHP_CUSTOM_ODBC" != "no"; then
+-    AC_MSG_CHECKING(for a custom ODBC support)
+-    if test "$PHP_CUSTOM_ODBC" = "yes"; then
+-      PHP_CUSTOM_ODBC=/usr/local
+-    fi
+-    ODBC_INCDIR=$PHP_CUSTOM_ODBC/include
+-    ODBC_LIBDIR=$PHP_CUSTOM_ODBC/$PHP_LIBDIR
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LIBS=$CUSTOM_ODBC_LIBS
+-    ODBC_TYPE=custom-odbc
+-    AC_DEFINE(HAVE_CODBC,1,[ ])
+-    AC_MSG_RESULT([$ext_ouput])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(iodbc,,
+-[  --with-iodbc[=DIR]      Include iODBC support [/usr/local]])
+-
+-  if test "$PHP_IODBC" != "no"; then
+-    AC_MSG_CHECKING(for iODBC support)
+-    if test "$PHP_IODBC" = "yes"; then
+-      PHP_IODBC=/usr/local
+-    fi
+-    PHP_ADD_LIBRARY_WITH_PATH(iodbc, $PHP_IODBC/$PHP_LIBDIR)
+-    PHP_ADD_INCLUDE($PHP_IODBC/include, 1)
+-    ODBC_TYPE=iodbc
+-    ODBC_INCLUDE=-I$PHP_IODBC/include
+-    ODBC_LFLAGS=-L$PHP_IODBC/$PHP_LIBDIR
+-    ODBC_LIBS=-liodbc
+-    AC_DEFINE(HAVE_IODBC,1,[ ])
+-    AC_DEFINE(HAVE_ODBC2,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(esoob,,
+-[  --with-esoob[=DIR]      Include Easysoft OOB support [/usr/local/easysoft/oob/client]])
+-
+-  if test "$PHP_ESOOB" != "no"; then
+-    AC_MSG_CHECKING(for Easysoft ODBC-ODBC Bridge support)
+-    if test "$PHP_ESOOB" = "yes"; then
+-      PHP_ESOOB=/usr/local/easysoft/oob/client
+-    fi
+-    ODBC_INCDIR=$PHP_ESOOB/include
+-    ODBC_LIBDIR=$PHP_ESOOB/$PHP_LIBDIR
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LIBS=-lesoobclient
+-    ODBC_TYPE=esoob
+-    AC_DEFINE(HAVE_ESOOB,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(unixODBC,,
+-[  --with-unixODBC[=DIR]   Include unixODBC support [/usr/local]])
+-
+-  if test "$PHP_UNIXODBC" != "no"; then
+-    AC_MSG_CHECKING(for unixODBC support)
+-    if test "$PHP_UNIXODBC" = "yes"; then
+-      PHP_UNIXODBC=/usr/local
+-    fi
+-    ODBC_INCDIR=$PHP_UNIXODBC/include
+-    ODBC_LIBDIR=$PHP_UNIXODBC/$PHP_LIBDIR
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LIBS=-lodbc
+-    ODBC_TYPE=unixODBC
+-    PHP_ODBC_CHECK_HEADER(sqlext.h)
+-    AC_DEFINE(HAVE_UNIXODBC,1,[ ])
+-    AC_MSG_RESULT([$ext_output])
+-  fi
+-fi
+-
+-if test -z "$ODBC_TYPE"; then
+-PHP_ARG_WITH(dbmaker,,
+-[  --with-dbmaker[=DIR]    Include DBMaker support])
+-
+-  if test "$PHP_DBMAKER" != "no"; then
+-    AC_MSG_CHECKING(for DBMaker support)
+-    if test "$PHP_DBMAKER" = "yes"; then
+-      # find dbmaker's home directory
+-      DBMAKER_HOME=`grep "^dbmaker:" /etc/passwd | $AWK -F: '{print $6}'`
+-
+-      # check DBMaker version (from 5.0 to 2.0)
+-      DBMAKER_VERSION=5.0
+-
+-      while test ! -d $DBMAKER_HOME/$DBMAKER_VERSION -a "$DBMAKER_VERSION" != "2.9"; do
+-        DM_VER=`echo $DBMAKER_VERSION | sed -e 's/\.//' | $AWK '{ print $1-1;}'`
+-        MAJOR_V=`echo $DM_VER | $AWK '{ print $1/10; }'  | $AWK -F. '{ print $1; }'`
+-        MINOR_V=`echo $DM_VER | $AWK '{ print $1%10; }'`
+-        DBMAKER_VERSION=$MAJOR_V.$MINOR_V
+-      done
+-
+-      if test "$DBMAKER_VERSION" = "2.9"; then
+-        PHP_DBMAKER=$DBMAKER_HOME
+-      else
+-        PHP_DBMAKER=$DBMAKER_HOME/$DBMAKER_VERSION
+-      fi
+-    fi
+-
+-    ODBC_INCDIR=$PHP_DBMAKER/include
+-    ODBC_LIBDIR=$PHP_DBMAKER/$PHP_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LFLAGS=-L$ODBC_LIBDIR
+-    ODBC_INCLUDE=-I$ODBC_INCDIR
+-    ODBC_LIBS="-ldmapic -lc"
+-    ODBC_TYPE=dbmaker
+-
+-    AC_DEFINE(HAVE_DBMAKER,1,[Whether you want DBMaker])
+-
+-    if test "$ext_shared" = "yes"; then
+-      AC_MSG_RESULT([yes (shared)])
+-      ODBC_LIBS="-ldmapic -lc -lm"
+-      ODBC_SHARED="odbc.la"
+-    else
+-      AC_MSG_RESULT([yes (static)])
+-      PHP_ADD_LIBRARY_WITH_PATH(dmapic, $ODBC_LIBDIR)
+-      PHP_ADD_INCLUDE($ODBC_INCDIR)
+-      ODBC_STATIC="libphpext_odbc.la"
+-    fi
+-  fi
+-fi
+-
+ dnl
+ dnl Extension setup
+ dnl
+Index: 5_2_4RC1/scripts/phpize.m4
+===================================================================
+--- 5_2_4RC1.orig/scripts/phpize.m4
++++ 5_2_4RC1/scripts/phpize.m4
+@@ -34,11 +34,13 @@ dnl Find php-config script
+ PHP_ARG_WITH(php-config,,
+ [  --with-php-config=PATH  Path to php-config [php-config]], php-config, no)
+ 
+-prefix=`$PHP_PHP_CONFIG --prefix 2>/dev/null`
+-phpincludedir=`$PHP_PHP_CONFIG --include-dir 2>/dev/null`
+-INCLUDES=`$PHP_PHP_CONFIG --includes 2>/dev/null`
+-EXTENSION_DIR=`$PHP_PHP_CONFIG --extension-dir 2>/dev/null`
+-PHP_EXECUTABLE=`$PHP_PHP_CONFIG --php-binary 2>/dev/null`
++dnl For BC
++PHP_CONFIG=$PHP_PHP_CONFIG
++prefix=`$PHP_CONFIG --prefix 2>/dev/null`
++phpincludedir=`$PHP_CONFIG --include-dir 2>/dev/null`
++INCLUDES=`$PHP_CONFIG --includes 2>/dev/null`
++EXTENSION_DIR=`$PHP_CONFIG --extension-dir 2>/dev/null`
++PHP_EXECUTABLE=`$PHP_CONFIG --php-binary 2>/dev/null`
+  
+ if test -z "$prefix"; then
+   AC_MSG_ERROR([Cannot find php-config. Please use --with-php-config=PATH])
+@@ -68,6 +70,10 @@ sinclude(config.m4)
+ enable_static=no
+ enable_shared=yes
+ 
++dnl Only allow AC_PROG_CXX if it's explicitly called (by PHP_REQUIRE_CXX)
++dnl otherwise AC_PROG_LIBTOOL fails if there is no working C++ compiler
++AC_PROVIDE_IFELSE([PHP_REQUIRE_CXX], [AC_PROG_CXX], [undefine([AC_PROG_CXX])
++AC_DEFUN([AC_PROG_CXX], [])])
+ AC_PROG_LIBTOOL
+ 
+ all_targets='$(PHP_MODULES)'

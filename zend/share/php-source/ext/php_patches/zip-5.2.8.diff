@@ -1,0 +1,27 @@
+--- php-5.2.8/ext/zip/lib/zip_open.c:1.8	Wed Dec 31 11:12:38 2008
++++ php-5.2.8/ext/zip/lib/zip_open.c	Fri Jan  2 00:22:21 2009
+@@ -66,9 +66,13 @@
+     int i;
+     off_t len;
+     
++
+     switch (_zip_file_exists(fn, flags, zep)) {
+     case -1:
++			if (!(flags & ZIP_OVERWRITE)) {
+ 	return NULL;
++			}
++			
+     case 0:
+ 	return _zip_allocate_new(fn, zep);
+     default:
+@@ -440,7 +444,7 @@
+     }
+     
+     if (stat(fn, &st) != 0) {
+-	if (flags & ZIP_CREATE)
++	if (flags & ZIP_CREATE || flags & ZIP_OVERWRITE)
+ 	    return 0;
+ 	else {
+ 	    set_error(zep, NULL, ZIP_ER_OPEN);
+
+

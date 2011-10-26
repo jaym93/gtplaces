@@ -1,0 +1,91 @@
+--- php-5.2.10/ext/pdo_oci/pdo_oci.c	2009-05-20 08:54:33.000000000 +0300
++++ php-5.2.10/ext/pdo_oci/pdo_oci.c.patched	2009-05-20 08:54:23.000000000 +0300
+@@ -83,22 +83,31 @@
+ #endif
+ 			;
+ 
+-/* true global environment */
+-OCIEnv *pdo_oci_Env = NULL;
++/**
++ * global environment 
++ **/
++OCIEnv *get_oci_env() 
++{
++	static OCIEnv *env = NULL;
++	if(env == NULL) {
++		/**
++		 * First time
++		 */
++#if HAVE_OCIENVCREATE
++		OCIEnvCreate(&env, PDO_OCI_INIT_MODE, NULL, NULL, NULL, NULL, 0, NULL);
++#else
++		OCIInitialize(PDO_OCI_INIT_MODE, NULL, NULL, NULL, NULL);
++		OCIEnvInit(&env, OCI_DEFAULT, 0, NULL);
++#endif
++	}
++	return env;
++}
+ 
+ /* {{{ PHP_MINIT_FUNCTION
+  */
+ PHP_MINIT_FUNCTION(pdo_oci)
+ {
+ 	php_pdo_register_driver(&pdo_oci_driver);
+-
+-#if HAVE_OCIENVCREATE
+-	OCIEnvCreate(&pdo_oci_Env, PDO_OCI_INIT_MODE, NULL, NULL, NULL, NULL, 0, NULL);
+-#else
+-	OCIInitialize(PDO_OCI_INIT_MODE, NULL, NULL, NULL, NULL);
+-	OCIEnvInit(&pdo_oci_Env, OCI_DEFAULT, 0, NULL);
+-#endif
+-
+ 	return SUCCESS;
+ }
+ /* }}} */
+@@ -107,8 +116,14 @@
+  */
+ PHP_MSHUTDOWN_FUNCTION(pdo_oci)
+ {
++	OCIEnv *env = get_oci_env();
+ 	php_pdo_unregister_driver(&pdo_oci_driver);
+-	OCIHandleFree((dvoid*)pdo_oci_Env, OCI_HTYPE_ENV);
++	/**
++	 * relese the environment if it was alreay allocated
++	 */
++	if(env) {
++		OCIHandleFree((dvoid*) env, OCI_HTYPE_ENV);	
++	}
+ 	return SUCCESS;
+ }
+ /* }}} */
+--- php-5.2.10/ext/pdo_oci/oci_driver.c	2008-12-31 13:17:42.000000000 +0200
++++ php-5.2.10/ext/pdo_oci/oci_driver.c.patched	2009-05-20 08:56:18.000000000 +0300
+@@ -551,7 +551,7 @@
+ 	/* allocate an environment */
+ #if HAVE_OCIENVNLSCREATE
+ 	if (vars[0].optval) {
+-		H->charset = OCINlsCharSetNameToId(pdo_oci_Env, (const oratext *)vars[0].optval);
++		H->charset = OCINlsCharSetNameToId(get_oci_env(), (const oratext *)vars[0].optval);
+ 		if (!H->charset) {
+ 			oci_init_error("OCINlsCharSetNameToId: unknown character set name");
+ 			goto cleanup;
+@@ -565,7 +565,7 @@
+ #endif
+ 	if (H->env == NULL) {
+ 		/* use the global environment */
+-		H->env = pdo_oci_Env;
++		H->env = get_oci_env();
+ 	}
+ 
+ 	/* something to hold errors */
+--- php-5.2.10/ext/pdo_oci/php_pdo_oci_int.h	2008-12-31 13:17:42.000000000 +0200
++++ php-5.2.10/ext/pdo_oci/php_pdo_oci_int.h.patched	2009-05-20 09:27:05.000000000 +0300
+@@ -84,7 +84,7 @@
+ 
+ extern const ub4 PDO_OCI_INIT_MODE;
+ extern pdo_driver_t pdo_oci_driver;
+-extern OCIEnv *pdo_oci_Env;
++extern OCIEnv *get_oci_env();
+ 
+ ub4 _oci_error(OCIError *err, pdo_dbh_t *dbh, pdo_stmt_t *stmt, char *what, sword status, int isinit, const char *file, int line TSRMLS_DC);
+ #define oci_init_error(w)	_oci_error(H->err, dbh, NULL, w, H->last_err, TRUE, __FILE__, __LINE__ TSRMLS_CC)

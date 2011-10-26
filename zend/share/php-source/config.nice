@@ -1,0 +1,18 @@
+#! /bin/sh
+#
+# Created by configure
+
+CFLAGS='-O2 -pipe -g' \
+LDFLAGS='-static-libgcc' \
+CC='gcc' \
+'./configure' \
+'--disable-xml' \
+'--disable-dom' \
+'--disable-libxml' \
+'--disable-simplexml' \
+'--without-pear' \
+'--disable-xmlreader' \
+'--disable-xmlwriter' \
+'--without-iconv' \
+'--with-openssl-dir=/usr/local/openssl-0.9.8l' \
+"$@"

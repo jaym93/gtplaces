@@ -1,0 +1,124 @@
+Index: 5_2_4/sapi/cgi/cgi_main.c
+===================================================================
+--- 5_2_4.orig/sapi/cgi/cgi_main.c	2007-09-03 15:48:34.000000000 +0300
++++ 5_2_4/sapi/cgi/cgi_main.c	2007-09-03 15:49:12.410234080 +0300
+@@ -141,6 +141,7 @@
+ 	{'?', 0, "usage"},/* help alias (both '?' and 'usage') */
+ 	{'v', 0, "version"},
+ 	{'z', 1, "zend-extension"},
++ 	{'R', 1, "repeat"},
+ 	{'-', 0, NULL} /* end of args */
+ };
+ 
+@@ -1175,6 +1176,9 @@
+ 	int status = 0;
+ #endif
+ #endif /* PHP_FASTCGI */
++	int benchmark = 0;
++	int repeats = 1;
++	struct timeval start, end;
+ 
+ #if 0 && defined(PHP_DEBUG)
+ 	/* IIS is always making things more difficult.  This allows
+@@ -1460,6 +1464,10 @@
+ 	zend_first_try {
+ 		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
+ 			switch (c) {
++				case 'R': 
++				        benchmark = 1;
++						repeats = atoi(php_optarg);
++						break;
+ 				case 'h':
+ 				case '?':
+ #if PHP_FASTCGI
+@@ -1477,6 +1485,9 @@
+ 		}
+ 		php_optind = orig_optind;
+ 		php_optarg = orig_optarg;
++		if (benchmark) {
++			gettimeofday(&start, NULL);
++		}
+ 
+ #if PHP_FASTCGI
+ 		/* start of FAST CGI loop */
+@@ -1860,11 +1871,12 @@
+ 
+ 		}
+ 
++		repeats--;
+ #if PHP_FASTCGI
+-			if (!fastcgi) break;
++			if (!fastcgi && repeats <= 0) break;
+ 			/* only fastcgi will get here */
+ 			requests++;
+-			if (max_requests && (requests == max_requests)) {
++			if (fastcgi && max_requests && (requests == max_requests)) {
+ 				fcgi_finish_request(&request);
+ 				if (bindpath) {
+ 					free(bindpath);
+@@ -1875,6 +1887,9 @@
+ 				}
+ 				break;
+ 			}
++			php_optind = orig_optind;
++			php_optarg = orig_optarg;
++
+ 			/* end of fastcgi loop */
+ 		}
+ 		fcgi_shutdown();
+@@ -1890,6 +1905,18 @@
+ 		exit_status = 255;
+ 	} zend_end_try();
+ 
++	if (benchmark) {
++		gettimeofday(&end, NULL);
++		end.tv_sec -= start.tv_sec;
++		if (end.tv_usec >= start.tv_usec) {
++			end.tv_usec -= start.tv_usec;
++		} else {
++			end.tv_sec -= 1;
++			end.tv_usec = end.tv_usec + 1000000 - start.tv_usec;
++		}
++		fprintf(stderr, "\nElapsed time: %d.%06d sec\n", end.tv_sec, start.tv_usec);
++	}
++
+ 	SG(server_context) = NULL;
+ 	php_module_shutdown(TSRMLS_C);
+ 	sapi_shutdown();
+Index: 5_2_4/TSRM/tsrm_virtual_cwd.c
+===================================================================
+--- 5_2_4.orig/TSRM/tsrm_virtual_cwd.c	10 Aug 2007 09:09:46 -0000	1.74.2.9.2.35
++++ 5_2_4/TSRM/tsrm_virtual_cwd.c	23 Oct 2007 05:52:47 -0000
+@@ -489,6 +489,9 @@ CWD_API int virtual_file_ex(cwd_state *s
+ 	int ret;
+ 	int use_cache;
+ 	int use_relative_path = 0;
++#ifdef TSRM_WIN32
++	int is_unc;
++#endif
+ 	TSRMLS_FETCH();
+ 
+ 	use_cache = ((use_realpath != CWD_EXPAND) && CWDG(realpath_cache_size_limit));
+@@ -573,9 +576,6 @@ CWD_API int virtual_file_ex(cwd_state *s
+ 		char *ptr, *path_copy, *free_path;
+ 		char *tok;
+ 		int ptr_length;
+-#ifdef TSRM_WIN32
+-		int is_unc;
+-#endif
+ no_realpath:
+ 
+ #ifdef TSRM_WIN32
+@@ -738,7 +738,12 @@ no_realpath:
+ 		}
+ 	}
+ 
++	/* Store existent file in realpath cache. */
++#ifdef TSRM_WIN32
++	if (use_cache && !is_unc) {
++#else
+ 	if (use_cache && (use_realpath == CWD_REALPATH)) {
++#endif
+ 		realpath_cache_add(path, path_length, state->cwd, state->cwd_length, t TSRMLS_CC);
+ 	}
+ 

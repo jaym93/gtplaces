@@ -1,0 +1,74 @@
+--- php-5.2.8/Zend/zend_compile.c:1.647.2.27.2.52	Wed Dec 31 11:17:33 2008
++++ php-5.2.8/Zend/zend_compile.c	Wed Jan 21 10:15:44 2009
+ #include <zend_language_parser.h>
+ #include "zend.h"
+@@ -1607,8 +1607,17 @@
+ 
+ 	if (function_ptr) {
+ 		if (ARG_MAY_BE_SENT_BY_REF(function_ptr, (zend_uint) offset)) {
+-			op = (param->op_type & (IS_VAR|IS_CV))?ZEND_SEND_REF:ZEND_SEND_VAL;
+-			send_by_reference = 0;
++			if (param->op_type & (IS_VAR|IS_CV)) {
++				send_by_reference = 1;
++				if (op == ZEND_SEND_VAR && zend_is_function_or_method_call(param)) {
++					/* Method call */
++					op = ZEND_SEND_VAR_NO_REF;
++					send_function = ZEND_ARG_SEND_FUNCTION | ZEND_ARG_SEND_SILENT;
++				}
++			} else {
++				op = ZEND_SEND_VAL;
++				send_by_reference = 0;
++			}
+ 		} else {
+ 			send_by_reference = ARG_SHOULD_BE_SENT_BY_REF(function_ptr, (zend_uint) offset) ? ZEND_ARG_SEND_BY_REF : 0;
+ 		}
+--- php-5.2.8/Zend/zend_compile.h:1.316.2.8.2.15	Wed Dec 31 11:17:33 2008
++++ php-5.2.8/Zend/zend_compile.h	Wed Jan 21 10:15:46 2009
+ #ifndef ZEND_COMPILE_H
+ #define ZEND_COMPILE_H
+@@ -659,6 +659,7 @@
+ #define ZEND_ARG_SEND_BY_REF (1<<0)
+ #define ZEND_ARG_COMPILE_TIME_BOUND (1<<1)
+ #define ZEND_ARG_SEND_FUNCTION (1<<2)
++#define ZEND_ARG_SEND_SILENT   (1<<3)
+ 
+ #define ZEND_SEND_BY_VAL     0
+ #define ZEND_SEND_BY_REF     1
+--- php-5.2.8/Zend/zend_vm_def.h:1.59.2.29.2.63	Thu Jan 15 08:48:40 2009
++++ php-5.2.8/Zend/zend_vm_def.h	Wed Jan 21 10:15:46 2009
+@@ -2331,7 +2331,9 @@
+ 	} else {
+ 		zval *valptr;
+ 
+-		zend_error(E_STRICT, "Only variables should be passed by reference");
++		if (!(opline->extended_value & ZEND_ARG_SEND_SILENT)) {
++			zend_error(E_STRICT, "Only variables should be passed by reference");
++		}
+ 		ALLOC_ZVAL(valptr);
+ 		INIT_PZVAL_COPY(valptr, varptr);
+ 		if (!IS_OP1_TMP_FREE()) {
+--- php-5.2.8/Zend/zend_vm_execute.h:1.62.2.30.2.66	Thu Jan 15 08:48:40 2009
++++ php-5.2.8/Zend/zend_vm_execute.h	Wed Jan 21 10:15:46 2009
+@@ -7554,7 +7554,9 @@
+ 	} else {
+ 		zval *valptr;
+ 
+-		zend_error(E_STRICT, "Only variables should be passed by reference");
++		if (!(opline->extended_value & ZEND_ARG_SEND_SILENT)) {
++			zend_error(E_STRICT, "Only variables should be passed by reference");
++		}
+ 		ALLOC_ZVAL(valptr);
+ 		INIT_PZVAL_COPY(valptr, varptr);
+ 		if (!0) {
+@@ -19876,7 +19878,9 @@
+ 	} else {
+ 		zval *valptr;
+ 
+-		zend_error(E_STRICT, "Only variables should be passed by reference");
++		if (!(opline->extended_value & ZEND_ARG_SEND_SILENT)) {
++			zend_error(E_STRICT, "Only variables should be passed by reference");
++		}
+ 		ALLOC_ZVAL(valptr);
+ 		INIT_PZVAL_COPY(valptr, varptr);
+ 		if (!0) {
+

@@ -1,0 +1,30 @@
+--- php-5.2.10RC2/Zend/zend_execute.h	2009/06/05 11:21:47	1.84.2.4.2.11
++++ php-5.2.10RC2/Zend/zend_execute.h	2009/06/14 10:05:11	1.84.2.4.2.12
+@@ -175,8 +175,8 @@
+ 
+ 	zend_ptr_stack_2_pop(stack, &a, &b);
+ 
+-	*object = a;
+-	*fbc = b;
++	*object =  (zval *) a;
++	*fbc = (zend_function *) b;
+ }
+ 
+ static inline void zend_arg_types_stack_3_pop(zend_ptr_stack *stack, zend_class_entry **called_scope, zval **object, 
+zend_function **fbc)
+--- php-5.2.10RC2/Zend/zend_execute.h	2009/06/05 11:21:47	1.84.2.4.2.11
++++ php-5.2.10RC2/Zend/zend_execute.h	2009/06/14 10:05:11	1.84.2.4.2.12
+@@ -185,9 +185,9 @@
+ 
+ 	zend_ptr_stack_3_pop(stack, &a, &b, &c);
+ 
+-	*called_scope = a;
+-	*object = b;
+-	*fbc = c;
++	*called_scope = (zend_class_entry *) a;
++	*object = (zval *) b;
++	*fbc = (zend_function *) c;
+ }
+ 
+ void execute_new_code(TSRMLS_D);
+

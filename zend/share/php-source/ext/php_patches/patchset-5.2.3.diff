@@ -1,0 +1,1330 @@
+Index: 5_2_3/sapi/apache/mod_php5.c
+===================================================================
+--- 5_2_3.orig/sapi/apache/mod_php5.c
++++ 5_2_3/sapi/apache/mod_php5.c
+@@ -22,6 +22,8 @@
+ #include "php_apache_http.h"
+ #include "http_conf_globals.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ #ifdef NETWARE
+ #define SIGPIPE SIGINT
+ #endif
+@@ -764,9 +766,15 @@ static void *php_create_dir(pool *p, cha
+  */
+ static void *php_merge_dir(pool *p, void *basev, void *addv)
+ {
+-	/* This function *must* return addv, and not modify basev */
+-	zend_hash_merge_ex((HashTable *) addv, (HashTable *) basev, (copy_ctor_func_t) copy_per_dir_entry, sizeof(php_per_dir_entry), (merge_checker_func_t) should_overwrite_per_dir_entry, NULL);
+-	return addv;
++	/* This function *must* not modify addv or basev */
++	HashTable *new;
++
++	/* need a copy of addv to merge */
++	new = php_create_dir(p, "php_merge_dir");
++	zend_hash_copy(new, (HashTable *) addv, (copy_ctor_func_t) copy_per_dir_entry, NULL, sizeof(php_per_dir_entry));
++
++	zend_hash_merge_ex(new, (HashTable *) basev, (copy_ctor_func_t) copy_per_dir_entry, sizeof(php_per_dir_entry), (merge_checker_func_t) should_overwrite_per_dir_entry, NULL);
++	return new;
+ }
+ /* }}} */
+ 
+@@ -943,6 +951,7 @@ static void php_init_handler(server_rec 
+ 	{
+ 		TSRMLS_FETCH();
+ 		if (PG(expose_php)) {
++			ap_add_version_component("Zend Core/" APOLLO_VERSION);
+ 			ap_add_version_component("PHP/" PHP_VERSION);
+ 		}
+ 	}
+Index: 5_2_3/sapi/apache2handler/sapi_apache2.c
+===================================================================
+--- 5_2_3.orig/sapi/apache2handler/sapi_apache2.c
++++ 5_2_3/sapi/apache2handler/sapi_apache2.c
+@@ -53,6 +53,8 @@
+ 
+ #include "php_apache.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ /* UnixWare and Netware define shutdown to _shutdown, which causes problems later
+  * on when using a structure member named shutdown. Since this source
+  * file does not use the system call shutdown, it is safe to #undef it.K
+@@ -364,6 +366,7 @@ static void php_apache_add_version(apr_p
+ {
+ 	TSRMLS_FETCH();
+ 	if (PG(expose_php)) {
++		ap_add_version_component(p, "Zend Core/" APOLLO_VERSION);
+ 		ap_add_version_component(p, "PHP/" PHP_VERSION);
+ 	}
+ }
+@@ -651,11 +654,17 @@ zend_first_try {
+ 	return OK;
+ }
+ 
++static void php_apache_child_init(apr_pool_t *pchild, server_rec *s)
++{
++	apr_pool_cleanup_register(pchild, NULL, php_apache_server_shutdown, apr_pool_cleanup_null);
++}
++
+ void php_ap2_register_hook(apr_pool_t *p)
+ {
+ 	ap_hook_pre_config(php_pre_config, NULL, NULL, APR_HOOK_MIDDLE);
+ 	ap_hook_post_config(php_apache_server_startup, NULL, NULL, APR_HOOK_MIDDLE);
+ 	ap_hook_handler(php_handler, NULL, NULL, APR_HOOK_MIDDLE);
++	ap_hook_child_init(php_apache_child_init, NULL, NULL, APR_HOOK_MIDDLE);
+ }
+ 
+ /*
+Index: 5_2_3/sapi/cgi/cgi_main.c
+===================================================================
+--- 5_2_3.orig/sapi/cgi/cgi_main.c
++++ 5_2_3/sapi/cgi/cgi_main.c
+@@ -141,6 +141,7 @@ static const opt_struct OPTIONS[] = {
+ 	{'?', 0, "usage"},/* help alias (both '?' and 'usage') */
+ 	{'v', 0, "version"},
+ 	{'z', 1, "zend-extension"},
++ 	{'R', 1, "repeat"},
+ 	{'-', 0, NULL} /* end of args */
+ };
+ 
+@@ -1136,6 +1137,9 @@ int main(int argc, char *argv[])
+ 	int status = 0;
+ #endif
+ #endif /* PHP_FASTCGI */
++	int benchmark = 0;
++	int repeats = 1;
++	struct timeval start, end;
+ 
+ #if 0 && defined(PHP_DEBUG)
+ 	/* IIS is always making things more difficult.  This allows
+@@ -1425,6 +1429,10 @@ consult the installation file that came 
+ 	zend_first_try {
+ 		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
+ 			switch (c) {
++				case 'R': 
++				        benchmark = 1;
++						repeats = atoi(php_optarg);
++						break;
+ 				case 'h':
+ 				case '?':
+ #if PHP_FASTCGI
+@@ -1442,6 +1450,9 @@ consult the installation file that came 
+ 		}
+ 		php_optind = orig_optind;
+ 		php_optarg = orig_optarg;
++		if (benchmark) {
++			gettimeofday(&start, NULL);
++		}
+ 
+ #if PHP_FASTCGI
+ 		/* start of FAST CGI loop */
+@@ -1682,7 +1693,9 @@ consult the installation file that came 
+ 		*/
+ 		retval = FAILURE;
+ 		if (cgi || SG(request_info).path_translated) {
+-			retval = php_fopen_primary_script(&file_handle TSRMLS_CC);
++			if (!php_check_open_basedir(SG(request_info).path_translated TSRMLS_CC)) {
++				retval = php_fopen_primary_script(&file_handle TSRMLS_CC);
++			}
+ 		}
+ 		/* 
+ 			if we are unable to open path_translated and we are not
+@@ -1704,9 +1717,21 @@ consult the installation file that came 
+ 				goto fastcgi_request_done;
+ 			}
+ #endif
++
++			STR_FREE(SG(request_info).path_translated);
++
++			if (free_query_string && SG(request_info).query_string) {
++				free(SG(request_info).query_string);
++				SG(request_info).query_string = NULL;
++			}
++
+ 			php_request_shutdown((void *) 0);
+ 			SG(server_context) = NULL;
+ 			php_module_shutdown(TSRMLS_C);
++			sapi_shutdown();
++#ifdef ZTS
++			tsrm_shutdown();
++#endif
+ 			return FAILURE;
+ 		}
+ 
+@@ -1811,17 +1836,21 @@ fastcgi_request_done:
+ 
+ 		}
+ 
++		repeats--;
+ #if PHP_FASTCGI
+-			if (!fastcgi) break;
++			if (!fastcgi && repeats <= 0) break;
+ 			/* only fastcgi will get here */
+ 			requests++;
+-			if (max_requests && (requests == max_requests)) {
++			if (fastcgi && max_requests && (requests == max_requests)) {
+ 				fcgi_finish_request(&request);
+ 				if (bindpath) {
+ 					free(bindpath);
+ 				}
+ 				break;
+ 			}
++			php_optind = orig_optind;
++			php_optarg = orig_optarg;
++
+ 			/* end of fastcgi loop */
+ 		}
+ 		fcgi_shutdown();
+@@ -1837,6 +1866,18 @@ fastcgi_request_done:
+ 		exit_status = 255;
+ 	} zend_end_try();
+ 
++	if (benchmark) {
++		gettimeofday(&end, NULL);
++		end.tv_sec -= start.tv_sec;
++		if (end.tv_usec >= start.tv_usec) {
++			end.tv_usec -= start.tv_usec;
++		} else {
++			end.tv_sec -= 1;
++			end.tv_usec = end.tv_usec + 1000000 - start.tv_usec;
++		}
++		fprintf(stderr, "\nElapsed time: %d.%06d sec\n", end.tv_sec, start.tv_usec);
++	}
++
+ 	SG(server_context) = NULL;
+ 	php_module_shutdown(TSRMLS_C);
+ 	sapi_shutdown();
+Index: 5_2_3/Zend/zend_execute.c
+===================================================================
+--- 5_2_3.orig/Zend/zend_execute.c
++++ 5_2_3/Zend/zend_execute.c
+@@ -366,7 +366,7 @@ static inline void zend_switch_free(zend
+ 				 * quick & silent get_zval_ptr, and FREE_OP
+ 				 */
+ 				PZVAL_UNLOCK_FREE(T->str_offset.str);
+-			} else {
++			} else if (T(opline->op1.u.var).var.ptr) {
+ 				zval_ptr_dtor(&T(opline->op1.u.var).var.ptr);
+ 				if (opline->extended_value & ZEND_FE_RESET_VARIABLE) { /* foreach() free */
+ 					zval_ptr_dtor(&T(opline->op1.u.var).var.ptr);
+@@ -732,10 +732,11 @@ static inline void zend_assign_to_variab
+  			if (variable_ptr != value) {
+  				zend_uint refcount = variable_ptr->refcount;
+  				zval garbage;
+- 
++#ifndef ZEND_WIN32
+  				if (type != IS_TMP_VAR) {
+  					value->refcount++;
+  				}
++#endif
+  				garbage = *variable_ptr;
+  				*variable_ptr = *value;
+  				variable_ptr->refcount = refcount;
+@@ -743,7 +744,9 @@ static inline void zend_assign_to_variab
+  				zend_error(E_STRICT, "Implicit cloning object of class '%s' because of 'zend.ze1_compatibility_mode'", class_name);
+  				variable_ptr->value.obj = Z_OBJ_HANDLER_P(value, clone_obj)(value TSRMLS_CC);
+  				if (type != IS_TMP_VAR) {
++#ifndef ZEND_WIN32
+  					value->refcount--;
++#endif
+  				}
+  				zendi_zval_dtor(garbage);
+  			}
+@@ -771,17 +774,20 @@ static inline void zend_assign_to_variab
+ 		if (variable_ptr!=value) {
+ 			zend_uint refcount = variable_ptr->refcount;
+ 			zval garbage;
+-
++#ifndef ZEND_WIN32
+ 			if (type!=IS_TMP_VAR) {
+ 				value->refcount++;
+ 			}
++#endif
+ 			garbage = *variable_ptr;
+ 			*variable_ptr = *value;
+ 			variable_ptr->refcount = refcount;
+ 			variable_ptr->is_ref = 1;
+ 			if (type!=IS_TMP_VAR) {
+ 				zendi_zval_copy_ctor(*variable_ptr);
++#ifndef ZEND_WIN32
+ 				value->refcount--;
++#endif
+ 			}
+ 			zendi_zval_dtor(garbage);
+ 		}
+@@ -1230,6 +1236,15 @@ static void zend_fetch_property_address(
+ {
+ 	zval *container;
+ 
++	if (!container_ptr) {
++		zend_error(E_WARNING, "Cannot use string offset as an array");
++		if (result) {
++			result->var.ptr_ptr = &EG(error_zval_ptr);
++			PZVAL_LOCK(*result->var.ptr_ptr);
++		}
++		return;
++	}
++
+ 	container = *container_ptr;
+ 	if (container == EG(error_zval_ptr)) {
+ 		if (result) {
+Index: 5_2_3/win32/build/config.w32
+===================================================================
+--- 5_2_3.orig/win32/build/config.w32
++++ 5_2_3/win32/build/config.w32
+@@ -316,6 +316,8 @@ ADD_SOURCES("regex", "regcomp.c regerror
+ 
+ STDOUT.WriteBlankLines(1);
+ 
++ARG_ENABLE("memory-limit", "dummy", "no");
++
+ /* Can we build with IPv6 support? */
+ ARG_ENABLE("ipv6", "Disable IPv6 support (default is turn it on if available)", "yes");
+ 
+Index: 5_2_3/zend-endian-uni.diff
+===================================================================
+--- /dev/null
++++ 5_2_3/zend-endian-uni.diff
+@@ -0,0 +1,57 @@
++Index: Zend/zend_strtod.c
++===================================================================
++RCS file: /repository/ZendEngine2/zend_strtod.c,v
++retrieving revision 1.17.2.2.2.10
++diff -u -p -d -r1.17.2.2.2.10 zend_strtod.c
++--- Zend/zend_strtod.c	26 Apr 2007 23:13:25 -0000	1.17.2.2.2.10
+++++ Zend/zend_strtod.c	29 May 2007 13:14:31 -0000
++@@ -135,7 +135,7 @@ typedef unsigned long int uint32_t;
++ # endif
++ #endif
++ 
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__
++ #define IEEE_BIG_ENDIAN
++ #else
++ #define IEEE_LITTLE_ENDIAN
++Index: ext/date/lib/parse_tz.c
++===================================================================
++RCS file: /repository/php-src/ext/date/lib/parse_tz.c,v
++retrieving revision 1.20.2.6.2.12
++diff -u -p -d -r1.20.2.6.2.12 parse_tz.c
++--- ext/date/lib/parse_tz.c	25 Jan 2007 14:38:45 -0000	1.20.2.6.2.12
+++++ ext/date/lib/parse_tz.c	29 May 2007 13:14:31 -0000
++@@ -33,7 +33,7 @@
++ #endif
++ #include "timezonedb.h"
++ 
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__ 
++ #define timelib_conv_int(l) (l)
++ #else
++ #define timelib_conv_int(l) ((l & 0x000000ff) << 24) + ((l & 0x0000ff00) << 8) + ((l & 0x00ff0000) >> 8) + ((l & 0xff000000) >> 24)
++Index: ext/hash/hash_tiger.c
++===================================================================
++RCS file: /repository/php-src/ext/hash/hash_tiger.c,v
++retrieving revision 1.4.2.4.2.2
++diff -u -p -d -r1.4.2.4.2.2 hash_tiger.c
++--- ext/hash/hash_tiger.c	8 Jan 2007 22:29:25 -0000	1.4.2.4.2.2
+++++ ext/hash/hash_tiger.c	29 May 2007 13:14:32 -0000
++@@ -91,7 +91,7 @@
++ #define split_ex(str) \
++ 	x0=str[0]; x1=str[1]; x2=str[2]; x3=str[3]; \
++ 	x4=str[4]; x5=str[5]; x6=str[6]; x7=str[7];
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__ 
++ #	define split(str) \
++ 	{ \
++ 		int i; \
++@@ -144,7 +144,7 @@ static inline void TigerFinalize(PHP_TIG
++ 		memset(&context->buffer[context->length], 0, 56 - context->length);
++ 	}
++ 
++-#ifndef WORDS_BIGENDIAN	
+++#ifndef __BIG_ENDIAN__ 
++ 	memcpy(&context->buffer[56], &context->passed, sizeof(php_hash_uint64));
++ #else
++ 	context->buffer[56] = (unsigned char) (context->passed & 0xff);
+Index: 5_2_3/main/php_variables.c
+===================================================================
+--- 5_2_3.orig/main/php_variables.c
++++ 5_2_3/main/php_variables.c
+@@ -125,8 +125,22 @@ PHPAPI void php_register_variable_ex(cha
+ 			int new_idx_len = 0;
+ 
+ 			if(++nest_level > PG(max_input_nesting_level)) {
++				HashTable *ht;
+ 				/* too many levels of nesting */
+-				php_error_docref(NULL TSRMLS_CC, E_ERROR, "Input variable nesting level more than allowed %ld (change max_input_nesting_level in php.ini to increase the limit)", PG(max_input_nesting_level));
++
++				if (track_vars_array) {
++					ht = Z_ARRVAL_P(track_vars_array);
++				} else if (PG(register_globals)) {
++					ht = EG(active_symbol_table);
++				}
++
++				zend_hash_del(ht, var, var_len + 1);
++				zval_dtor(val);
++
++				if (!PG(display_errors)) {
++					php_error_docref(NULL TSRMLS_CC, E_WARNING, "Input variable nesting level more than allowed %ld (change max_input_nesting_level in php.ini to increase the limit)", PG(max_input_nesting_level));
++				}
++				return;
+ 			}
+ 
+ 			ip++;
+Index: 5_2_3/ext/standard/string.c
+===================================================================
+--- 5_2_3.orig/ext/standard/string.c
++++ 5_2_3/ext/standard/string.c
+@@ -204,7 +204,7 @@ PHP_FUNCTION(bin2hex)
+ }
+ /* }}} */
+ 
+-static void php_spn_common_handler(INTERNAL_FUNCTION_PARAMETERS, int behavior)
++static void php_spn_common_handler(INTERNAL_FUNCTION_PARAMETERS, int behavior) /* {{{ */
+ {
+ 	char *s11, *s22;
+ 	int len1, len2;
+@@ -239,10 +239,14 @@ static void php_spn_common_handler(INTER
+ 		}
+ 	}
+ 	
+-	if ((start + len) > len1) {
++	if (len > len1 - start) {
+ 		len = len1 - start;
+ 	}
+ 
++	if(len == 0) {
++		RETURN_LONG(0);
++	}
++
+ 	if (behavior == STR_STRSPN) {
+ 		RETURN_LONG(php_strspn(s11 + start /*str1_start*/,
+ 						s22 /*str2_start*/,
+@@ -256,6 +260,7 @@ static void php_spn_common_handler(INTER
+ 	}
+ 	
+ }
++/* }}} */
+ 
+ /* {{{ proto int strspn(string str, string mask [, start [, len]])
+    Finds length of initial segment consisting entirely of characters found in mask. If start or/and length is provided works like strspn(substr($s,$start,$len),$good_chars) */
+@@ -831,7 +836,6 @@ PHPAPI void php_explode_negative_limit(z
+ }
+ /* }}} */
+ 
+-
+ /* {{{ proto array explode(string separator, string str [, int limit])
+    Splits a string on string separator and return array of components. If limit is positive only limit number of components is returned. If limit is negative all components except the last abs(limit) are returned. */
+ PHP_FUNCTION(explode)
+@@ -1856,12 +1860,11 @@ PHP_FUNCTION(strripos)
+ 			e = haystack + haystack_len - 1;
+ 		} else {
+ 			p = haystack;
+-			if (-offset > haystack_len || -offset < 0) {
++			if (-offset > haystack_len || offset < -INT_MAX) {
+ 				php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Offset is greater than the length of haystack string");
+ 				RETURN_FALSE;
+-			} else {
+-				e = haystack + haystack_len + offset;
+ 			}
++			e = haystack + haystack_len + offset;
+ 		}
+ 		/* Borrow that ord_needle buffer to avoid repeatedly tolower()ing needle */
+ 		*ord_needle = tolower(*needle);
+@@ -1889,7 +1892,7 @@ PHP_FUNCTION(strripos)
+ 		p = haystack_dup + offset;
+ 		e = haystack_dup + haystack_len - needle_len;
+ 	} else {
+-		if (-offset > haystack_len || -offset < 0) {
++		if (-offset > haystack_len || offset < -INT_MAX) {
+ 			efree(needle_dup);
+ 			efree(haystack_dup);
+ 			php_error_docref(NULL TSRMLS_CC, E_NOTICE, "Offset is greater than the length of haystack string");
+@@ -1961,13 +1964,20 @@ static char *php_chunk_split(char *src, 
+ 	chunks = srclen / chunklen;
+ 	restlen = srclen - chunks * chunklen; /* srclen % chunklen */
+ 
+-	out_len = (srclen + (chunks + 1) * endlen + 1);
+-
+-	if (out_len > INT_MAX || out_len <= 0) {
++	if(chunks > INT_MAX - 1) {
+ 		return NULL;
+ 	}
++	out_len = chunks + 1;
++	if(endlen !=0 && out_len > INT_MAX/endlen) {
++		return NULL;
++	}
++	out_len *= endlen;
++	if(out_len > INT_MAX - srclen - 1) {
++		return NULL;
++	}
++	out_len += srclen + 1;
+ 
+-	dest = safe_emalloc(out_len, sizeof(char), 0);
++	dest = safe_emalloc((int)out_len, sizeof(char), 0);
+ 
+ 	for (p = src, q = dest; p < (src + srclen - chunklen + 1); ) {
+ 		memcpy(q, p, chunklen);
+@@ -2120,7 +2130,6 @@ PHP_FUNCTION(substr)
+ }
+ /* }}} */
+ 
+-
+ /* {{{ proto mixed substr_replace(mixed str, mixed repl, mixed start [, mixed length])
+    Replaces part of a string with another string */
+ PHP_FUNCTION(substr_replace)
+@@ -2352,9 +2361,6 @@ PHP_FUNCTION(substr_replace)
+ }
+ /* }}} */
+ 
+-
+-
+-
+ /* {{{ proto string quotemeta(string str)
+    Quotes meta characters */
+ PHP_FUNCTION(quotemeta)
+@@ -3400,8 +3406,7 @@ PHPAPI char *php_str_to_str(char *haysta
+ {
+ 	return php_str_to_str_ex(haystack, length, needle, needle_len, str, str_len, _new_length, 1, NULL);
+ } 
+-/* }}}
+- */
++/* }}} */
+ 
+ /* {{{ php_str_replace_in_subject
+  */
+@@ -3810,7 +3815,6 @@ PHP_FUNCTION(hebrevc)
+ }
+ /* }}} */
+ 
+-
+ /* {{{ proto string nl2br(string str)
+    Converts newlines to HTML line breaks */
+ PHP_FUNCTION(nl2br)
+@@ -3886,7 +3890,6 @@ PHP_FUNCTION(nl2br)
+ }
+ /* }}} */
+ 
+-
+ /* {{{ proto string strip_tags(string str [, string allowable_tags])
+    Strips HTML and PHP tags from a string */
+ PHP_FUNCTION(strip_tags)
+@@ -4125,10 +4128,11 @@ int php_tag_find(char *tag, int len, cha
+ }
+ /* }}} */
+ 
+-PHPAPI size_t php_strip_tags(char *rbuf, int len, int *stateptr, char *allow, int allow_len)
++PHPAPI size_t php_strip_tags(char *rbuf, int len, int *stateptr, char *allow, int allow_len) /* {{{ */
+ {
+ 	return php_strip_tags_ex(rbuf, len, stateptr, allow, allow_len, 0);
+ }
++/* }}} */
+ 
+ /* {{{ php_strip_tags
+  
+@@ -4852,8 +4856,7 @@ PHP_FUNCTION(str_rot13)
+ }
+ /* }}} */
+ 
+-
+-static void php_string_shuffle(char *str, long len TSRMLS_DC)
++static void php_string_shuffle(char *str, long len TSRMLS_DC) /* {{{ */
+ {
+ 	long n_elems, rnd_idx, n_left;
+ 	char temp;
+@@ -4877,7 +4880,7 @@ static void php_string_shuffle(char *str
+ 		}
+ 	}
+ }
+-
++/* }}} */
+ 
+ /* {{{ proto void str_shuffle(string str)
+    Shuffles string. One permutation of all possible is created */
+@@ -4990,13 +4993,28 @@ PHP_FUNCTION(str_word_count)
+ PHP_FUNCTION(money_format)
+ {
+ 	int format_len = 0, str_len;
+-	char *format, *str;
++	char *format, *str, *p, *e;
+ 	double value;
++	zend_bool check = 0;
+ 
+ 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sd", &format, &format_len, &value) == FAILURE) {
+ 		return;
+ 	}
+ 
++	p = format;
++	e = p + format_len;
++	while ((p = memchr(p, '%', (e - p)))) {
++		if (*(p + 1) == '%') {
++			p += 2;	
++		} else if (!check) {
++			check = 1;
++			p++;
++		} else {
++			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Only a single %%i or %%n token can be used");
++			RETURN_FALSE;
++		}
++	}
++
+ 	str_len = format_len + 1024;
+ 	str = emalloc(str_len);
+ 	if ((str_len = strfmon(str, str_len, format, value)) < 0) {
+Index: 5_2_3/ext/zip/php_zip.c
+===================================================================
+--- 5_2_3.orig/ext/zip/php_zip.c
++++ 5_2_3/ext/zip/php_zip.c
+@@ -120,7 +120,7 @@ static int php_zip_extract_file(struct z
+ 			len = spprintf(&file_dirname_fullpath, 0, "%s", dest);
+ 		}
+ 
+-		php_basename(file, file_len, NULL, 0, &file_basename, (unsigned int *)&file_basename_len TSRMLS_CC);
++		php_basename(file, file_len, NULL, 0, &file_basename, (size_t *)&file_basename_len TSRMLS_CC);
+ 
+ 		if (OPENBASEDIR_CHECKPATH(file_dirname_fullpath)) {
+ 			efree(file_dirname_fullpath);
+@@ -985,6 +985,9 @@ static ZIPARCHIVE_METHOD(addEmptyDir)
+ 	zval *this = getThis();
+ 	char *dirname;
+ 	int   dirname_len;
++	int idx;
++	struct zip_stat sb;
++	char *s;
+ 
+ 	if (!this) {
+ 		RETURN_FALSE;
+@@ -996,14 +999,40 @@ static ZIPARCHIVE_METHOD(addEmptyDir)
+ 			&dirname, &dirname_len) == FAILURE) {
+ 		return;
+ 	}
++
+ 	if (dirname_len<1) {
+ 		RETURN_FALSE;
+ 	}
+ 
+-	if (zip_add_dir(intern, (const char *)dirname) < 0) {
+-		RETURN_FALSE;
++	if (dirname[dirname_len-1] != '/') {
++		s=(char *)emalloc(dirname_len+2);
++		strcpy(s, dirname);
++		s[dirname_len] = '/';
++		s[dirname_len+1] = '\0';
++	} else {
++		s = dirname;
++	}
++
++	idx = zip_stat(intern, s, 0, &sb);
++	if (idx >= 0) {
++		RETVAL_FALSE;
++	} else {
++		/* reset the error */
++		if (intern->error.str) {
++			_zip_error_fini(&intern->error);
++		}
++		_zip_error_init(&intern->error);
++
++		if (zip_add_dir(intern, (const char *)s) == -1) {
++			RETVAL_FALSE;
++		} else {
++			RETVAL_TRUE;
++		}
++	}
++
++	if (s != dirname) {
++		efree(s);
+ 	}
+-	RETURN_TRUE;
+ }
+ /* }}} */
+ 
+Index: 5_2_3/ext/gd/config.m4
+===================================================================
+--- 5_2_3.orig/ext/gd/config.m4
++++ 5_2_3/ext/gd/config.m4
+@@ -447,18 +447,10 @@ if test "$PHP_GD" != "no"; then
+     GDLIB_CFLAGS="-I$ext_srcdir/libgd $GDLIB_CFLAGS"
+     PHP_ADD_BUILD_DIR($ext_builddir/libgd)
+     GD_HEADER_DIRS="ext/gd/ ext/gd/libgd/"
+-
+-    PHP_TEST_BUILD(foobar, [], [
+-      AC_MSG_ERROR([GD build test failed. Please check the config.log for details.])
+-    ], [ -L$GD_LIB $GD_SHARED_LIBADD ], [char foobar () {}])
+   else
+     GD_HEADER_DIRS="ext/gd/"
+     GDLIB_CFLAGS="-I$GD_INCLUDE $GDLIB_CFLAGS"
+     PHP_ADD_INCLUDE($GD_INCLUDE)
+-
+-    PHP_CHECK_LIBRARY(gd, gdImageCreate, [], [
+-      AC_MSG_ERROR([GD build test failed. Please check the config.log for details.])
+-    ], [ -L$GD_LIB $GD_SHARED_LIBADD ])
+   fi
+ 
+   PHP_INSTALL_HEADERS([$GD_HEADER_DIRS])
+Index: 5_2_3/main/fopen_wrappers.c
+===================================================================
+--- 5_2_3.orig/main/fopen_wrappers.c
++++ 5_2_3/main/fopen_wrappers.c
+@@ -172,8 +172,8 @@ PHPAPI int php_check_specific_open_based
+ 			}
+ 		}
+ 
++		resolved_name_len = strlen(resolved_name);
+ 		if (path_tmp[path_len - 1] == PHP_DIR_SEPARATOR) {
+-			resolved_name_len = strlen(resolved_name);
+ 			if (resolved_name[resolved_name_len - 1] != PHP_DIR_SEPARATOR) {
+ 				resolved_name[resolved_name_len] = PHP_DIR_SEPARATOR;
+ 				resolved_name[++resolved_name_len] = '\0';
+@@ -189,6 +189,16 @@ PHPAPI int php_check_specific_open_based
+ 			/* File is in the right directory */
+ 			return 0;
+ 		} else {
++			/* /openbasedir/ and /openbasedir are the same directory */
++			if (resolved_basedir_len == (resolved_name_len + 1) && resolved_basedir[resolved_basedir_len - 1] == PHP_DIR_SEPARATOR) {
++#if defined(PHP_WIN32) || defined(NETWARE)
++				if (strncasecmp(resolved_basedir, resolved_name, resolved_name_len) == 0) {
++#else
++				if (strncmp(resolved_basedir, resolved_name, resolved_name_len) == 0) {
++#endif
++					return 0;
++				}
++			}
+ 			return -1;
+ 		}
+ 	} else {
+Index: 5_2_3/ext/ncurses/ncurses_functions.c
+===================================================================
+--- 5_2_3.orig/ext/ncurses/ncurses_functions.c
++++ 5_2_3/ext/ncurses/ncurses_functions.c
+@@ -2373,6 +2373,7 @@ PHP_FUNCTION(ncurses_panel_above)
+ 		FETCH_PANEL(panel, &phandle);
+ 		above = panel_above(*panel);
+ 	} else {
++		IS_NCURSES_INITIALIZED();
+ 		above = panel_above((PANEL *)0);
+ 	}
+ 
+Index: 5_2_3/ext/gd/gd.c
+===================================================================
+--- 5_2_3.orig/ext/gd/gd.c
++++ 5_2_3/ext/gd/gd.c
+@@ -1725,6 +1725,10 @@ PHP_FUNCTION(imagecreatetruecolor)
+ 
+ 	im = gdImageCreateTrueColor(Z_LVAL_PP(x_size), Z_LVAL_PP(y_size));
+ 
++	if (!im) {
++		RETURN_FALSE;
++	}
++
+ 	ZEND_REGISTER_RESOURCE(return_value, im, le_gd);
+ }
+ /* }}} */
+@@ -2333,6 +2337,10 @@ PHP_FUNCTION(imagecreate)
+ 
+ 	im = gdImageCreate(Z_LVAL_PP(x_size), Z_LVAL_PP(y_size));
+ 
++	if (!im) {
++		RETURN_FALSE;
++	}
++
+ 	ZEND_REGISTER_RESOURCE(return_value, im, le_gd);
+ }
+ /* }}} */
+Index: 5_2_3/ext/gd/libgd/gd.c
+===================================================================
+--- 5_2_3.orig/ext/gd/libgd/gd.c
++++ 5_2_3/ext/gd/libgd/gd.c
+@@ -120,6 +120,15 @@ gdImagePtr gdImageCreate (int sx, int sy
+ {
+ 	int i;
+ 	gdImagePtr im;
++
++	if (overflow2(sx, sy)) {
++		return NULL;
++	}
++
++	if (overflow2(sizeof(unsigned char *), sy)) {
++		return NULL;
++	}
++
+ 	im = (gdImage *) gdMalloc(sizeof(gdImage));
+ 	memset(im, 0, sizeof(gdImage));
+ 	/* Row-major ever since gd 1.3 */
+@@ -162,6 +171,19 @@ gdImagePtr gdImageCreateTrueColor (int s
+ {
+ 	int i;
+ 	gdImagePtr im;
++
++	if (overflow2(sx, sy)) {
++		return NULL;
++	}
++
++	if (overflow2(sizeof(unsigned char *), sy)) {
++		return NULL;
++	}
++	
++	if (overflow2(sizeof(int), sx)) {
++		return NULL;
++	}
++
+ 	im = (gdImage *) gdMalloc(sizeof(gdImage));
+ 	memset(im, 0, sizeof(gdImage));
+ 	im->tpixels = (int **) gdMalloc(sizeof(int *) * sy);
+@@ -2404,6 +2426,14 @@ void gdImageCopyResized (gdImagePtr dst,
+ 	int *stx, *sty;
+ 	/* We only need to use floating point to determine the correct stretch vector for one line's worth. */
+ 	double accum;
++	
++	if (overflow2(sizeof(int), srcW)) {
++		return;
++	}
++	if (overflow2(sizeof(int), srcH)) {
++		return;
++	}
++
+ 	stx = (int *) gdMalloc (sizeof (int) * srcW);
+ 	sty = (int *) gdMalloc (sizeof (int) * srcH);
+ 	accum = 0;
+@@ -3195,6 +3225,10 @@ void gdImageFilledPolygon (gdImagePtr im
+ 		return;
+ 	}
+ 
++	if (overflow2(sizeof(int), n)) {
++		return;
++	}
++
+ 	if (c == gdAntiAliased) {
+ 		fill_color = im->AA_color;
+ 	} else {
+@@ -3209,6 +3243,9 @@ void gdImageFilledPolygon (gdImagePtr im
+ 		while (im->polyAllocated < n) {
+ 			im->polyAllocated *= 2;
+ 		}
++		if (overflow2(sizeof(int), im->polyAllocated)) {
++			return;
++		}
+ 		im->polyInts = (int *) gdRealloc(im->polyInts, sizeof(int) * im->polyAllocated);
+ 	}
+ 	miny = p[0].y;
+Index: 5_2_3/ext/standard/pack.c
+===================================================================
+--- 5_2_3.orig/ext/standard/pack.c
++++ 5_2_3/ext/standard/pack.c
+@@ -635,6 +635,12 @@ PHP_FUNCTION(unpack)
+ 			case 'd':
+ 				size = sizeof(double);
+ 				break;
++
++			default:
++				php_error_docref(NULL TSRMLS_CC, E_WARNING, "Invalid format type %c", type);
++				zval_dtor(return_value);
++				RETURN_FALSE;
++				break;
+ 		}
+ 
+ 		/* Do actual unpacking */
+Index: 5_2_3/ext/bcmath/bcmath.c
+===================================================================
+--- 5_2_3.orig/ext/bcmath/bcmath.c
++++ 5_2_3/ext/bcmath/bcmath.c
+@@ -31,7 +31,7 @@
+ #include "php_bcmath.h"
+ #include "libbcmath/src/bcmath.h"
+ 
+-ZEND_DECLARE_MODULE_GLOBALS(bcmath);
++ZEND_DECLARE_MODULE_GLOBALS(bcmath)
+ static PHP_GINIT_FUNCTION(bcmath);
+ static PHP_GSHUTDOWN_FUNCTION(bcmath);
+ 
+@@ -229,7 +229,7 @@ PHP_FUNCTION(bcadd)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+@@ -275,7 +275,7 @@ PHP_FUNCTION(bcsub)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+@@ -321,7 +321,7 @@ PHP_FUNCTION(bcmul)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+@@ -367,7 +367,7 @@ PHP_FUNCTION(bcdiv)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+@@ -449,6 +449,7 @@ PHP_FUNCTION(bcpowmod)
+ 	int left_len, right_len, modulous_len;
+ 	bc_num first, second, mod, result;
+ 	long scale = BCG(bc_precision);
++	int scale_int;
+ 
+ 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sss|l", &left, &left_len, &right, &right_len, &modulous, &modulous_len, &scale) == FAILURE) {
+ 		return;
+@@ -461,7 +462,10 @@ PHP_FUNCTION(bcpowmod)
+ 	php_str2num(&first, left TSRMLS_CC);
+ 	php_str2num(&second, right TSRMLS_CC);
+ 	php_str2num(&mod, modulous TSRMLS_CC);
+-	bc_raisemod(first, second, mod, &result, scale TSRMLS_CC);
++
++	scale_int = (int) ((int)scale < 0) ? 0 : scale;
++
++	bc_raisemod(first, second, mod, &result, scale_int TSRMLS_CC);
+ 	if (result->n_scale > scale) {
+ 		result->n_scale = scale;
+ 	}
+@@ -495,7 +499,7 @@ PHP_FUNCTION(bcpow)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+@@ -541,7 +545,7 @@ PHP_FUNCTION(bcsqrt)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+@@ -584,7 +588,7 @@ PHP_FUNCTION(bccomp)
+ 					WRONG_PARAM_COUNT;
+ 				}
+ 				convert_to_long_ex(scale_param);
+-				scale = (int) (Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
++				scale = (int) ((int)Z_LVAL_PP(scale_param) < 0) ? 0 : Z_LVAL_PP(scale_param);
+ 				break;
+ 		default:
+ 				WRONG_PARAM_COUNT;
+Index: 5_2_3/ext/simplexml/simplexml.c
+===================================================================
+--- 5_2_3.orig/ext/simplexml/simplexml.c
++++ 5_2_3/ext/simplexml/simplexml.c
+@@ -238,7 +238,7 @@ next_iter:
+ 
+ /* {{{ sxe_prop_dim_read()
+  */
+-static zval * sxe_prop_dim_read(zval *object, zval *member, zend_bool elements, zend_bool attribs, zend_bool silent TSRMLS_DC)
++static zval * sxe_prop_dim_read(zval *object, zval *member, zend_bool elements, zend_bool attribs, int type TSRMLS_DC)
+ {
+ 	zval           *return_value;
+ 	php_sxe_object *sxe;
+@@ -249,6 +249,12 @@ static zval * sxe_prop_dim_read(zval *ob
+ 	int             nodendx = 0;
+ 	int             test = 0;
+ 
++	if (!member) {
++		return_value = &EG(uninitialized_zval);
++		return_value->is_ref = 1;
++		return return_value;
++	}
++
+ 	sxe = php_sxe_fetch_object(object TSRMLS_CC);
+ 
+ 	if (Z_TYPE_P(member) == IS_LONG) {
+@@ -357,7 +363,7 @@ static zval * sxe_prop_dim_read(zval *ob
+  */
+ static zval * sxe_property_read(zval *object, zval *member, int type TSRMLS_DC)
+ {
+-	return sxe_prop_dim_read(object, member, 1, 0, type == BP_VAR_IS TSRMLS_CC);
++	return sxe_prop_dim_read(object, member, 1, 0, type TSRMLS_CC);
+ }
+ /* }}} */
+ 
+@@ -365,7 +371,7 @@ static zval * sxe_property_read(zval *ob
+  */
+ static zval * sxe_dimension_read(zval *object, zval *offset, int type TSRMLS_DC)
+ {
+-	return sxe_prop_dim_read(object, offset, 0, 1, 0 TSRMLS_CC);
++	return sxe_prop_dim_read(object, offset, 0, 1, type TSRMLS_CC);
+ }
+ /* }}} */
+ 
+Index: 5_2_3/ext/json/json.c
+===================================================================
+--- 5_2_3.orig/ext/json/json.c
++++ 5_2_3/ext/json/json.c
+@@ -354,7 +354,7 @@ static void json_encode_r(smart_str *buf
+                 double dbl = Z_DVAL_P(val);
+ 
+                 if (!zend_isinf(dbl) && !zend_isnan(dbl)) {
+-			len = spprintf(&d, 0, "%.9g", dbl);
++			len = spprintf(&d, 0, "%.*g", (int)EG(precision), dbl);
+ 			if (d) {
+ 				if (dbl > LONG_MAX && !memchr(d, '.', len)) {
+ 					smart_str_append_unsigned(buf, (unsigned long)Z_DVAL_P(val));
+Index: 5_2_3/Zend/zend_ini.c
+===================================================================
+--- 5_2_3.orig/Zend/zend_ini.c
++++ 5_2_3/Zend/zend_ini.c
+@@ -55,7 +55,9 @@ static int zend_restore_ini_entry_cb(zen
+ 				ini_entry->on_modify(ini_entry, ini_entry->orig_value, ini_entry->orig_value_length, ini_entry->mh_arg1, ini_entry->mh_arg2, ini_entry->mh_arg3, stage TSRMLS_CC);
+ 			} zend_end_try();
+ 		}
+-		efree(ini_entry->value);
++		if (ini_entry->value != ini_entry->orig_value) {
++			efree(ini_entry->value);
++		}
+ 		ini_entry->value = ini_entry->orig_value;
+ 		ini_entry->value_length = ini_entry->orig_value_length;
+ 		ini_entry->modified = 0;
+@@ -234,30 +236,39 @@ ZEND_API int zend_alter_ini_entry(char *
+ {
+ 	zend_ini_entry *ini_entry;
+ 	char *duplicate;
++	zend_bool modified;
+ 	TSRMLS_FETCH();
+ 
+ 	if (zend_hash_find(EG(ini_directives), name, name_length, (void **) &ini_entry)==FAILURE) {
+ 		return FAILURE;
+ 	}
+ 
++	if (stage == ZEND_INI_STAGE_ACTIVATE && modify_type == ZEND_INI_SYSTEM) {
++		ini_entry->modifiable = ZEND_INI_SYSTEM;
++	}
++
+ 	if (!(ini_entry->modifiable & modify_type)) {
+ 		return FAILURE;
+ 	}
+ 
++	modified = ini_entry->modified;
++
++	if (!EG(modified_ini_directives)) {
++		ALLOC_HASHTABLE(EG(modified_ini_directives));
++		zend_hash_init(EG(modified_ini_directives), 8, NULL, NULL, 0);
++	}
++	if (!modified) {
++		ini_entry->orig_value = ini_entry->value;
++		ini_entry->orig_value_length = ini_entry->value_length;
++		ini_entry->modified = 1;
++		zend_hash_add(EG(modified_ini_directives), name, name_length, &ini_entry, sizeof(zend_ini_entry*), NULL);
++	}
++
+ 	duplicate = estrndup(new_value, new_value_length);
+-	
++
+ 	if (!ini_entry->on_modify
+ 		|| ini_entry->on_modify(ini_entry, duplicate, new_value_length, ini_entry->mh_arg1, ini_entry->mh_arg2, ini_entry->mh_arg3, stage TSRMLS_CC)==SUCCESS) {
+-		if (!ini_entry->modified) {
+-			ini_entry->orig_value = ini_entry->value;
+-			ini_entry->orig_value_length = ini_entry->value_length;
+-			ini_entry->modified = 1;
+-			if (!EG(modified_ini_directives)) {
+-				ALLOC_HASHTABLE(EG(modified_ini_directives));
+-				zend_hash_init(EG(modified_ini_directives), 8, NULL, NULL, 0);
+-			}
+-			zend_hash_add(EG(modified_ini_directives), name, name_length, &ini_entry, sizeof(zend_ini_entry*), NULL);
+-		} else { /* we already changed the value, free the changed value */
++		if (modified && ini_entry->orig_value != ini_entry->value) { /* we already changed the value, free the changed value */
+ 			efree(ini_entry->value);
+ 		}
+ 		ini_entry->value = duplicate;
+Index: 5_2_3/ext/mysql/php_mysql.c
+===================================================================
+--- 5_2_3.orig/ext/mysql/php_mysql.c
++++ 5_2_3/ext/mysql/php_mysql.c
+@@ -603,8 +603,8 @@ static void php_mysql_do_connect(INTERNA
+ 				break;
+ 		}
+ 		/* disable local infile option for open_basedir */
+-                if (PG(open_basedir) && strlen(PG(open_basedir)) && (client_flags & CLIENT_LOCAL_FILES)) {
+-                	client_flags ^= CLIENT_LOCAL_FILES;
++		if (((PG(open_basedir) && PG(open_basedir)[0] != '\0') || PG(safe_mode)) && (client_flags & CLIENT_LOCAL_FILES)) {
++			client_flags ^= CLIENT_LOCAL_FILES;
+ 		}
+ 
+ 		if (z_host) {
+@@ -738,6 +738,7 @@ static void php_mysql_do_connect(INTERNA
+ #endif
+ 
+ 			mysql = (php_mysql_conn *) le->ptr;
++			mysql->active_result_id = 0;
+ 		}
+ 		ZEND_REGISTER_RESOURCE(return_value, mysql, le_plink);
+ 	} else { /* non persistent */
+Index: 5_2_3/main/main.c
+===================================================================
+--- 5_2_3.orig/main/main.c
++++ 5_2_3/main/main.c
+@@ -356,6 +356,14 @@ PHPAPI void php_log_err(char *log_messag
+ 			return;
+ 		}
+ #endif
++		if (PG(safe_mode) && (!php_checkuid(PG(error_log), NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
++			return FAILURE;
++		}
++
++		if (PG(open_basedir) && php_check_open_basedir(PG(error_log) TSRMLS_CC)) {
++			return FAILURE;
++		}
++
+ 		fd = VCWD_OPEN_MODE(PG(error_log), O_CREAT | O_APPEND | O_WRONLY, 0644);
+ 		if (fd != -1) {
+ 			char *tmp;
+@@ -1420,6 +1428,36 @@ int php_register_extensions(zend_module_
+ }
+ /* }}} */
+ 
++#if defined(PHP_WIN32) && defined(_MSC_VER) && (_MSC_VER >= 1400)
++static _invalid_parameter_handler old_invalid_parameter_handler;
++
++void dummy_invalid_parameter_handler(
++		const wchar_t *expression,
++		const wchar_t *function,
++		const wchar_t *file,
++		unsigned int   line,
++		uintptr_t      pEwserved)
++{
++	static int called = 0;
++	char buf[1024];
++	int len;
++
++	if (!called) {
++		called = 1;
++		if (function) {
++			if (file) {
++				len = _snprintf(buf, sizeof(buf)-1, "Invalid parameter detected in CRT function '%ws' (%ws:%d)", function, file, line);
++			} else {
++				len = _snprintf(buf, sizeof(buf)-1, "Invalid parameter detected in CRT function '%ws'", function);
++			}
++		} else {
++			len = _snprintf(buf, sizeof(buf)-1, "Invalid CRT parameters detected");
++		}
++		zend_error(E_WARNING, "%s", buf);
++		called = 0;
++	}
++}
++#endif
+ 
+ /* {{{ php_module_startup
+  */
+@@ -1450,6 +1488,13 @@ int php_module_startup(sapi_module_struc
+ 			php_os="WIN32";
+ 		}
+ 	}
++#if defined(_MSC_VER) && (_MSC_VER >= 1400)
++	old_invalid_parameter_handler =
++		_set_invalid_parameter_handler(dummy_invalid_parameter_handler);
++	if (old_invalid_parameter_handler != NULL) {
++		_set_invalid_parameter_handler(old_invalid_parameter_handler);
++	}
++#endif
+ #else
+ 	php_os=PHP_OS;
+ #endif
+@@ -1703,6 +1748,12 @@ void php_module_shutdown(TSRMLS_D)
+ 	php_shutdown_temporary_directory();
+ 
+ 	module_initialized = 0;
++
++#if defined(PHP_WIN32) && defined(_MSC_VER) && (_MSC_VER >= 1400)
++	if (old_invalid_parameter_handler == NULL) {
++		_set_invalid_parameter_handler(old_invalid_parameter_handler);
++	}
++#endif
+ }
+ /* }}} */
+ 
+Index: 5_2_3/ext/standard/dir.c
+===================================================================
+--- 5_2_3.orig/ext/standard/dir.c
++++ 5_2_3/ext/standard/dir.c
+@@ -24,6 +24,7 @@
+ #include "fopen_wrappers.h"
+ #include "file.h"
+ #include "php_dir.h"
++#include "php_string.h"
+ #include "php_scandir.h"
+ 
+ #ifdef HAVE_DIRENT_H
+@@ -361,9 +362,9 @@ PHP_NAMED_FUNCTION(php_if_readdir)
+    Find pathnames matching a pattern */
+ PHP_FUNCTION(glob)
+ {
+-	char cwd[MAXPATHLEN];
+ 	int cwd_skip = 0;
+ #ifdef ZTS
++	char cwd[MAXPATHLEN];
+ 	char work_pattern[MAXPATHLEN];
+ 	char *result;
+ #endif
+@@ -395,6 +396,23 @@ PHP_FUNCTION(glob)
+ 	} 
+ #endif
+ 
++	if (PG(safe_mode) || (PG(open_basedir) && *PG(open_basedir))) {
++		int pattern_len = strlen(pattern);
++		char *basename = estrndup(pattern, pattern_len);
++		
++		php_dirname(basename, pattern_len);
++		if (PG(safe_mode) && (!php_checkuid(basename, NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
++			efree(basename);
++			RETURN_FALSE;
++		}
++		if (php_check_open_basedir(basename TSRMLS_CC)) {
++			efree(basename);
++			RETURN_FALSE;
++		}
++		efree(basename);
++	}
++
++	memset(&globbuf, 0, sizeof(glob_t));
+ 	globbuf.gl_offs = 0;
+ 	if (0 != (ret = glob(pattern, flags & GLOB_FLAGMASK, NULL, &globbuf))) {
+ #ifdef GLOB_NOMATCH
+@@ -420,16 +438,6 @@ PHP_FUNCTION(glob)
+ 		return;
+ 	}
+ 
+-	/* we assume that any glob pattern will match files from one directory only
+-	   so checking the dirname of the first match should be sufficient */
+-	strlcpy(cwd, globbuf.gl_pathv[0], MAXPATHLEN);
+-	if (PG(safe_mode) && (!php_checkuid(cwd, NULL, CHECKUID_CHECK_FILE_AND_DIR))) {
+-		RETURN_FALSE;
+-	}
+-	if (php_check_open_basedir(cwd TSRMLS_CC)) {
+-		RETURN_FALSE;
+-	}
+-
+ 	array_init(return_value);
+ 	for (n = 0; n < globbuf.gl_pathc; n++) {
+ 		/* we need to do this everytime since GLOB_ONLYDIR does not guarantee that
+@@ -475,6 +483,11 @@ PHP_FUNCTION(scandir)
+ 		return;
+ 	}
+ 
++	if (dirn_len < 1) {
++		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Directory name cannot be empty");
++		RETURN_FALSE;
++	}
++
+ 	if (zcontext) {
+ 		context = php_stream_context_from_zval(zcontext, 0);
+ 	}
+Index: 5_2_3/ext/gd/libgd/gd_gif_in.c
+===================================================================
+--- 5_2_3.orig/ext/gd/libgd/gd_gif_in.c
++++ 5_2_3/ext/gd/libgd/gd_gif_in.c
+@@ -586,7 +586,10 @@ ReadImage(gdImagePtr im, gdIOCtx *fd, in
+ 	/*        return; */
+ 	/*} */
+ 
+-	while ((v = LWZReadByte(fd, &sd, FALSE, c, ZeroDataBlockP)) >= 0 ) {
++	while ((v = LWZReadByte(fd, &sd, FALSE, c, ZeroDataBlockP)) >= 0) {
++		if (v >= gdMaxColors) {
++			v = 0;
++		}
+ 		/* This how we recognize which colors are actually used. */
+ 		if (im->open[v]) {
+ 			im->open[v] = 0;
+Index: 5_2_3/Zend/zend_operators.c
+===================================================================
+--- 5_2_3.orig/Zend/zend_operators.c
++++ 5_2_3/Zend/zend_operators.c
+@@ -1402,6 +1402,11 @@ ZEND_API int compare_function(zval *resu
+ 
+ 	/* If both are objects sharing the same comparision handler then use is */
+ 	if (eq_comp) {
++		if (Z_OBJ_HANDLE_P(op1) == Z_OBJ_HANDLE_P(op2)) {
++			/* object handles are identical, apprently this is the same object */
++			ZVAL_LONG(result, 0);
++			COMPARE_RETURN_AND_FREE(SUCCESS);
++		}
+ 		ZVAL_LONG(result, Z_OBJ_HT_P(op1)->compare_objects(op1, op2 TSRMLS_CC));
+ 		COMPARE_RETURN_AND_FREE(SUCCESS);
+ 	}
+Index: 5_2_3/Zend/zend_object_handlers.c
+===================================================================
+--- 5_2_3.orig/Zend/zend_object_handlers.c
++++ 5_2_3/Zend/zend_object_handlers.c
+@@ -800,7 +800,9 @@ static union _zend_function *zend_std_ge
+ 		/* Ensure that we haven't overridden a private function and end up calling
+ 		 * the overriding public function...
+ 		 */
+-		if (EG(scope) && fbc->op_array.fn_flags & ZEND_ACC_CHANGED) {
++		if (EG(scope) &&
++				is_derived_class(fbc->common.scope, EG(scope)) &&
++				fbc->op_array.fn_flags & ZEND_ACC_CHANGED) {
+ 			zend_function *priv_fbc;
+ 
+ 			if (zend_hash_find(&EG(scope)->function_table, lc_method_name, method_len+1, (void **) &priv_fbc)==SUCCESS
+Index: 5_2_3/ext/standard/php_fopen_wrapper.c
+===================================================================
+--- 5_2_3.orig/ext/standard/php_fopen_wrapper.c
++++ 5_2_3/ext/standard/php_fopen_wrapper.c
+@@ -159,6 +159,7 @@ php_stream * php_stream_url_wrap_php(php
+ 	php_stream * stream = NULL;
+ 	char *p, *token, *pathdup;
+ 	long max_memory;
++	FILE *file = NULL;
+ 
+ 	if (!strncasecmp(path, "php://", 6)) {
+ 		path += 6;
+@@ -210,6 +211,7 @@ php_stream * php_stream_url_wrap_php(php
+ 				fd = dup(fd);
+ 			} else {
+ 				cli_in = 1;
++				file = stdin;
+ 			}
+ 		} else {
+ 			fd = dup(STDIN_FILENO);
+@@ -222,6 +224,7 @@ php_stream * php_stream_url_wrap_php(php
+ 				fd = dup(fd);
+ 			} else {
+ 				cli_out = 1;
++				file = stdout;
+ 			}
+ 		} else {
+ 			fd = dup(STDOUT_FILENO);
+@@ -234,6 +237,7 @@ php_stream * php_stream_url_wrap_php(php
+ 				fd = dup(fd);
+ 			} else {
+ 				cli_err = 1;
++				file = stderr;
+ 			}
+ 		} else {
+ 			fd = dup(STDERR_FILENO);
+@@ -285,10 +289,14 @@ php_stream * php_stream_url_wrap_php(php
+ 		/* failed to dup */
+ 		return NULL;
+ 	}
+-	
+-	stream = php_stream_fopen_from_fd(fd, mode, NULL);
+-	if (stream == NULL) {
+-		close(fd);
++
++	if (file) {
++		stream = php_stream_fopen_from_file(file, mode);
++	} else {	
++		stream = php_stream_fopen_from_fd(fd, mode, NULL);
++		if (stream == NULL) {
++			close(fd);
++		}
+ 	}
+  
+ 	return stream;

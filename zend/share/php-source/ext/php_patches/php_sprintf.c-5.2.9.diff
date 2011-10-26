@@ -1,0 +1,13 @@
+--- php-5.2.9/main/php_sprintf.c	2008-12-31 13:17:47.000000000 +0200
++++ php-5.2.9/main/php_sprintf.c.patch	2009-05-14 12:26:58.000000000 +0300
+@@ -37,9 +37,7 @@
+   s[0] = '\0';
+   ret = vsprintf (s, format, args);
+   va_end (args);
+-  if (!ret)
+-    return -1;
+-  return strlen (s);
++  return (ret < 0) ? -1 : ret;
+ }
+ 
+ /*

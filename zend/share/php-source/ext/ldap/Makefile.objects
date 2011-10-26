@@ -1,0 +1,8 @@
+ldap.lo: /usr/local/zend/share/php-source/ext/ldap/ldap.c
+	$(LIBTOOL) --mode=compile $(CC) -DLDAP_DEPRECATED=1 -I. -I/usr/local/zend/share/php-source/ext/ldap $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS)  -c /usr/local/zend/share/php-source/ext/ldap/ldap.c -o ldap.lo 
+$(phplibdir)/ldap.la: ./ldap.la
+	$(LIBTOOL) --mode=install cp ./ldap.la $(phplibdir)
+
+./ldap.la: $(shared_objects_ldap) $(LDAP_SHARED_DEPENDENCIES)
+	$(LIBTOOL) --mode=link $(CC) $(COMMON_FLAGS) $(CFLAGS_CLEAN) $(EXTRA_CFLAGS) $(LDFLAGS) -o $@ -export-dynamic -avoid-version -prefer-pic -module -rpath $(phplibdir) $(EXTRA_LDFLAGS) $(shared_objects_ldap) $(LDAP_SHARED_LIBADD)
+

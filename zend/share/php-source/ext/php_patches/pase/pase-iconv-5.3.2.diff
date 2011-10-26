@@ -1,0 +1,108 @@
+Index: 5.3.2/ext/iconv/config.m4
+===================================================================
+--- php-5.3.2/.orig/ext/iconv/config.m4
+--- php-5.3.2/ext/iconv/config.m4
+@@ -79,9 +79,24 @@ int main() {
+       ])
+     fi
+ 
++    if test -z "$iconv_impl_name"; then
++      AC_MSG_CHECKING([if using IBM iconv])
++      php_iconv_old_ld="$LDFLAGS"
++      LDFLAGS="-liconv $LDFLAGS"
++      AC_TRY_LINK([#include <iconv.h>],[cstoccsid("");],
++      [
++        AC_MSG_RESULT(yes)
++        iconv_impl_name="ibm"
++      ],[
++        AC_MSG_RESULT(no)
++        LDFLAGS="$php_iconv_old_ld"
++      ])
++    fi
++
+     echo > ext/iconv/php_have_bsd_iconv.h
+     echo > ext/iconv/php_have_glibc_iconv.h
+     echo > ext/iconv/php_have_libiconv.h
++    echo > ext/iconv/php_have_ibm_iconv.h
+ 
+     case "$iconv_impl_name" in
+       gnu_libiconv [)]
+@@ -104,6 +119,12 @@ int main() {
+         PHP_DEFINE([PHP_ICONV_IMPL],[\"glibc\"],[ext/iconv])
+         AC_DEFINE([PHP_ICONV_IMPL],["glibc"],[Which iconv implementation to use])
+         ;;
++      ibm [)]
++        PHP_DEFINE([HAVE_IBM_ICONV],1,[ext/iconv])
++        AC_DEFINE([HAVE_IBM_ICONV],1,[IBM iconv implementation])
++        PHP_DEFINE([PHP_ICONV_IMPL],[\"IBM iconv\"],[ext/iconv])
++        AC_DEFINE([PHP_ICONV_IMPL],["IBM iconv"],[Which iconv implementation to use])
++        ;;
+     esac
+ 
+     AC_MSG_CHECKING([if iconv supports errno])
+Index: 5.3.2/ext/iconv/iconv.c
+===================================================================
+--- 5.3.2.orig/ext/iconv/iconv.c
++++ 5.3.2/ext/iconv/iconv.c
+@@ -228,7 +228,7 @@ static php_iconv_err_t php_iconv_stream_
+ /* }}} */
+ 
+ /* {{{ static globals */
+-static char _generic_superset_name[] = "UCS-4LE";
++static char _generic_superset_name[] = ICONV_UCS4_ENCODING;
+ #define GENERIC_SUPERSET_NAME _generic_superset_name
+ #define GENERIC_SUPERSET_NBYTES 4
+ /* }}} */
+@@ -1040,7 +1040,7 @@ static php_iconv_err_t _php_iconv_mime_e
+ 		goto out;
+ 	}
+ 
+-	cd_pl = iconv_open("ASCII", enc);
++	cd_pl = iconv_open(ICONV_ASCII_ENCODING, enc);
+ 	if (cd_pl == (iconv_t)(-1)) {
+ #if ICONV_SUPPORTS_ERRNO
+ 		if (errno == EINVAL) {
+@@ -1351,7 +1351,7 @@ static php_iconv_err_t _php_iconv_mime_d
+ 		*next_pos = NULL;
+ 	}
+ 
+-	cd_pl = iconv_open(enc, "ASCII");
++	cd_pl = iconv_open(enc, ICONV_ASCII_ENCODING);
+ 
+ 	if (cd_pl == (iconv_t)(-1)) {
+ #if ICONV_SUPPORTS_ERRNO
+Index: 5.3.2/ext/iconv/php_iconv.h
+===================================================================
+--- 5.3.2.orig/ext/iconv/php_iconv.h
++++ 5.3.2/ext/iconv/php_iconv.h
+@@ -37,6 +37,7 @@
+ #include "ext/iconv/php_have_libiconv.h"
+ #include "ext/iconv/php_have_glibc_iconv.h"
+ #include "ext/iconv/php_have_bsd_iconv.h"
++#include "ext/iconv/php_have_ibm_iconv.h"
+ #include "ext/iconv/php_iconv_supports_errno.h"
+ #include "ext/iconv/php_php_iconv_impl.h"
+ #include "ext/iconv/php_php_iconv_h_path.h"
+@@ -75,9 +76,19 @@ ZEND_END_MODULE_GLOBALS(iconv)
+ #define ICONVG(v) (iconv_globals.v)
+ #endif
+ 
+-#define ICONV_INPUT_ENCODING "ISO-8859-1" 
+-#define ICONV_OUTPUT_ENCODING "ISO-8859-1"
+-#define ICONV_INTERNAL_ENCODING "ISO-8859-1" 
++#ifdef HAVE_IBM_ICONV
++# define ICONV_INPUT_ENCODING "ISO8859-1"
++# define ICONV_OUTPUT_ENCODING "ISO8859-1"
++# define ICONV_INTERNAL_ENCODING "ISO8859-1"
++# define ICONV_ASCII_ENCODING "IBM-850"
++# define ICONV_UCS4_ENCODING "UTF-32"
++#else
++# define ICONV_INPUT_ENCODING "ISO-8859-1"
++# define ICONV_OUTPUT_ENCODING "ISO-8859-1"
++# define ICONV_INTERNAL_ENCODING "ISO-8859-1"
++# define ICONV_ASCII_ENCODING "ASCII"
++# define ICONV_UCS4_ENCODING "UCS-4LE"
++#endif
+ 
+ #ifndef ICONV_CSNMAXLEN
+ #define ICONV_CSNMAXLEN 64

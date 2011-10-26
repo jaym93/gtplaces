@@ -1,0 +1,463 @@
+Index: 5_2_0/sapi/apache/mod_php5.c
+===================================================================
+--- 5_2_0.orig/sapi/apache/mod_php5.c
++++ 5_2_0/sapi/apache/mod_php5.c
+@@ -22,6 +22,8 @@
+ #include "php_apache_http.h"
+ #include "http_conf_globals.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ #ifdef NETWARE
+ #define SIGPIPE SIGINT
+ #endif
+@@ -946,6 +948,7 @@ static void php_init_handler(server_rec 
+ 	{
+ 		TSRMLS_FETCH();
+ 		if (PG(expose_php)) {
++			ap_add_version_component("Zend Core/" APOLLO_VERSION);
+ 			ap_add_version_component("PHP/" PHP_VERSION);
+ 		}
+ 	}
+Index: 5_2_0/sapi/apache2handler/sapi_apache2.c
+===================================================================
+--- 5_2_0.orig/sapi/apache2handler/sapi_apache2.c
++++ 5_2_0/sapi/apache2handler/sapi_apache2.c
+@@ -53,6 +53,8 @@
+ 
+ #include "php_apache.h"
+ 
++#include "ext/apollo/php_apollo.h"
++
+ /* UnixWare and Netware define shutdown to _shutdown, which causes problems later
+  * on when using a structure member named shutdown. Since this source
+  * file does not use the system call shutdown, it is safe to #undef it.K
+@@ -352,6 +354,7 @@ static void php_apache_add_version(apr_p
+ {
+ 	TSRMLS_FETCH();
+ 	if (PG(expose_php)) {
++		ap_add_version_component(p, "Zend Core/" APOLLO_VERSION);
+ 		ap_add_version_component(p, "PHP/" PHP_VERSION);
+ 	}
+ }
+Index: 5_2_0/Zend/zend_execute.c
+===================================================================
+--- 5_2_0.orig/Zend/zend_execute.c
++++ 5_2_0/Zend/zend_execute.c
+@@ -411,11 +411,7 @@ static void zend_assign_to_variable_refe
+ 		*variable_ptr_ptr = value_ptr;
+ 		value_ptr->refcount++;
+ 
+-		variable_ptr->refcount--;
+-		if (variable_ptr->refcount==0) {
+-			zendi_zval_dtor(*variable_ptr);
+-			FREE_ZVAL(variable_ptr);
+-		}
++		zval_ptr_dtor(&variable_ptr);
+ 	} else if (!variable_ptr->is_ref) {
+ 		if (variable_ptr_ptr == value_ptr_ptr) {
+ 			SEPARATE_ZVAL(variable_ptr_ptr);
+Index: 5_2_0/Zend/zend_object_handlers.c
+===================================================================
+--- 5_2_0.orig/Zend/zend_object_handlers.c
++++ 5_2_0/Zend/zend_object_handlers.c
+@@ -469,6 +469,19 @@ zval *zend_std_read_dimension(zval *obje
+ 		/* Undo PZVAL_LOCK() */
+ 		retval->refcount--;
+ 
++		if ((type == BP_VAR_W || type == BP_VAR_RW  || type == BP_VAR_UNSET) && retval->refcount > 0) {
++			zval *tmp = retval;
++
++			ALLOC_ZVAL(retval);
++			*retval = *tmp;
++			zval_copy_ctor(retval);
++			retval->is_ref = 0;
++			retval->refcount = 0;
++			if (Z_TYPE_P(retval) != IS_OBJECT) {
++				zend_error(E_NOTICE, "Indirect modification of overloaded element of %s has no effect", ce->name);
++			}
++		}
++
+ 		return retval;
+ 	} else {
+ 		zend_error(E_ERROR, "Cannot use object of type %s as array", ce->name);
+Index: 5_2_0/Zend/zend_builtin_functions.c
+===================================================================
+--- 5_2_0.orig/Zend/zend_builtin_functions.c
++++ 5_2_0/Zend/zend_builtin_functions.c
+@@ -1661,7 +1661,9 @@ static zval *debug_backtrace_get_args(vo
+ 	while (--arg_count >= 0) {
+ 		arg = (zval **) p++;
+ 		if (*arg) {
+-			SEPARATE_ZVAL_TO_MAKE_IS_REF(arg);
++			if (Z_TYPE_PP(arg) != IS_OBJECT) {
++				SEPARATE_ZVAL_TO_MAKE_IS_REF(arg);
++			}
+ 			(*arg)->refcount++;
+ 			add_next_index_zval(arg_array, *arg);
+ 		} else {
+Index: 5_2_0/Zend/zend_alloc.c
+===================================================================
+--- 5_2_0.orig/Zend/zend_alloc.c
++++ 5_2_0/Zend/zend_alloc.c
+@@ -660,6 +660,15 @@ static long zend_mm_find_leaks(zend_mm_s
+ 
+ 	p = ZEND_MM_NEXT_BLOCK(b);
+ 	while (1) {
++		if (ZEND_MM_IS_GUARD_BLOCK(p)) {
++			ZEND_MM_CHECK_MAGIC(p, MEM_BLOCK_GUARD);
++			segment = segment->next_segment;
++			if (!segment) {
++				break;
++			}
++			p = (zend_mm_block *) ((char *) segment + ZEND_MM_ALIGNED_SEGMENT_SIZE);
++			continue;
++		}
+ 		q = ZEND_MM_NEXT_BLOCK(p);
+ 		if (q <= p ||
+ 		    (char*)q > (char*)segment + segment->size ||
+@@ -680,14 +689,6 @@ static long zend_mm_find_leaks(zend_mm_s
+ 			    zend_mm_panic("zend_mm_heap corrupted");
+ 			}
+ 		}
+-		if (ZEND_MM_IS_GUARD_BLOCK(q)) {
+-			ZEND_MM_CHECK_MAGIC(q, MEM_BLOCK_GUARD);
+-			segment = segment->next_segment;
+-			if (!segment) {
+-				break;
+-			}
+-			q = (zend_mm_block *) ((char *) segment + ZEND_MM_ALIGNED_SEGMENT_SIZE);
+-		}
+ 		p = q;
+ 	}
+ 	return leaks;
+Index: 5_2_0/ext/standard/string.c
+===================================================================
+--- 5_2_0.orig/ext/standard/string.c
++++ 5_2_0/ext/standard/string.c
+@@ -955,7 +955,12 @@ PHPAPI void php_implode(zval *delim, zva
+ 	}
+ 	smart_str_0(&implstr);
+ 
+-	RETURN_STRINGL(implstr.c, implstr.len, 0);
++	if (implstr.len) {
++		RETURN_STRINGL(implstr.c, implstr.len, 0);
++	} else {
++		smart_str_free(&implstr);
++		RETURN_EMPTY_STRING();
++	}
+ }
+ /* }}} */
+ 
+Index: 5_2_0/ext/standard/array.c
+===================================================================
+--- 5_2_0.orig/ext/standard/array.c
++++ 5_2_0/ext/standard/array.c
+@@ -2033,7 +2033,7 @@ static void _phpi_pop(INTERNAL_FUNCTION_
+ 		if (should_rehash) {
+ 			zend_hash_rehash(Z_ARRVAL_PP(stack));
+ 		}
+-	} else if (!key_len) {
++	} else if (!key_len && index >= Z_ARRVAL_PP(stack)->nNextFreeElement-1) {
+ 		Z_ARRVAL_PP(stack)->nNextFreeElement = Z_ARRVAL_PP(stack)->nNextFreeElement - 1;
+ 	}
+ 
+@@ -2666,6 +2666,7 @@ PHP_FUNCTION(array_pad)
+ 	num_pads = pad_size_abs - input_size;
+ 	if(num_pads > 1048576) {
+ 		php_error_docref(NULL TSRMLS_CC, E_WARNING, "You may only pad up to 1048576 elements at a time");
++		zval_dtor(return_value);
+ 		RETURN_FALSE;
+ 	}
+ 	pads = (zval ***)safe_emalloc(num_pads, sizeof(zval **), 0);
+Index: 5_2_0/ext/standard/file.c
+===================================================================
+--- 5_2_0.orig/ext/standard/file.c
++++ 5_2_0/ext/standard/file.c
+@@ -399,6 +399,7 @@ PHP_FUNCTION(get_meta_tags)
+ 				}
+ 			} else if (tok_last == TOK_EQUAL && looking_for_val) {
+ 				if (saw_name) {
++					STR_FREE(name);
+ 					/* Get the NAME attr (Single word attr, non-quoted) */
+ 					temp = name = estrndup(md.token_data, md.token_len);
+ 
+@@ -411,6 +412,7 @@ PHP_FUNCTION(get_meta_tags)
+ 
+ 					have_name = 1;
+ 				} else if (saw_content) {
++					STR_FREE(value);
+ 					/* Get the CONTENT attr (Single word attr, non-quoted) */
+ 					if (PG(magic_quotes_runtime)) {
+ 						value = php_addslashes(md.token_data, 0, &md.token_len, 0 TSRMLS_CC);
+@@ -437,6 +439,7 @@ PHP_FUNCTION(get_meta_tags)
+ 			}
+ 		} else if (tok == TOK_STRING && tok_last == TOK_EQUAL && looking_for_val) {
+ 			if (saw_name) {
++				STR_FREE(name);
+ 				/* Get the NAME attr (Quoted single/double) */
+ 				temp = name = estrndup(md.token_data, md.token_len);
+ 
+@@ -449,6 +452,7 @@ PHP_FUNCTION(get_meta_tags)
+ 
+ 				have_name = 1;
+ 			} else if (saw_content) {
++				STR_FREE(value);
+ 				/* Get the CONTENT attr (Single word attr, non-quoted) */
+ 				if (PG(magic_quotes_runtime)) {
+ 					value = php_addslashes(md.token_data, 0, &md.token_len, 0 TSRMLS_CC);
+@@ -472,12 +476,13 @@ PHP_FUNCTION(get_meta_tags)
+ 				/* For BC */
+ 				php_strtolower(name, strlen(name));
+ 				if (have_content) {
+-					add_assoc_string(return_value, name, value, 0); 
++					add_assoc_string(return_value, name, value, 1);
+ 				} else {
+ 					add_assoc_string(return_value, name, "", 1);
+ 				}
+ 
+ 				efree(name);
++				STR_FREE(value);
+ 			} else if (have_content) {
+ 				efree(value);
+ 			}
+@@ -499,6 +504,8 @@ PHP_FUNCTION(get_meta_tags)
+ 		md.token_data = NULL;
+ 	}
+ 
++	STR_FREE(name);
++	STR_FREE(value);
+ 	php_stream_close(md.stream);
+ }
+ 
+Index: 5_2_0/sapi/cgi/cgi_main.c
+===================================================================
+--- 5_2_0.orig/sapi/cgi/cgi_main.c
++++ 5_2_0/sapi/cgi/cgi_main.c
+@@ -142,6 +142,7 @@ static const opt_struct OPTIONS[] = {
+ 	{'?', 0, "usage"},/* help alias (both '?' and 'usage') */
+ 	{'v', 0, "version"},
+ 	{'z', 1, "zend-extension"},
++ 	{'R', 1, "repeat"},
+ 	{'-', 0, NULL} /* end of args */
+ };
+ 
+@@ -1002,6 +1003,9 @@ int main(int argc, char *argv[])
+ 	int status = 0;
+ #endif
+ #endif /* PHP_FASTCGI */
++	int benchmark = 0;
++	int repeats = 1;
++	struct timeval start, end;
+ 
+ #if 0 && defined(PHP_DEBUG)
+ 	/* IIS is always making things more difficult.  This allows
+@@ -1330,6 +1334,10 @@ consult the installation file that came 
+ 	zend_first_try {
+ 		while ((c = php_getopt(argc, argv, OPTIONS, &php_optarg, &php_optind, 1)) != -1) {
+ 			switch (c) {
++				case 'R': 
++				        benchmark = 1;
++						repeats = atoi(php_optarg);
++						break;
+ 				case 'h':
+ 				case '?':
+ 					no_headers = 1;
+@@ -1344,6 +1352,9 @@ consult the installation file that came 
+ 		}
+ 		php_optind = orig_optind;
+ 		php_optarg = orig_optarg;
++		if (benchmark) {
++			gettimeofday(&start, NULL);
++		}
+ 
+ #if PHP_FASTCGI
+ 		/* start of FAST CGI loop */
+@@ -1696,11 +1707,12 @@ fastcgi_request_done:
+ 
+ 		}
+ 
++		repeats--;
+ #if PHP_FASTCGI
+-			if (!fastcgi) break;
++			if (!fastcgi && repeats <= 0) break;
+ 			/* only fastcgi will get here */
+ 			requests++;
+-			if (max_requests && (requests == max_requests)) {
++			if (fastcgi && max_requests && (requests == max_requests)) {
+ 				fcgi_finish_request(&request);
+ #ifndef PHP_WIN32
+ 				if (bindpath) {
+@@ -1709,6 +1721,9 @@ fastcgi_request_done:
+ #endif
+ 				break;
+ 			}
++			php_optind = orig_optind;
++			php_optarg = orig_optarg;
++
+ 			/* end of fastcgi loop */
+ 		}
+ #endif
+@@ -1723,6 +1738,18 @@ fastcgi_request_done:
+ 		exit_status = 255;
+ 	} zend_end_try();
+ 
++	if (benchmark) {
++		gettimeofday(&end, NULL);
++		end.tv_sec -= start.tv_sec;
++		if (end.tv_usec >= start.tv_usec) {
++			end.tv_usec -= start.tv_usec;
++		} else {
++			end.tv_sec -= 1;
++			end.tv_usec = end.tv_usec + 1000000 - start.tv_usec;
++		}
++		fprintf(stderr, "\nElapsed time: %d.%06d sec\n", end.tv_sec, start.tv_usec);
++	}
++
+ 	SG(server_context) = NULL;
+ 	php_module_shutdown(TSRMLS_C);
+ 	sapi_shutdown();
+Index: 5_2_0/ext/date/lib/parse_tz.c
+===================================================================
+--- 5_2_0.orig/ext/date/lib/parse_tz.c
++++ 5_2_0/ext/date/lib/parse_tz.c
+@@ -192,39 +192,26 @@ void timelib_dump_tzinfo(timelib_tzinfo 
+ 	}
+ }
+ 
+-static int tz_search(char *timezone, int left, int right, const timelib_tzdb *tzdb)
+-{
+-	int mid, cmp;
+-
+-	if (left > right) {
+-		return -1; /* not found */
+-	}
+- 
+-	mid = (left + right) / 2;
+- 
+-	cmp = strcasecmp(timezone, tzdb->index[mid].id);
+-	if (cmp < 0) {
+-		return tz_search(timezone, left, mid - 1, tzdb);
+-	} else if (cmp > 0) {
+-		return tz_search(timezone, mid + 1, right, tzdb);
+-	} else { /* (cmp == 0) */
+-		return tzdb->index[mid].pos;
+-	}
+-}
+-
+-
+ static int seek_to_tz_position(const unsigned char **tzf, char *timezone, const timelib_tzdb *tzdb)
+ {
+-	int	pos;
+-	
+-	pos = tz_search(timezone, 0, tzdb->index_size - 1, tzdb);
++	int left = 0, right = tzdb->index_size - 1;
+ 
+-	if (pos == -1) {
+-		return 0;
+-	}
++	do {
++		int mid = ((unsigned)left + right) >> 1;
++		int cmp = strcasecmp(timezone, tzdb->index[mid].id);
++
++		if (cmp < 0) {
++			right = mid - 1;
++		} else if (cmp > 0) {
++			left = mid + 1;
++		} else { /* (cmp == 0) */
++			(*tzf) = &(tzdb->data[tzdb->index[mid].pos + 20]);
++			return 1;
++		}
++
++	} while (left <= right);
+ 
+-	(*tzf) = &(tzdb->data[pos + 20]);
+-	return 1;
++	return 0;
+ }
+ 
+ const timelib_tzdb *timelib_builtin_db(void)
+Index: 5_2_0/main/network.c
+===================================================================
+--- 5_2_0.orig/main/network.c
++++ 5_2_0/main/network.c
+@@ -441,7 +441,7 @@ php_socket_t php_network_bind_socket_to_
+ 			err = php_socket_errno();
+ 		}
+ 
+-		close(sock);
++		closesocket(sock);
+ 	}
+ 	sock = -1;
+ 
+@@ -870,7 +870,7 @@ skip_bind:
+ #endif
+ 		}
+ 
+-		close(sock);
++		closesocket(sock);
+ 	}
+ 	sock = -1;
+ 
+Index: 5_2_0/zend-endian-uni.diff
+===================================================================
+--- /dev/null
++++ 5_2_0/zend-endian-uni.diff
+@@ -0,0 +1,57 @@
++Index: Zend/zend_strtod.c
++===================================================================
++RCS file: /repository/ZendEngine2/zend_strtod.c,v
++retrieving revision 1.17.2.2.2.5
++diff -u -r1.17.2.2.2.5 zend_strtod.c
++--- Zend/zend_strtod.c	26 Dec 2006 17:17:52 -0000	1.17.2.2.2.5
+++++ Zend/zend_strtod.c	19 Jan 2007 11:38:18 -0000
++@@ -133,7 +133,7 @@
++ # endif
++ #endif
++ 
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__
++ #define IEEE_BIG_ENDIAN
++ #else
++ #define IEEE_LITTLE_ENDIAN
++Index: ext/date/lib/parse_tz.c
++===================================================================
++RCS file: /repository/php-src/ext/date/lib/parse_tz.c,v
++retrieving revision 1.20.2.6.2.10
++diff -u -r1.20.2.6.2.10 parse_tz.c
++--- ext/date/lib/parse_tz.c	18 Jan 2007 23:20:24 -0000	1.20.2.6.2.10
+++++ ext/date/lib/parse_tz.c	19 Jan 2007 11:38:18 -0000
++@@ -30,7 +30,7 @@
++ #endif
++ #include "timezonedb.h"
++ 
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__ 
++ #define timelib_conv_int(l) (l)
++ #else
++ #define timelib_conv_int(l) ((l & 0x000000ff) << 24) + ((l & 0x0000ff00) << 8) + ((l & 0x00ff0000) >> 8) + ((l & 0xff000000) >> 24)
++Index: ext/hash/hash_tiger.c
++===================================================================
++RCS file: /repository/php-src/ext/hash/hash_tiger.c,v
++retrieving revision 1.4.2.4.2.2
++diff -u -r1.4.2.4.2.2 hash_tiger.c
++--- ext/hash/hash_tiger.c	8 Jan 2007 22:29:25 -0000	1.4.2.4.2.2
+++++ ext/hash/hash_tiger.c	19 Jan 2007 11:38:19 -0000
++@@ -91,7 +91,7 @@
++ #define split_ex(str) \
++ 	x0=str[0]; x1=str[1]; x2=str[2]; x3=str[3]; \
++ 	x4=str[4]; x5=str[5]; x6=str[6]; x7=str[7];
++-#ifdef WORDS_BIGENDIAN
+++#ifdef __BIG_ENDIAN__ 
++ #	define split(str) \
++ 	{ \
++ 		int i; \
++@@ -144,7 +144,7 @@
++ 		memset(&context->buffer[context->length], 0, 56 - context->length);
++ 	}
++ 
++-#ifndef WORDS_BIGENDIAN	
+++#ifndef __BIG_ENDIAN__ 
++ 	memcpy(&context->buffer[56], &context->passed, sizeof(php_hash_uint64));
++ #else
++ 	context->buffer[56] = (unsigned char) (context->passed & 0xff);

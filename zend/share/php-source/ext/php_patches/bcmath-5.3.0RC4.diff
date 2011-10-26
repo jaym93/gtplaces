@@ -1,0 +1,11 @@
+--- php-5.3.0RC4/ext/bcmath/libbcmath/src/bcmath.h	2009-06-25 13:53:33.000000000 +0300
++++ php-5.3.0RC4/ext/bcmath/libbcmath/src/bcmath.h.patch	2009-06-25 13:53:02.000000000 +0300
+@@ -53,7 +53,7 @@
+     } bc_struct;
+ 
+ #ifdef HAVE_CONFIG_H
+-#include "config.h"
++#include "../../config.h"
+ #endif
+ 
+ #include "php.h"
