@@ -1,8 +1,8 @@
 <?php
 
-$path = 'zend/gui/library';
+$path = 'ZendFramework/library';
 set_include_path($path . PATH_SEPARATOR . get_include_path());
-$path = 'zend/share/pear';
+$path = 'pear';
 set_include_path($path . PATH_SEPARATOR . get_include_path());
 require_once("Zend/Json.php");
 include_once("Zend/Db.php");
