@@ -73,7 +73,7 @@ function insertTagsData() {
 			tx.executeSql("DELETE FROM buildingsTags", [], function(tx, results) {
 				// console.log((Date.now() - startDate) + " done clearing tags");
 				// 				startDate = Date.now();
-				$.getJSON("../../../api/gtplaces/tags", null, insertTagsDataIntoDB);
+				$.getJSON("../api/tags", null, insertTagsDataIntoDB);
 			});
 		});
 	});
@@ -502,7 +502,7 @@ function confirmFlagTag() {
 	$("#confirmFlagPopup #btnFlag").unbind('click');
     $("#confirmFlagPopup #btnFlag").click(function() {
 		console.log(tag);
-        $.post("../../../api/gtplaces/tags/" + tag + "/flag", { "bid": currentPlaceID}, function(data) {
+        $.post("../api/tags/" + tag + "/flag", { "bid": currentPlaceID}, function(data) {
 		    // console.log("flagged tag: " + tag);
 		    
 		    $("#confirmFlagPopup").hide();
@@ -575,7 +575,7 @@ function saveTag() {
 	
 	if (newTag.length != 0) {
 	    // Send a AJAX reques to save the new tag
-		$.post("../../../api/gtplaces/tags", { "bid": currentPlaceID, "tag": newTag }, function(data) {
+		$.post("../api/tags", { "bid": currentPlaceID, "tag": newTag }, function(data) {
 			// console.log("added tag!");
 		   var tagData = data.pop();
 		    
