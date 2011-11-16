@@ -223,16 +223,14 @@ function stags($tagname) {
 }
 
 function flagTag($bid,$tagname) {
-   global $db,$tag;
-	// Placeholder to call getusername()
-	$user = 'jnarayanan3';
+   global $db,$tag,$_USER;
    // $logger = new Zend_Log();
    // $writer = new Zend_Log_Writer_Stream('php://output');
    // $logger->addWriter($writer);
    // $logger->info('Informational message');
    
    $sl = $tag->find($bid, $db->quote($tagname));
-   $gtuser = $user;
+   $gtuser = $_USER['uid'];
    $flagged = 0;
    // error_log("$sl");
    foreach ($sl as $row) {
