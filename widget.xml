@@ -3,12 +3,11 @@
 	<icon>images/icon_gtplaces.png</icon>
 	<library name="jquery"/>
    <library name="jquery.mobile"/>
+    <library name="jquery.tmpl"/>
    <library name="gtmob"/>
-	<javascript file="gtplaces.js"/>
-   <css file="css/list.css"/>
-   <css file="css/reset.css"/>
-   <css file="css/placeinfo.css"/>	
-   <html file="gtplaceslist.html"/>	
+   <javascript file="gtplaces.js"/>
+   <css file="gtplaces.css"/>
+   <html file="gtplaces.html"/>	
 	<manifest>
         <text>
 <![CDATA[
@@ -18,7 +17,8 @@ NETWORK:
         </text>
         <file>buildingData.json</file>
         <directory recursive="false" filter="*.png">img</directory>  
-		  <directory recursive="false" filter="*.gif">img</directory>
-		  <directory recursive="false" filter="*.png">css</directory>
+		<directory recursive="false" filter="*.gif">img</directory>
+		<directory recursive="false" filter="*.png">css</directory>
     </manifest>
 </widget>
+

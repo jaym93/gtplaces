@@ -1,5 +1,5 @@
 var db;
-var templateRow = '<div class="searchResult" id="searchResultTemplateRow" onclick="searchResultClick(\'%%PLACEID%%\');">	<div class="placeID">%%PLACEID%%</div><div class="placeName">%%PLACENAME%%</div>	<div class="placeDistance">&nbsp;</div>	<div class="placeLinkButton">		&nbsp;	</div></div>';
+var templateRow;
 var searchTimer = null;
 var screenWidth = 0;
 var currentPlaceID = -1;
@@ -90,9 +90,7 @@ function preprocessTagsData(data) {
 	}
 	
 	var x = [];
-	//console.log(data);
-	//console.log(tagsData);
-	//var buildingids = Object.keys(tagsData);
+	
 	var buildingids = [];
 	for (bid in tagsData)
 		buildingids.push(bid);
@@ -111,15 +109,10 @@ function preprocessTagsData(data) {
 // Callback from tags fetch ajax call.
 function insertTagsDataIntoDB(data) {
 	// console.log((Date.now() - startDate) + " got new tags from server");
-	// startDate = Date.now();
+	
 	var tagsData = preprocessTagsData(data);
 	
-	// console.log((Date.now() - startDate) + " done preprocessing tags");
-	// startDate = Date.now();
-	
-	// console.log("tags_data:");
-	// console.log(tagsData);
-	
+
 	for (var i = 0; i < tagsData.length; i++) {
 		var buildingid = tagsData[i]["buildingid"];
 		var tags = tagsData[i]["tags"];
@@ -181,7 +174,7 @@ function insertJSONDataIntoDB(data) {
     // console.log("got json data, gonna process it");
 	var buildingData = data["buildingData"];
 	// console.log("buildingData:");
-	// console.log(buildingData);
+
 	
 	var building;
 	for (var i = 0; i < buildingData.length; i++) {
@@ -296,36 +289,46 @@ function dropTable() {
 	});
 }
 
-// This function takes the list of rows from the database and creates the
+// This function takes the list of rows from the database and create template rows
 // HTML of the list of places to be shown on screen
 function populateList(rows) {
-    var listString = "";
-    
-	document.getElementById("searchResultsList").innerHTML = "";
+    var listString;
+	
+	/* Instantiate the global variable as an empty array.*/
+	templateRow= {};
+	
+	$("#building_no_results_message").hide();
+	/* 
+	 * Clear the previous result elements from the HTML DOM, if they exist. This way nothing is attached to 
+	 * the searchResultsList div.
+	 */
+	$("#searchResultsList").empty();
 	
 	if (rows.length > 0) {	
 		var row = null;
         for (var i = 0; i < rows.length; i++) {
-			row = rows.item(i);
-			listString += templateRow.replace("%%PLACEID%%", row["id"]).replace("%%ID%%", row["id"]).replace("%%PLACENAME%%", row["name"]);
+			row = rows.item(i);	
+			
+			/* Add the newly created building name to the array list, with the key "buildingName" 
+			 * Add the newly created building ID to the array list, with the key "buildingName"
+			 */
+			templateRow.buildingID=row["id"];
+			templateRow.buildingName=row["name"];
+			
+			$("#buildingListTemplate").tmpl(templateRow).appendTo( "#searchResultsList" );
+			$('#searchResultsList').listview('refresh');
 		}
 	}
 	else
-	    listString = '<div class="searchResult loadMoreResults">No places found</div>';
+	    $("#building_no_results_message").show();
 	
 	$("#loadingIndicator").hide();
-	document.getElementById("searchResultsList").innerHTML = listString;
 	
-	library.changeLinksForOffline();
-	
-	// $(".searchResult").live("click", function() {
-	// 	alert($(this).children(".placeName").text());
-	// 	showPlaceInfoPage($(this).children(".placeID").text());
-	// });
+	library.changeLinksForOffline();	
 }
 
 function searchResultClick(placeID) {
-	// showPlaceInfoPage($(this).children(".placeID").text());
+	
 	showPlaceInfoPage(jQuery.trim(placeID));
 }
 
@@ -334,8 +337,7 @@ function emptyFuncHandler() {	}
 function initList() {
 	$("#loadingIndicator").hide();
 	
-	// var listString = '<div class="searchResult loadMoreResults" onclick="filterList();">Show list of all places</div>';
-	// document.getElementById("searchResultsList").innerHTML = listString;
+
 	filterList("");
 }
 
@@ -374,7 +376,6 @@ function ontxtchange() {
 	clearTimeout(searchTimer);
 	searchTimer = setTimeout(function() {filterList(searchTerm);}, 400);
 	
-	// filterList(searchTerm);
 };
 
 function getPlaceDetails(placeID, callback) {
@@ -401,114 +402,87 @@ function getPlaceTags(placeID, callback) {
 
 function showPlaceInfoPage(placeID) {
     currentPlaceID = placeID;
-	// $("#placeListMain").css("-webkit-transform","translate3d(" + -1 * (screenWidth) + "px, 0, 0)");
-	// $("#placeInfoMain").css("-webkit-transform","translate3d(" + -1 * (screenWidth) + "px, 0, 0)");
-	
-	$("#portal_header #left a img").attr("src", "img/back.png");
-	
-	// $("#portal_header #left a").live("click", function() {
-	// 	showPlaceListPage();
-	// 	return false;
-	// });
-	
-	$("#portal_header #left a").click(function() {
-		showPlaceListPage();
-		return false;
-	});
 	
 	getPlaceDetails(placeID, populatePlaceInfo);
 	
 	getPlaceTags(placeID, populatePlaceTags);
 	
-	$("#placeListMain").hide();
-	$("#placeInfoMain").show();
-	
-	library.changeLinksForOffline();
-}
-
-function showPlaceListPage() {
-    $("#tag_input").hide();
-	$("#placeInfoMain").hide();
-	$("#placeListMain").show();
-	
-	$("#portal_header #left a img").attr("src", "include/Home.png");
-	
-	// $("#portal_header #left a").die();
-	$('#portal_header #left a').unbind('click');
-	
 	library.changeLinksForOffline();
 }
 
 function populatePlaceInfo(placeInfoRows) {
+	/* Instantiate the variable as an empty array.*/
+	var templateBuildingInfo = {};
+	
+	/*Clear the previous result elements from the HTML DOM, if they exist. */
+	$("#buildingDetailInfo").empty();
+	
 	if (placeInfoRows.length > 0) {
 		var placeInfo = placeInfoRows.item(0);
-		// console.log(placeInfo);
-	
-		$("#placeInfoMain .placeName").text(placeInfo.name);
-		$("#placeInfoMain .placeAddress a").text(placeInfo.address);
-		$("#placeInfoMain .placeAddress a").attr("href", "http://maps.google.com?q=" + escape(placeInfo.address));
 		
-		$("#placeInfoMain .placeImage img").attr("src", "http://gtalumni.org/map/images/buildings/" + placeInfo.image_url);
+		/* Add the newly created building place name to the array list, with the key "placeName" 
+
+         * Add the newly created building image url to the array list, with the key "placeImageUrl"
+
+         */
+		templateBuildingInfo.placeName=placeInfo.name;
+		templateBuildingInfo.placeImageUrl= "http://gtalumni.org/map/images/buildings/" + placeInfo.image_url;
+		templateBuildingInfo.placeAddress=placeInfo.address;
+		templateBuildingInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
+		
+		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
+	
+
+$('#searchResultsList').listview('refresh');
 	}
 	else
 		alert("Place not found!");
 
 }
 
+
 function populatePlaceTags(placeTags) {
-	// console.log(placeTags);
-	
+	//console.log(placeTags);
+	var placeTagList={};
 	$("#tags_list").empty();
 
 	if (placeTags.length > 0) {
 		for (var i = 0; i < placeTags.length; i++) {
 			var placeTag = placeTags.item(i);
-	        // $("#tags_list").append("<span class='tag' id='tag" + placeTag["tag_id"] + "'>" + placeTag["tag"] + "</span> ");
-	        // $("#tags_list").append("<span class='tag' id='tag" + placeTag["tag_id"] + "'>" + placeTag["tag"] + "</span> ");
-			$("<span class='tag' id='tag" + placeTag["tag_id"] + "'>" + placeTag["tag"] + " </span> ").appendTo("#tags_list").click(confirmFlagTag);
-	        // $(".tag" + placeTag["tag_id"]).click(function() { alert("asd");});
+			
+	        placeTagList.buildingTagId =placeTag.tag_id;
+			placeTagList.buildingTag=placeTag.tag;
+			
+			$("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
+			
+			
 		}
 	}
 	else {
-		$("#tags_list").append("<p id='noTagsYet'>No tags yet...<p>")
+		$("#noTaginfo").show();
 	}
 	
-    // $("#tags_list .tag").live('click', confirmFlagTag);
 }
 
-// function confirmFlagTag(tagId, tag)
-function confirmFlagTag() {
-    var windowWidth = $(window).width(),
-        windowHeight = $(window).height();
-    
-    var tag = $(this).text().trim();
-    var spanTag = this;
-    
-    $("#confirmFlagPopup #txtFlag").text($(this).text());
-    $("#confirmFlagPopup")  .css("top", $(this).position()["top"] + "px").css("left", ((windowWidth - 245)/2) + "px")
-                            .show();
-    // $("#confirmFlagPopup #txtFlag").text($(this).text())
-    //         .css({
-    //             'left'  : ((windowWidth - 245)/2) + "px",
-    //             'top'   : "200px"
-    //         })
-    //         .show();
-    
-	$("#confirmFlagPopup #btnCancel").unbind('click');
-    $("#confirmFlagPopup #btnCancel").click(function() {
-        $("#confirmFlagPopup").hide();
-    });
-    
-	$("#confirmFlagPopup #btnFlag").unbind('click');
-    $("#confirmFlagPopup #btnFlag").click(function() {
-		console.log(tag);
-        $.post("../api/tags/" + tag + "/flag", { "bid": currentPlaceID}, function(data) {
-		    // console.log("flagged tag: " + tag);
+function confirmFlagTag(e) {
+	
+    var selectedTag=$(e).text().trim();
+	var selectedTagId = $(e).attr("id");
+	console.log(selectedTagId);
+	console.log(selectedTag);
+	$("#txtFlag").empty();
+	$("#txtFlag").append(selectedTag); 
+	
+	$("#btnFlag").click(function() {
+		//console.log(selectedTag);
+        $.post("../api/tags/" + selectedTag +"/flag", { "bid": currentPlaceID}, function(data) {
 		    
-		    $("#confirmFlagPopup").hide();
-		    $(spanTag).css("color", "red");
+		    $("#"+selectedTagId).find('a').css("color", "red");
+			$("#"+selectedTagId).css("font-size", "22px");
+			
 	    });
     });
+	
 }
 
 function findElemIn(coll, itemName, value) {
@@ -538,16 +512,7 @@ function doJSONStuff() {
 		// console.log(name);
 	}
 	
-	// console.log(JSON.stringify(buildingJSONData));
 	
-	// var x = "";
-	// 			for (var i = 0; i < buildingJSONData.length; i++)
-	// 			{
-	// 
-	// 				x += "http://"+window.location.hostname+"/gtplaces.php?id=row&bid=" + buildingJSONData[i]["id"] + "\n";
-	// 			}
-	// 			
-	// 			console.log(x);
 }
 
 function displayErrorMessage(err) {
@@ -561,11 +526,9 @@ function displayErrorMessage(err) {
 function addTag() {
 	if ($("#tag_input").is(":visible")) {
 		$("#tag_input").hide();
-		$("#add_tag_link img").attr("src", "img/button_add_up.png")
-	}
+			}
 	else {
 		$("#tag_input").show();
-		$("#add_tag_link img").attr("src", "img/button_add_down.png")
 	}
 }
 
@@ -575,7 +538,7 @@ function saveTag() {
 	
 	if (newTag.length != 0) {
 	    // Send a AJAX reques to save the new tag
-		$.post("../api/tags", { "bid": currentPlaceID, "tag": newTag }, function(data) {
+		$.post("../api/tags/", { "bid": currentPlaceID, "tag": newTag }, function(data) {
 			// console.log("added tag!");
 		   var tagData = data.pop();
 		    
@@ -611,9 +574,12 @@ function saveTag() {
 					],
 					function (tx, results) {
 						// console.log("updated db");
-						// $("#tags_list").append("<span class='tag' id='tag" + -1 + "'>" + newTag + "</span> ");
+						
 						$("#tags_list #noTagsYet").remove();
-						$("<span class='tag' id='tag" + tagData["tag_id"] + "'>" + newTag + " </span> ").appendTo("#tags_list").click(confirmFlagTag);
+						$("<span class='tag' id='tag" + tagData["tag_id"] + "'>" + "<a href='#confirmFlagPopup' data-role='button' data-inline='true' data-rel='dialog' data-transition='pop'>"+ newTag + "</a>" +" </span> ").appendTo("#tags_list").click(function(){
+							confirmFlagTag(this);
+						});
+					
 						$("#new_tag").val("");
 						$("#tag_input").hide();
 					},
@@ -635,25 +601,8 @@ function body_onload() {
 	$("#tag_button").click(saveTag);
 	$("#cancel_new_tag").click(function() { $("#tag_input").hide(); })
 	
-	// set the widths of the screen divs, etc so that we can slide them left and right
-	// using either just javascript or css3 animations
-	// right now these animations are slow and have been disabled
-	screenWidth = $(window).width();
 	
-	$("#screens").width(screenWidth*2);
-				
-	$("#placeListMain").width(screenWidth - 20);
-	$("#placeInfoMain").width(screenWidth - 20);
-	
-	$("#placeInfoMain").css("left", screenWidth);
-	$(window).resize(function() {
-   	screenWidth = $(window).width();
-      $("#screens").width(screenWidth*2);          
-      $("#placeListMain").width(screenWidth - 20);
-      $("#placeInfoMain").width(screenWidth - 20);
-    	$("#placeInfoMain").css("left", screenWidth);
-   });	
-	$("#loadingIndicator").hide();
+	//$("#loadingIndicator").hide();
 	
 	startDate = Date.now();
 	
