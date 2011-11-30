@@ -14,12 +14,6 @@
 						</div> <!--/searchTxtWrapper-->
 					
 					
-					<!--<div id="loadingIndicator" style="display: none">
-						<img src="img/loadingAnimation.gif" alt="Loading..."/>
-						<div id="loadingIndicatorText">
-							Loading...
-						</div>
-					</div>-->
 					
 					<script id="buildingListTemplate" type="text/x-jquery-tmpl">
 						<li id="buildingList" onclick="searchResultClick('${buildingID}');">
@@ -39,84 +33,92 @@
 				</div><!-- /page -->
 				
 				<!--building info page-->
-		<div id="placeInfoMain" data-role="page" >
+		<div id="placeInfoMain" data-role="page" data-theme='d' >
 					
 					<div data-role="header" data-position="inline" data-theme='d'>
-						<a href="#placeListMain" data-icon="back" data-theme="c">Back</a>
+						<a href="#placeListMain" data-icon="back" data-theme="c" data-iconpos="notext">Back</a>
 		               <h1>GT Places</h1>
 	                </div><!-- /header -->
 
-	            <div data-role="content">	
+	            <div data-role="content" data-content-theme="c">	
 		                
 	             <script id="buildingInfoTemplate" type="text/x-jquery-tmpl">
-	               	<ul data-role="listview" data-theme="c" data-dividertheme="c" class="ui-listview">
-					<li class="ui-li ui-li-static ui-body-c ui-li-has-thumb">               	
-						<img src="${placeImageUrl}" class="ui-li-thumb">	   
-						<h3 class="ui-li-heading">${placeName}</h3>
-	                </li>
+	               
+					<div id="building_information"> 
+					   <div id="building_info_image">           	
+						<img src="${placeImageUrl}">
+					   </div>	
+					   
+					   <div id="building_info_name">	   
+						<h3>${placeName}</h3>
+					   </div>	
+	                </div>
+				     			
+				 </script>
 					
-					<li class="ui-btn ui-btn-icon-right ui-li-has-arrow ui-li ui-btn-down-c ui-btn-up-c">
-	                  <div class="ui-btn-inner ui-li">
-	                   	<div lass="ui-btn-text">
-	                   	  <a href="${placeAddressUrl}" target="_blank" class="ui-link-inherit">
-						  <h3 class="ui-li-heading">Address</h3>
-						  <p class="ui-li-desc">${placeAddress}</p>
-						  </a>
-						</div>
-						<span class="ui-icon ui-icon-arrow-r ui-icon-shadow"></span>
-					  </div>
-	                </li>
-					</ul>
-					</script>
+				<script id="buildingAddressTemplate" type="text/x-jquery-tmpl">
+						  	       
+					<a href="${placeAddressUrl}" id="building_place_address"> ${placeAddress}</a>
+										
+				</script>	
+									
 					
 					<script id="tagInfoTemplate" type="text/x-jquery-tmpl">
 						<span class="tag" id="${buildingTagId}" onclick="confirmFlagTag(this);">
 							<a href="#confirmFlagPopup" data-role="button" data-inline="true" data-rel="dialog" data-transition="pop">${buildingTag}</a>
-						</span>
-						
+						</span>					
 					</script>	
 					
 				<div id="buildingDetailInfo">
 				</div>		
 				
-				<ul data-role="listview" data-theme="c" data-dividertheme="c">
+				<ul data-role="listview" data-inset="true" id="building_info_others">
+					<li class="list-item-schedule">
+					  <div id="building_address" class="ui-grid-a">
+						 <div class="ui-block-a"><b>Address</b></div>
+						 <div class="ui-block-b" id="building_address_link"></div> 
+					  </div>
+					 </li> 	
 					
-					<li >
-						    <h3 class="placePhoneLabel ui-li-heading" >
-								Phone
-							</h3>
-							<p class="placePhone ui-li-desc">
+					<li class="list-item-schedule">
+					<div id="building_info_phone" class="ui-grid-a">
+						    <div class="ui-block-a placePhoneLabel">
+								<b>Phone</b>
+							</div>
+							<div class="ui-block-b placePhone">
 								(404) 123 4567
-							</p>
+							</div>
+					</div>
 					</li>
 					
-					<li >
-						    <h3 class="placeTagsLabel ui-li-heading" >
-								Tags
-							</h3>
-							<p class="ui-li-desc" id="taginfo">
+					<li class="list-item-schedule">
+					<div id="building_info_tag" class="ui-grid-a">
+						    <div class="ui-block-a placeTagsLabel">
+								<b>Tags</b>
+							</div>
+							
+							<div class="ui-block-b" id="taginfo">
 								<div id="tags_list"></div>
-							</p>
+							</div>
 							
-							<p class="ui-li-desc" id="noTaginfo">
+							<div class="ui-block-b" id="noTaginfo">
 								No tags yet.
-							</p>
+							</div>
 							
-		 <div id="placeTagControls">
+	 <div id="placeTagControls">
 		 
 		 <a class="image_buttons" id="add_tag_link" data-role="button" data-icon="plus" data-theme='c' data-inline="true">Tag</a>
 			<div class="addTagContainer">
 			   <div id="tag_input" style="display: none;" >
-			      <div data-role="fieldcontain" class="ui-hide-label">
+			      <div data-role="fieldcontain" class="ui-hide-label" >
 	              <!--<label for="new_tag"></label>-->
-	              <input type="text" name="new_tag" id="new_tag" value="" placeholder="New tag" data-inline="true"/> <input type="button" id="tag_button" value="Add" data-inline="true">
-                  </div>
-				  
-				  
-				  
+	              <input type="text" name="new_tag" id="new_tag" placeholder="New tag" data-inline="true"/>
+				  <input type="button" id="tag_button" value="Add" data-inline="true">
+                  </div>	  	  
 			   </div>
 			</div>
 	    </div>		
+					</div>
 					</li>
                 </ul>
 

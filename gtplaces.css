@@ -1,4 +1,4 @@
-body{
+#placeListMain{
 	text-align:center;
 }
 #searchTxtWrapper{
@@ -13,9 +13,13 @@ body{
 #searchResultsList{
 	margin-top:10px;
 }
+
+#placeInfoMain{
+	background-color:
+}
 #buildingDetailInfo img{
-margin:auto;
-width: 80px;
+margin-right:10px;
+width: 95px;
 border: 2px solid #666666;
 -webkit-border-radius: 3px 3px 3px 3px;
 -moz-border-radius: 3px 3px 3px 3px;
@@ -31,5 +35,61 @@ border-radius: 3px 3px 3px 3px;
 	font-weight:normal;
 }
 
+.ui-li-divider, .ui-li-static{
+	font-size:14px;
+}
 
+#building_information{
+	display:block;
+	width:auto;
+	height:100px;
+	
+}
+#building_info_image {
+	margin: 0;
+height: auto;
+width: 95px;
+float: left;
+position:absolute;
+}
 
+#building_info_name {
+	height: auto;
+width: auto;
+float: right;
+font-size:14px;
+position: absolute;
+left: 130px;
+}
+
+#building_info_name h3{
+	
+}
+
+#building_info_others{
+	display:block;
+}
+
+.placePhone{
+	font-size:12px;
+}
+
+#building_address_link a{
+	font-size:12px;
+}
+
+#noTaginfo{
+	font-size:12px;
+}
+
+.ui-block-a{
+	float:left;
+}
+.ui-block-b{
+	float:right;
+	vertical-align:middle;
+}
+input.ui-input-text, textarea.ui-input-text, .ui-input-search{
+	width: 40%;
+display: inline-block;
+}

@@ -24,7 +24,8 @@ function initDB() {
 			  	tx.executeSql('CREATE TABLE IF NOT EXISTS buildings (id, name, address, image_url, latitude, longitude, tags)', [], function(tx, results) {
 					// all is good - either the table already exists or we created it first
 
-					$("#loadingIndicator").show();
+					//$("#loadingIndicator").show();
+					$.mobile.showPageLoadingMsg(); //show loading icons
 					
 					tx.executeSql("SELECT COUNT(*) as recordCount FROM buildings", [], function(tx, results) {
 						var recordCount = results.rows.item(0)["recordCount"];
@@ -322,7 +323,8 @@ function populateList(rows) {
 	else
 	    $("#building_no_results_message").show();
 	
-	$("#loadingIndicator").hide();
+	//$("#loadingIndicator").hide();
+	 $.mobile.hidePageLoadingMsg();//hide loading icons
 	
 	library.changeLinksForOffline();	
 }
@@ -335,8 +337,8 @@ function searchResultClick(placeID) {
 function emptyFuncHandler() {	}
 
 function initList() {
-	$("#loadingIndicator").hide();
-	
+	//$("#loadingIndicator").hide();
+	 $.mobile.hidePageLoadingMsg();//hide loading icons
 
 	filterList("");
 }
@@ -413,9 +415,12 @@ function showPlaceInfoPage(placeID) {
 function populatePlaceInfo(placeInfoRows) {
 	/* Instantiate the variable as an empty array.*/
 	var templateBuildingInfo = {};
+	var buildingAddressInfo={};
 	
 	/*Clear the previous result elements from the HTML DOM, if they exist. */
 	$("#buildingDetailInfo").empty();
+	
+	$("#building_address_link").empty();
 	
 	if (placeInfoRows.length > 0) {
 		var placeInfo = placeInfoRows.item(0);
@@ -427,13 +432,15 @@ function populatePlaceInfo(placeInfoRows) {
          */
 		templateBuildingInfo.placeName=placeInfo.name;
 		templateBuildingInfo.placeImageUrl= "http://gtalumni.org/map/images/buildings/" + placeInfo.image_url;
-		templateBuildingInfo.placeAddress=placeInfo.address;
-		templateBuildingInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
+		
+		buildingAddressInfo.placeAddress=placeInfo.address;
+		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
 		
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 	
-
-$('#searchResultsList').listview('refresh');
+        $('#searchResultsList').listview('refresh');
+		
+		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo( "#building_address_link");
 	}
 	else
 		alert("Place not found!");
@@ -478,7 +485,7 @@ function confirmFlagTag(e) {
         $.post("../api/tags/" + selectedTag +"/flag", { "bid": currentPlaceID}, function(data) {
 		    
 		    $("#"+selectedTagId).find('a').css("color", "red");
-			$("#"+selectedTagId).css("font-size", "22px");
+			$("#"+selectedTagId).css("font-size", "12px");
 			
 	    });
     });
@@ -603,6 +610,7 @@ function body_onload() {
 	
 	
 	//$("#loadingIndicator").hide();
+	 $.mobile.hidePageLoadingMsg();//hide loading icons
 	
 	startDate = Date.now();
 	
