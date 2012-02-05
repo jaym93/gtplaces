@@ -115,7 +115,7 @@ function searchByTagname($tagname) {
 
 function searchByBuildingName($bname) {
    global $db;
-   $sl = $db->select()->from("buildings", array("b_id", "name", "address", "image_url"))->where("name LIKE ?", "%".implode("%", explode(" ", strtolower($bname)))."%");
+   $sl = $db->select()->from("buildings", array("b_id", "name", "address", "image_url","longitude","latitude"))->where("name LIKE ?", "%".implode("%", explode(" ", strtolower($bname)))."%");
    $qu = $sl->query();
    fb($sl->__toString(), "Query");
    $row_values = array();
