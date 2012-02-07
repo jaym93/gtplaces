@@ -94,9 +94,3 @@ input.ui-input-text, textarea.ui-input-text, .ui-input-search{
 display: inline-block;
 }
 
-/* icons sizing */
-.ui-icon { 
-   width: 20px; 
-   height: 20px; 
-   margin: 1px; 
-}
