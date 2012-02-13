@@ -174,15 +174,12 @@ function insertTagsDataIntoDB(data) {
 
 function insertJSONDataIntoDB(data) {
 	var buildingData = data["buildingData"];
-//	console.log("buildingData:");
 	
 	var building;
 
 	for (var i = 0; i < buildingData.length; i++) {
 
 		building = buildingData[i];
-      //console.log(building);
-
 
 		var insertFunc = function(bldg, currentIdx, maxIdx) {
 			// this function "closes-over" the local scope which includes the bldg variable
@@ -199,15 +196,12 @@ function insertJSONDataIntoDB(data) {
 						""
 					],
 					function(tx, results) {
-						// console.log("inserted" + currentIdx);
 						// Check if we have finished inserting all the records
 						if (currentIdx == maxIdx) {
-							// console.log("all done inserting records, now gonna initlist");
 							insertTagsData();
 							// initList();
 						}
 										
-						// console.log("Wrote row: " + bldg["name"]);
 					},
 					function(tx, err) { // handle create table errors
 						displayErrorMessage(err);
@@ -408,7 +402,6 @@ function populatePlaceInfo(placeInfoRows) {
 		buildingAddressInfo.placeAddress=placeInfo.address;
 		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
 		buildingAddressInfo.phone_num=placeInfo.phone_num;
-console.log(buildingAddressInfo.placeName + " " + buildingAddressInfo.phone_num);		
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 	
       $('#searchResultsList').listview('refresh');
