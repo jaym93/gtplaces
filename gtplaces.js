@@ -419,6 +419,7 @@ function populatePlaceTags(placeTags) {
 	//console.log(placeTags);
 	var placeTagList={};
 	$("#tags_list").empty();
+	$("#noTaginfo").hide();
 
 	if (placeTags.length > 0) {
 		for (var i = 0; i < placeTags.length; i++) {
