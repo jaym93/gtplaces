@@ -62,7 +62,10 @@
 										
 				</script>	
 									
-					
+			    <script id="phoneNumberTemplate" type="text/x-jquery-tmpl">
+					<a href="tel:${phone_num}">${phone_num}</a>
+				 </script>		
+
 					<script id="tagInfoTemplate" type="text/x-jquery-tmpl">
 						<span class="tag" id="${buildingTagId}" onclick="confirmFlagTag(this);">
 							<a href="#confirmFlagPopup" data-role="button" data-inline="true" data-rel="dialog" data-transition="pop">${buildingTag}</a>
@@ -81,14 +84,10 @@
 					 </li> 	
 					
 					<li class="list-item-schedule">
-					<div id="building_info_phone" class="ui-grid-a">
-						    <div class="ui-block-a placePhoneLabel">
-								<b>Phone</b>
-							</div>
-							<div class="ui-block-b placePhone">
-								(404) 123 4567
-							</div>
-					</div>
+						<div id="building_info_phone" class="ui-grid-a">
+						   <div class="ui-block-a placePhoneLabel"><b>Phone</b></div>
+							<div class="ui-block-b placePhone" id="phone_num_link"></div>
+						</div>
 					</li>
 					
 					<li class="list-item-schedule">

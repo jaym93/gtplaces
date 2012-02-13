@@ -101,7 +101,7 @@ function getBuildingTags() {
 
 function searchByTagname($tagname) {
 	global $db;
-   $sl = $db->select()->from("buildings", array("b_id","name","address","image_url"))->joinLeftUsing("tags","b_id",array("tag_name"))->where("tag_name LIKE ?", (preg_match("/^'.*?'$/", $tagname)) ? $tagname : $db->quote($tagname));
+   $sl = $db->select()->from("buildings", array("b_id","name","address","image_url","phone_num"))->joinLeftUsing("tags","b_id",array("tag_name"))->where("tag_name LIKE ?", (preg_match("/^'.*?'$/", $tagname)) ? $tagname : $db->quote($tagname));
 // echo $sl;
    $qu = $sl->query();
    fb($sl->__toString(), "Query");
@@ -115,7 +115,7 @@ function searchByTagname($tagname) {
 
 function searchByBuildingName($bname) {
    global $db;
-   $sl = $db->select()->from("buildings", array("b_id", "name", "address", "image_url","longitude","latitude"))->where("name LIKE ?", "%".implode("%", explode(" ", strtolower($bname)))."%");
+   $sl = $db->select()->from("buildings", array("b_id", "name", "address", "image_url","longitude","latitude","phone_num"))->where("name LIKE ?", "%".implode("%", explode(" ", strtolower($bname)))."%");
    $qu = $sl->query();
    fb($sl->__toString(), "Query");
    $row_values = array();
@@ -134,7 +134,8 @@ function getRowById($bid) {
 function addTag($bid,$tagname) {
    global $db,$tag;
 	//Placeholder to call getusername()
-	$user = 'jnarayanan3';
+	global $_USER;
+   $user = $_USER['uid'];
    $sl = $tag->find($bid, $db->quote($tagname));
    $cols = array("b_id" => $bid, "tag_name" => $db->quote(strtolower($tagname))); //"gtuser" => $_GET["user"]);
    if ($sl->count() == 0) {
@@ -166,7 +167,7 @@ function getTagNames() {
 function getTagsList() {
 	global $db;
    //$rvals = $db->query("SELECT b_id, name, tag_name FROM buildings, tags WHERE b_id = bid;");
-   $rvals = $db->select()->from("buildings", array("b_id","name","address","image_url","latitude","longitude"))->joinLeftUsing("tags", "b_id", array("tag_name"))->order("b_id ASC");
+   $rvals = $db->select()->from("buildings", array("b_id","name","address","image_url","latitude","longitude","phone_num"))->joinLeftUsing("tags", "b_id", array("tag_name"))->order("b_id ASC");
    $stmt = $rvals->query();
    $row_values = array();
    $prev_bid ="";
@@ -203,6 +204,7 @@ function getTagsList() {
 		$prev_row['image_url']=$row['image_url'];
       $prev_row['latitude']=$row['longitude'];
       $prev_row['longitude']=$row['latitude'];
+		$prev_row['phone_num']=$row['phone_num'];
       //$prev_row = $row; //maybe not coz we dont want the tag_name col.
    }
    fb($row_values);

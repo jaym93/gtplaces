@@ -21,7 +21,7 @@ function initDB() {
 			
 			// create required tables if they don't exist
 			db.transaction(function (tx) {
-			  	tx.executeSql('CREATE TABLE IF NOT EXISTS buildings (id, name, address, image_url, latitude, longitude, tags)', [], function(tx, results) {
+			  	tx.executeSql('CREATE TABLE IF NOT EXISTS buildings (id, name, address, image_url, latitude, longitude, phone_num,tags)', [], function(tx, results) {
 					// all is good - either the table already exists or we created it first
 
 					//$("#loadingIndicator").show();
@@ -29,18 +29,19 @@ function initDB() {
 					
 					tx.executeSql("SELECT COUNT(*) as recordCount FROM buildings", [], function(tx, results) {
 						var recordCount = results.rows.item(0)["recordCount"];
-
 						// we have no records, let's fetch the data and insert it
 						if (recordCount == 0) {
 							// make an xmlhttprequest to fetch the list of buildings
 							// Building details are loaded from static file rather than database to improve performance.
 							// When a new place gets added to the database,this file needs to be updated.
-							$.getJSON("buildingData.json", insertJSONDataIntoDB);
+							$.getJSON("../buildingData.json", insertJSONDataIntoDB);
 						}
 						else {
 							// console.log((Date.now() - startDate) + " gonna clear tags table");
 							// 							startDate = Date.now();
+							initList();
 							insertTagsData();
+
 						}
 					});
 				},
@@ -150,7 +151,7 @@ function insertTagsDataIntoDB(data) {
 												// console.log("all done");
 											 	// console.log((Date.now() - startDate) + " all done updating tags in buildings");
 												// startDate = Date.now();
-												initList();
+												//initList();
 											}
 										},
 										function(tx, err) { // handle create table errors
@@ -172,26 +173,29 @@ function insertTagsDataIntoDB(data) {
 }
 
 function insertJSONDataIntoDB(data) {
-    // console.log("got json data, gonna process it");
 	var buildingData = data["buildingData"];
-	// console.log("buildingData:");
-
+//	console.log("buildingData:");
 	
 	var building;
+
 	for (var i = 0; i < buildingData.length; i++) {
+
 		building = buildingData[i];
-		
+      //console.log(building);
+
+
 		var insertFunc = function(bldg, currentIdx, maxIdx) {
 			// this function "closes-over" the local scope which includes the bldg variable
 			return function(tx) {
-				tx.executeSql("INSERT INTO buildings VALUES(?, ?, ?, ?, ?, ?, ?)", 
+				tx.executeSql("INSERT INTO buildings VALUES(?, ?, ?, ?, ?, ?, ?, ?)", 
 					[
-						bldg["id"], 
+						bldg["b_id"], 
 						bldg["name"], 
 						bldg["address"], 
 						bldg["image_url"],
 						bldg["latitude"], 
 						bldg["longitude"],
+						bldg["phone_num"],
 						""
 					],
 					function(tx, results) {
@@ -212,41 +216,9 @@ function insertJSONDataIntoDB(data) {
 		}(building, i, buildingData.length - 1);
 
 		db.transaction(insertFunc);
-	}
-}
 
-function testDB() {
-	var ctr = 0;
-	
-	db.transaction(function(tx) {
-		tx.executeSql("SELECT COUNT(*) FROM buildings", [], function(tx, results) {
-			console.log("total number:");
-			console.log(results.rows.item(0));
-		});
-	});
-	
-	for (var i = 0; i < buildingJSONData2.length; i++) {
-		var building = buildingJSONData2[i];
-		
-		db.transaction(function(id, name, ctr) {
-			return function(tx) {
-				tx.executeSql("SELECT name FROM buildings where name = ?", [name], function(tx, results) {
-					if (results.rows.length == 0)
-						console.log(name + " not found!");
-					else if (results.rows.length > 1)
-						console.log(name + " more than one result found!");
-					else
-					{
-						tx.executeSql("UPDATE buildings SET id = ? WHERE name = ?", [id, name], function(tx, results) {
-							console.log("OK updated! " + id + " " + name);
-						});
-					}
-				});
-			}
-		}(building["id"], building["name"], ctr));
 	}
-	
-	// console.log("TOTAL MATCHED:" + ctr);
+
 }
 
 function loadDataIntoDB() {
@@ -381,7 +353,7 @@ function ontxtchange() {
 };
 
 function getPlaceDetails(placeID, callback) {
-	var query = "SELECT name, address, image_url FROM buildings where id = ?";
+	var query = "SELECT name, address, image_url, phone_num FROM buildings where id = ?";
 	var queryParams = [placeID];
 	
 	db.transaction(function(tx) {
@@ -419,8 +391,8 @@ function populatePlaceInfo(placeInfoRows) {
 	
 	/*Clear the previous result elements from the HTML DOM, if they exist. */
 	$("#buildingDetailInfo").empty();
-	
 	$("#building_address_link").empty();
+	$("#phone_num_link").empty();
 	
 	if (placeInfoRows.length > 0) {
 		var placeInfo = placeInfoRows.item(0);
@@ -435,12 +407,14 @@ function populatePlaceInfo(placeInfoRows) {
 		
 		buildingAddressInfo.placeAddress=placeInfo.address;
 		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
-		
+		buildingAddressInfo.phone_num=placeInfo.phone_num;
+console.log(buildingAddressInfo.placeName + " " + buildingAddressInfo.phone_num);		
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 	
-        $('#searchResultsList').listview('refresh');
+      $('#searchResultsList').listview('refresh');
 		
 		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo( "#building_address_link");
+		$("#phoneNumberTemplate").tmpl(buildingAddressInfo).appendTo("#phone_num_link");
 	}
 	else
 		alert("Place not found!");
