@@ -16,8 +16,8 @@
 	<command id='buildings' security='public'>
    	<description></description>
 	   <index>
-   	   <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude and image url]]></description>
-      	<action file='gtplaces.php'><![CDATA[getAllBuildings();]]></action>
+   	   <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude,image url and tags]]></description>
+      	<action file='gtplaces.php'><![CDATA[getTagsList();]]></action>
 	   </index>
 		<get>
          <description><![CDATA[Search by Building name]]></description>
@@ -27,8 +27,8 @@
 	<command id='buildings_tags' security='public'>
       <description></description>
       <index>
-         <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude,image url and list of tags]]></description>
-         <action file='gtplaces.php'><![CDATA[getTagsList();]]></action>
+         <description><![CDATA[Returns list of all buildings with building id and tags]]></description>
+         <action file='gtplaces.php'><![CDATA[getBuildingsTags();]]></action>
       </index>
    </command>
    <command id='tags' security='public'>

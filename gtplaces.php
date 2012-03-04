@@ -86,14 +86,47 @@ function getUser($columns) {
    }
 }
 
-function getBuildingTags() {
+/*
+Added by Janani Narayanan
+*************************
+Returns a list of building ids and tag names associated with a 
+building.Buildings and Tags have a many to many relationship.
+The sql statement returns all tags ordered in ascending order
+of building id.The conditional statement in for loop checks if 
+a tag belongs to a new building or same building as previous 
+row and consolidates tags belonging to the same building by 
+pushing them into array $row_values.
+*/
+function getBuildingsTags() {
 	global $db;
-   $rvals = $db->select()->from("tags", array("b_id","tag_name"));
-   $stmt = $rvals->query();
+   $rvals = $db->select()->from("tags", array("b_id","tag_name"))->order("b_id ASC");
+
+	$stmt = $rvals->query();
    $row_values = array();
-   foreach ($stmt->fetchAll() as $row) {
-      fb($row);
-      array_push($row_values, $row);
+   $prev_bid ="";
+   $tlist="";
+   $patterns = array();
+   $patterns[0] = "/^'*/";
+   $patterns[1] = "/'*$/";
+
+	foreach ($stmt->fetchAll() as $row) {
+
+      $curr_bid = $row['b_id'];
+
+      if ($prev_bid != $curr_bid)
+      { //make a new taglist since a new building has appeared
+          if (isset($prev_row))
+          { //to make sure its not the 1st row
+            $prev_row['tag_list']=$tlist;
+            array_push($row_values, $prev_row);//push into row_values the current row. 
+          }
+         $tlist= array();
+      }
+      array_push($tlist,preg_replace($patterns,"",$row['tag_name']));
+
+      $prev_bid = $curr_bid;
+		$prev_row['b_id']=$row['b_id'];
+
    }
    $ze = Zend_Json::encode($row_values);
    echo $ze;
@@ -175,13 +208,6 @@ function getTagsList() {
    $patterns = array();
    $patterns[0] = "/^'*/";
    $patterns[1] = "/'*$/";
-
-   /*
-   foreach ($stmt->fetchAll() as $row) {
-      fb($row);
-      array_push($row_values, $row);
-   }
-   */
 
    foreach ($stmt->fetchAll() as $row) {
       $curr_bid = $row['b_id'];

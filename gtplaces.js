@@ -30,6 +30,7 @@ function initDB() {
 					tx.executeSql("SELECT COUNT(*) as recordCount FROM buildings", [], function(tx, results) {
 						var recordCount = results.rows.item(0)["recordCount"];
 						// we have no records, let's fetch the data and insert it
+console.log("record count = " + recordCount);
 						if (recordCount == 0) {
 							// make an xmlhttprequest to fetch the list of buildings
 							// Building details are loaded from static file rather than database to improve performance.
@@ -37,12 +38,10 @@ function initDB() {
 							$.getJSON("../buildingData.json", insertJSONDataIntoDB);
 						}
 						else {
-							// console.log((Date.now() - startDate) + " gonna clear tags table");
-							// 							startDate = Date.now();
-							initList();
-							insertTagsData();
-
-						}
+							/*
+								Returns list of building id and all tags for the building.
+							*/
+							$.getJSON("../api/buildings_tags", null, insertTagsDataIntoDB);}
 					});
 				},
 				function(tx, err) { // handle create table errors 
@@ -68,104 +67,41 @@ function initDB() {
 	}
 }
 
-// Get the latest set of tags for places
-function insertTagsData() {
-	db.transaction(function (tx) {
-		tx.executeSql('CREATE TABLE IF NOT EXISTS buildingsTags (buildingid, tag_id, tag)', [], function (tx, results) {
-			tx.executeSql("DELETE FROM buildingsTags", [], function(tx, results) {
-				// console.log((Date.now() - startDate) + " done clearing tags");
-				// 				startDate = Date.now();
-				$.getJSON("../api/tags", null, insertTagsDataIntoDB);
-			});
-		});
-	});
-}
-
-// Convert the returned json object into a form that is easier to insert into the local html5 db
-function preprocessTagsData(data) {
-	var tagsData = {};
-	for (var i = 0; i < data.length; i++) {
-		if (tagsData[data[i]["b_id"]] == null)
-			tagsData[data[i]["b_id"]] = [{"id": data[i]["tag_id"], "tag": data[i]["tag_name"].replace("'", "").replace("'", "")}];
-		else
-			tagsData[data[i]["b_id"]].push({"id": data[i]["tag_id"], "tag": data[i]["tag_name"].replace("'", "").replace("'", "")});
-	}
-	
-	var x = [];
-	
-	var buildingids = [];
-	for (bid in tagsData)
-		buildingids.push(bid);
-
-	for (var i = 0; i < buildingids.length; i++) {
-		var bid = buildingids[i];
-		x.push({
-			"buildingid": bid,
-			"tags": tagsData[bid]
-		});
-	}
-	
-	return x;
-}
-
-// Callback from tags fetch ajax call.
-function insertTagsDataIntoDB(data) {
-	// console.log((Date.now() - startDate) + " got new tags from server");
-	
-	var tagsData = preprocessTagsData(data);
-	
-
+/* 
+Modified by Janani Narayanan
+*************************
+Callback from tags fetch ajax call to add tags to a building.
+*/
+function insertTagsDataIntoDB(tagsData) {
 	for (var i = 0; i < tagsData.length; i++) {
-		var buildingid = tagsData[i]["buildingid"];
-		var tags = tagsData[i]["tags"];
-		var allTagsString = "";
-		
+		var buildingid = tagsData[i].b_id;
+      var tags = tagsData[i].tag_list;
+      var allTagsString = "";
+	 	
 		var insertBuildingTagFunc = function(buildingid, tags, currentBldgIdx, maxBldgIdx) {
 			return function(tx) {
 				for (var j = 0; j < tags.length; j++) {
-					var tagid = tags[j]["id"];
-					var tag = tags[j]["tag"];
+					allTagsString += tags[j] + " ";
+				}
 
-					allTagsString += tag + " ";
-
-					tx.executeSql("INSERT INTO buildingsTags VALUES(?, ?, ?)",
-									[
-										buildingid,
-										tagid,
-										tag
-									],
-						function(buildingid, tag, currentTagIdx, maxTagIdx) {
-							return function(tx, results) {
-								// console.log(currentTagIdx + "/" + maxTagIdx + " inserted for building id:" + buildingid + " " + tag);
-								if (currentTagIdx == maxTagIdx) {
-									//console.log(allTagsString);
-									tx.executeSql("UPDATE buildings SET tags = ? WHERE id = ?",
-											[
-												allTagsString,
-												buildingid
-											],
-										function(tx, results) {
-											// console.log("updated building tags: " + allTagsString + " for building id:" + buildingid);
-										   allTagsString = "";
-											if (currentBldgIdx == maxBldgIdx) {
-												// console.log("all done");
-											 	// console.log((Date.now() - startDate) + " all done updating tags in buildings");
-												// startDate = Date.now();
-												//initList();
-											}
-										},
-										function(tx, err) { // handle create table errors
-											displayErrorMessage(err);
-										});
-												
-									}
-								}
-							}(buildingid, tag, j+1, tags.length),
-									
-							function(tx, err) { // handle create table errors
-								displayErrorMessage(err);
-							});
-						}
+				tx.executeSql("UPDATE buildings SET tags = ? WHERE id = ?",
+				[
+					allTagsString,
+					buildingid
+				],
+				function(tx, results) {
+					// console.log("updated building tags: " + allTagsString + " for building id:" + buildingid);
+					allTagsString = "";
+					if (currentBldgIdx == maxBldgIdx) {
+						// console.log("all done");
+						// console.log((Date.now() - startDate) + " all done updating tags in buildings");
+						// startDate = Date.now();
+						initList();
+					}
+				},
+				function(tx, err) { // handle create table errors
+					displayErrorMessage(err);
+				});
 			};
 		}
 		db.transaction(insertBuildingTagFunc(buildingid, tags, i+1, tagsData.length));
@@ -198,8 +134,8 @@ function insertJSONDataIntoDB(data) {
 					function(tx, results) {
 						// Check if we have finished inserting all the records
 						if (currentIdx == maxIdx) {
-							insertTagsData();
-							// initList();
+							$.getJSON("../api/buildings_tags", null, insertTagsDataIntoDB);
+							initList();
 						}
 										
 					},
@@ -239,7 +175,8 @@ function loadDataIntoDB() {
 	else
 		alert("No database found...");
 }
-
+/*
+// Unused methods - commented out by Janani Narayanan
 function truncateTable() {
 	db.transaction(function(tx) {
 		tx.executeSql("DELETE FROM buildings", [], function(tx, results) {
@@ -255,9 +192,9 @@ function dropTable() {
 		});
 	});
 }
-
+*/
 // This function takes the list of rows from the database and create template rows
-// HTML of the list of places to be shown on screen
+// HTML of the list of places to be shown on screen 
 function populateList(rows) {
     var listString;
 	
@@ -289,7 +226,6 @@ function populateList(rows) {
 	else
 	    $("#building_no_results_message").show();
 	
-	//$("#loadingIndicator").hide();
 	 $.mobile.hidePageLoadingMsg();//hide loading icons
 	
 	library.changeLinksForOffline();	
@@ -303,7 +239,6 @@ function searchResultClick(placeID) {
 function emptyFuncHandler() {	}
 
 function initList() {
-	//$("#loadingIndicator").hide();
 	 $.mobile.hidePageLoadingMsg();//hide loading icons
 
 	filterList("");
@@ -357,8 +292,14 @@ function getPlaceDetails(placeID, callback) {
 	});
 }
 
+/*
+Modified by Janani Narayanan
+****************************
+Function to query buildings to display tags 
+for the selected building.
+*/
 function getPlaceTags(placeID, callback) {
-	var query = "SELECT tag_id, tag FROM buildingsTags where buildingid = ?";
+	var query = "SELECT id,tags FROM buildings where id = ?";
 	var queryParams = [placeID];
 	
 	db.transaction(function(tx) {
@@ -416,22 +357,19 @@ function populatePlaceInfo(placeInfoRows) {
 
 
 function populatePlaceTags(placeTags) {
-	//console.log(placeTags);
 	var placeTagList={};
 	$("#tags_list").empty();
 	$("#noTaginfo").hide();
 
-	if (placeTags.length > 0) {
-		for (var i = 0; i < placeTags.length; i++) {
-			var placeTag = placeTags.item(i);
-			
-	        placeTagList.buildingTagId =placeTag.tag_id;
-			placeTagList.buildingTag=placeTag.tag;
-			
-			$("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
-			
-			
-		}
+	var placeTag = placeTags.item(0);
+
+	if(placeTag.tags != "") {
+         var currTokens = placeTag.tags.split(" ");
+			for (var i = 0; i < currTokens.length; i++) {
+				placeTagList.buildingId = placeTag.id;
+				placeTagList.buildingTag = currTokens[i];
+				$("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
+			}			
 	}
 	else {
 		$("#noTaginfo").show();
