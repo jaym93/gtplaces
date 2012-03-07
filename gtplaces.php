@@ -228,8 +228,8 @@ function getTagsList() {
       $prev_row['name']=$row['name'];
       $prev_row['address']=$row['address'];
 		$prev_row['image_url']=$row['image_url'];
-      $prev_row['latitude']=$row['longitude'];
-      $prev_row['longitude']=$row['latitude'];
+      $prev_row['latitude']=$row['latitude'];
+      $prev_row['longitude']=$row['longitude'];
 		$prev_row['phone_num']=$row['phone_num'];
       //$prev_row = $row; //maybe not coz we dont want the tag_name col.
    }
