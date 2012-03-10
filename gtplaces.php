@@ -1,15 +1,14 @@
 <?php
-
-$path = 'ZendFramework/library';
-set_include_path($path . PATH_SEPARATOR . get_include_path());
-$path = 'pear';
-set_include_path($path . PATH_SEPARATOR . get_include_path());
 require_once("Zend/Json.php");
 include_once("Zend/Db.php");
 require_once("Zend/Db/Table.php");
-require_once("FirePHPCore/fb.php");
+//require_once("FirePHPCore/fb.php");
 //$firephp = FirePHP::getInstance(true);
 include_once("db_config.php");
+
+function fb($param,$name){
+	//Had to disable
+}
 
 $params = array("host" => $db_host, "username" => $db_username, "password" => $db_password, "dbname" => $db_database);
 $db = Zend_Db::factory("Pdo_Mysql", $params);
