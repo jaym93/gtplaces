@@ -198,7 +198,6 @@ function getTagNames() {
 
 function getTagsList() {
 	global $db;
-   //$rvals = $db->query("SELECT b_id, name, tag_name FROM buildings, tags WHERE b_id = bid;");
    $rvals = $db->select()->from("buildings", array("b_id","name","address","image_url","latitude","longitude","phone_num"))->joinLeftUsing("tags", "b_id", array("tag_name"))->order("b_id ASC");
    $stmt = $rvals->query();
    $row_values = array();
@@ -230,12 +229,9 @@ function getTagsList() {
       $prev_row['latitude']=$row['latitude'];
       $prev_row['longitude']=$row['longitude'];
 		$prev_row['phone_num']=$row['phone_num'];
-      //$prev_row = $row; //maybe not coz we dont want the tag_name col.
    }
-   fb($row_values);
    $ze = Zend_Json::encode($row_values);
    echo $ze;
-   //fb($ze);
 }
 
 function stags($tagname) {

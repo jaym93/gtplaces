@@ -4,15 +4,6 @@
 		<![CDATA[This is an API to interact with GTplaces widget]]>
 	</description>
 
-<!--
-	<command id='idnames' security='public'>
-		<description><![CDATA[Returns filtered list of all buildings(building id,name,address,latitude,longitude and list of tags)]]></description>
-		<index>
-			<description><![CDATA[Request - [SERVER_NAME]/api/gtplaces/idnames/name,address,image_url (Returns list of all buildings with building name,address and image url)]]></description>
-			<action file='gtplaces.php'><![CDATA[getNames();]]></action>
-		</index>
-	</command>	
--->
 	<command id='buildings' security='public'>
    	<description></description>
 	   <index>
