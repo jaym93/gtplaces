@@ -6,6 +6,26 @@ var currentPlaceID = -1;
 
 var startDate = null;
 
+// Check if the browser supports offline sotrage
+function supports_html5_storage() {
+  try {
+    return 'localStorage' in window && window['localStorage'] !== null;
+  } catch (e) {
+    return false;
+  }
+}
+
+function init() {
+	// Put the object into storage - added by Janani Narayanan
+   if(supports_html5_storage()) {
+   	//localStorage.clear();
+		$.get("buildingData.json",null,function(data) {
+	      localStorage.setItem('OfflineGTplaces', data);
+		});
+   }
+
+}
+
 function initDB() {	 	
 	try {
 		if (!window.openDatabase) {
@@ -466,20 +486,6 @@ function saveTag() {
 			// into the buildingTags table and update the buildings tags string
 			// so that hte new tag can be used for searching
 			db.transaction(function(tx) {
-				tx.executeSql("INSERT INTO buildingsTags VALUES(?, ?, ?)",
-					[
-						currentPlaceID,
-						tagData["tag_id"],
-						newTag
-					],
-					function(tx, results) {
-						// console.log("saved tag");
-					},
-					function(tx, err) {
-						displayErrorMessage(err);
-					}
-				);
-								
 				tx.executeSql("UPDATE buildings SET tags = tags || ' ' || ? WHERE id = ?",
 					[
 						newTag,
@@ -521,6 +527,7 @@ function body_onload() {
 	startDate = Date.now();
 	
 	try {
+		init();
 		initDB();
 		return;
 	}
