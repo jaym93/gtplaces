@@ -4,24 +4,15 @@
 					<div data-role="header" data-position="inline" data-theme='d'>
 		               <h1>GT Places</h1>
 	                </div><!-- /header -->
-					
-					
-					
-					<div id="searchContainer" data-role="content">
-						
-						<div id="searchTxtWrapper" data-role="fieldcontain" data-theme="c">
-							<input type="search" name="place_search" id="search" onkeyup="ontxtchange();" placeholder="Search place name or tag">
-						</div> <!--/searchTxtWrapper-->
-					
-					
-					
+					<div data-role="content">					
 					<script id="buildingListTemplate" type="text/x-jquery-tmpl">
 						<li id="buildingList" onclick="searchResultClick('${buildingID}');">
 							<a href="#placeInfoMain">${buildingName}</a>		
+							<p id=${buildingID} style="display:none"></p>
 						</li>	
 					</script>	
 					
-					<ul data-role="listview" data-theme="d" id="searchResultsList">     
+					<ul data-role="listview" data-theme="d" id="searchResultsList" data-filter="true" data-filter-placeholder="Select place name or tag">     
 					</ul>
 					
 					<div class="no_results_message" id="building_no_results_message">
