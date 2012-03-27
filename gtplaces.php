@@ -181,7 +181,7 @@ function addTag($bid,$tagname) {
          $row->save();
       }
    }
-	getTagNames();
+   echo "success";
 }
 
 function getTagNames() {
