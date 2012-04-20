@@ -130,7 +130,7 @@ function populatePlaceInfo(placeInfo) {
 
          */
 		templateBuildingInfo.placeName=placeInfo.name;
-		templateBuildingInfo.placeImageUrl= "http://gtalumni.org/map/images/buildings/" + placeInfo.image_url;
+		templateBuildingInfo.placeImageUrl= placeInfo.image_url;
 		
 		buildingAddressInfo.placeAddress=placeInfo.address;
 		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
