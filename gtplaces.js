@@ -21,7 +21,7 @@ function init() {
 	// Put the object into storage - added by Janani Narayanan
    if(supports_html5_storage()) {
    	//localStorage.clear();
-		$.get("buildingsData.json",null,function(data) {
+		$.get("buildingData.json",null,function(data) {
 	      localStorage.setItem('OfflineGTplaces', data);
 			loadPlaces();
 		});
