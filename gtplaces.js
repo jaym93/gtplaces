@@ -25,6 +25,8 @@ function init() {
 	      localStorage.setItem('OfflineGTplaces', data);
 			loadPlaces();
 		});
+   }else{
+   		console.log("Your Browser Doesn't Support HTML5 Storage");
    }
 }
 

@@ -12,13 +12,14 @@
 	<html file="gtplaces.html"/>	
 	
 	<manifest>
+        <file>buildingData.json</file>
         <text>
 <![CDATA[
 NETWORK:
 *
+CACHE:
 ]]>
         </text>
-        <file>buildingData.json</file>
     </manifest>
 </widget>
 
