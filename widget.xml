@@ -12,7 +12,6 @@
 	<html file="gtplaces.html"/>	
 	
 	<manifest>
-        <file>buildingData.json</file>
         <text>
 <![CDATA[
 NETWORK:

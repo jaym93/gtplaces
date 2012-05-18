@@ -20,18 +20,18 @@ function supports_html5_storage() {
 function init() {
 	// Put the object into storage - added by Janani Narayanan
    if(supports_html5_storage()) {
-   	//localStorage.clear();
-		$.get("buildingData.json",null,function(data) {
-	      localStorage.setItem('OfflineGTplaces', data);
-			loadPlaces();
+	   	//localStorage.clear();
+		$.get("api/buildings",null,function(data) {
+			localStorage.setItem('OfflineGTplaces', data);
+			loadPlaces(data);
 		});
    }else{
    		console.log("Your Browser Doesn't Support HTML5 Storage");
    }
 }
 
-function loadPlaces() {
-	buildings = JSON.parse(localStorage.getItem('OfflineGTplaces'));
+function loadPlaces(placesJSONText) {
+	buildings = JSON.parse(placesJSONText);
 	populateList(buildings);
 	$.getJSON("api/buildings_tags",function(tags){
    	localStorage.setItem('GTplacesTags',JSON.stringify(tags));		
@@ -89,6 +89,7 @@ function emptyFuncHandler() {	}
 function getPlaceDetails(placeID, callback) {
 	jQuery.map(buildings,function (obj) {
 		if(obj.b_id == placeID) {
+			console.log(obj);
 			callback(obj);
 		}
 	});
@@ -109,7 +110,7 @@ function getPlaceTags(placeID, callback) {
 }
 
 function showPlaceInfoPage(placeID) {
-   currentPlaceID = placeID;
+	currentPlaceID = placeID;
 	getPlaceDetails(placeID, populatePlaceInfo);
 	getPlaceTags(placeID, populatePlaceTags);
 	library.changeLinksForOffline();
@@ -265,8 +266,8 @@ function body_onload() {
 	startDate = Date.now();
 	
 	try {
-		if(localStorage.getItem('OfflineGTplaces'))
-			loadPlaces();
+		if(placesJSONText = localStorage.getItem('OfflineGTplaces'))
+			loadPlaces(placesJSONText);
 		else
 			init();
 		return;
