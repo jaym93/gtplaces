@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding = "utf-8" ?>
 <widget title="GTplaces">
-	<icon>images/icon_gtplaces.png</icon>
-	
 	<library name="jquery"/>
-	<library name="jquery.mobile"/>
 	<library name="jquery.tmpl"/>
 	<library name="gtmob"/>
 	
-	<javascript file="gtplaces.js"/>
+	<icon>images/icon_gtplaces.png</icon>
+	
 	<css file="gtplaces.css"/>
 	<html file="gtplaces.html"/>	
 	
+	<library name="jquery.mobile"/>
+	
+	<javascript file="gtplaces.js"/>
+
 	<manifest>
         <text>
 <![CDATA[
@@ -18,6 +20,7 @@ NETWORK:
 *
 ]]>
         </text>
+        <file file="buildingData.json"/>
     </manifest>
 </widget>
 
