@@ -129,7 +129,7 @@ function getBuildingsTags() {
 	echo $ze;
 }
 
-function searchByTagname($tagname) {
+function searchByTagName($tagname) {
 	global $db;
 	$sl = $db->select()->from("Building", array("GTB_BUILDING_NUMBER","GTB_NAME","GTB_ADDRESS","image_url","phone_num"))->joinLeftUsing("tags","GTB_BUILDING_NUMBER",array("tag_name"))->where("tag_name LIKE ?", (preg_match("/^'.*?'$/", $tagname)) ? $tagname : $db->quote($tagname));
 	// echo $sl;
