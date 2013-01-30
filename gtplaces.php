@@ -143,6 +143,26 @@ function searchByTagName($tagname) {
 	echo $ze;
 }
 
+function searchByBuildingId($bid) {
+	global $db;
+	$sl = $db->select();
+	$sl->from("Building", array("GTB_BUILDING_NUMBER", "GTB_NAME",
+				"GTB_ADDRESS"));
+	$sl->joinLeft("GoogleEarth",
+			"Building.GTB_BUILDING_NUMBER = GoogleEarth.Building_GTB_BUILDING_NUMBER",
+			array("latitude", "longitude", "phone", "image"));
+	$sl->where("GTB_BUILDING_NUMBER LIKE ?", "%".implode("%",
+				explode(" ", strtolower($bid)))."%");
+	$qu = $sl->query();
+	fb($sl->__toString(), "Query");
+	$row_values = array();
+	foreach ($qu->fetchAll() as $row) {
+		array_push($row_values, $row);
+	}
+	$ze = Zend_Json::encode($row_values);
+	echo $ze;
+}
+
 function searchByBuildingName($bname) {
 	global $db;
 	$sl = $db->select();

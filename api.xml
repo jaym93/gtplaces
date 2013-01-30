@@ -15,13 +15,15 @@
          <action file='gtplaces.php'><![CDATA[searchByBuildingName($_REST['buildings']);]]></action>
       </get>
    </command>
-	<command id='buildings_tags' security='public'>
+	
+    <command id='buildings_id' security='public'>
       <description></description>
-      <index>
-         <description><![CDATA[Returns list of all buildings with building id and tags]]></description>
-         <action file='gtplaces.php'><![CDATA[getBuildingsTags();]]></action>
-      </index>
+      <get>
+         <description><![CDATA[Search by building id]]></description>
+         <action file='gtplaces.php'><![CDATA[searchByBuildingId($_REST['buildings_id']);]]></action>
+      </get>
    </command>
+	
    <command id='tags' security='public'>
 		<description></description>
       <index>
