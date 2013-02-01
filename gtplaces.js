@@ -17,13 +17,28 @@ function supports_html5_storage() {
   }
 }
 
+// Gets the value of a GET query by param name
+function getParameterByName(name)
+{
+  name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+  var regexS = "[\\?&]" + name + "=([^&#]*)";
+  var regex = new RegExp(regexS);
+  var results = regex.exec(window.location.search);
+  if(results == null) {
+    return "";
+  }
+  else {
+    return decodeURIComponent(results[1].replace(/\+/g, " "));
+  }
+}
+
 function init() {
-	// Put the object into storage - added by Janani Narayanan
+    // Put the object into storage - added by Janani Narayanan
    if(supports_html5_storage()) {
 	   	//localStorage.clear();
 		$.get("api/buildings",null,function(data) {
 			localStorage.setItem('OfflineGTplaces', data);
-			loadPlaces(data);
+		    loadPlaces(data);
 		});
    }else{
    		console.log("Your Browser Doesn't Support HTML5 Storage");
@@ -34,9 +49,14 @@ function loadPlaces(placesJSONText) {
 	buildings = JSON.parse(placesJSONText);
 	populateList(buildings);
 	$.getJSON("api/buildings_tags",function(tags){
-   	localStorage.setItem('GTplacesTags',JSON.stringify(tags));		
-		loadTags();
-   });
+    	localStorage.setItem('GTplacesTags',JSON.stringify(tags));		
+	    loadTags();
+    });
+    
+    bid = $.url().fparam("bid");
+    $.getJSON("api/buildings_id/"+bid,function(data){
+        $("input[data-type='search']").val(data[0].GTB_NAME).trigger('change');
+    });
 }
 
 function loadTags() {

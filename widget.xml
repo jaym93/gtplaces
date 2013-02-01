@@ -2,6 +2,7 @@
 <widget title="GTplaces" appcache="enabled" icon="images/icon_gtplaces.png">
 	<library name="jquery"/>
 	<library name="jquery.tmpl"/>
+	<library name="jquery.url"/> 
 	<library name="gtmob"/>
 	
 	<css file="gtplaces.css"/>
