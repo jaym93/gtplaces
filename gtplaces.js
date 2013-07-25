@@ -1,3 +1,5 @@
+var test;
+
 var db;
 var templateRow;
 var searchTimer = null;
@@ -47,6 +49,7 @@ function init() {
 
 function loadPlaces(placesJSONText) {
 	buildings = JSON.parse(placesJSONText);
+	test = placesJSONText;
 	populateList(buildings);
 	$.getJSON("api/buildings_tags",function(tags){
     	localStorage.setItem('GTplacesTags',JSON.stringify(tags));		
@@ -286,10 +289,13 @@ function body_onload() {
 	startDate = Date.now();
 	
 	try {
-		if(placesJSONText = localStorage.getItem('OfflineGTplaces'))
+		if(placesJSONText = localStorage.getItem('OfflineGTplaces')) {
+		    console.log("Loading data from localStorage");
 			loadPlaces(placesJSONText);
-		else
+		} else {
+		    console.log("Fetching data from servers");
 			init();
+		}
 		return;
 	}
 	catch (err) {
