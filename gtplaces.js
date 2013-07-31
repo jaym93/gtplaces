@@ -159,7 +159,7 @@ function populatePlaceInfo(placeInfo) {
 		templateBuildingInfo.placeImageUrl= placeInfo.image_url;
 		
 		buildingAddressInfo.placeAddress=placeInfo.address;
-		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address);
+		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address) + " Georgia Institute of Technology";
 		buildingAddressInfo.phone_num=placeInfo.phone_num;
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 	
