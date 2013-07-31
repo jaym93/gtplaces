@@ -1,3 +1,7 @@
+//TODO
+//TODO: Hide tag button if not logged in
+
+
 var test;
 
 var db;
@@ -5,7 +9,8 @@ var templateRow;
 var searchTimer = null;
 var screenWidth = 0;
 var currentPlaceID = -1;
-var buildings,tags;
+var buildings;
+var tags;
 var startDate = null;
 $(document).ready(function() {
 	body_onload();
@@ -49,17 +54,18 @@ function init() {
 
 function loadPlaces(placesJSONText) {
 	buildings = JSON.parse(placesJSONText);
-	test = placesJSONText;
 	populateList(buildings);
-	$.getJSON("api/buildings_tags",function(tags){
+	$.getJSON("api/tags",function(tags){
     	localStorage.setItem('GTplacesTags',JSON.stringify(tags));		
 	    loadTags();
     });
     
     bid = $.url().fparam("bid");
-    $.getJSON("api/buildings_id/"+bid,function(data){
-        $("input[data-type='search']").val(data[0].GTB_NAME).trigger('change');
-    });
+    if (bid !== undefined && bid.length > 0) {
+        $.getJSON("api/buildings_id/"+bid,function(data){
+            $("input[data-type='search']").val(data[0].GTB_NAME).trigger('change');
+        });
+    }
 }
 
 function loadTags() {
@@ -67,7 +73,7 @@ function loadTags() {
 	for(var i = 0; i < tags.length; i++) {
 		var tagList = "";
 		var tagArray = tags[i].tag_list;
-		for(var j = 0;j <  tagArray.length; j++) {
+		for(var j = 0; j < tagArray.length; j++) {
 			tagList += tagArray[j].replace("\\","") + ",";
 		}
 		tagList = tagList.substring(0,tagList.length-1);
@@ -125,11 +131,12 @@ Function to query buildings to display tags
 for the selected building.
 */
 function getPlaceTags(placeID, callback) {
-	jQuery.map(tags,function (obj) {
-      if(obj.b_id == placeID) {
-         callback(obj);
-      }
-   });
+    test = tags;
+    jQuery.map(tags,function (obj) {
+        if(obj.b_id == placeID) {
+            callback(obj);
+        }
+    });
 }
 
 function showPlaceInfoPage(placeID) {
@@ -175,19 +182,18 @@ function populatePlaceInfo(placeInfo) {
 
 
 function populatePlaceTags(placeTag) {
-	var placeTagList={};
+	var placeTagList = {};
 	$("#tags_list").empty();
 	$("#noTaginfo").hide();
 
 	if(placeTag.tag_list != "") {
-         var currTokens = placeTag.tag_list;
-			for (var i = 0; i < currTokens.length; i++) {
-				placeTagList.buildingId = placeTag.b_id;
-				placeTagList.buildingTag = currTokens[i];
-				$("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
-			}			
-	}
-	else {
+        var currTokens = placeTag.tag_list;
+		for (var i = 0; i < currTokens.length; i++) {
+			placeTagList.buildingId = placeTag.b_id;
+			placeTagList.buildingTag = currTokens[i];
+			$("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
+		}			
+	} else {
 		$("#noTaginfo").show();
 	}
 	
@@ -251,23 +257,28 @@ function saveTag() {
 	if (newTag.length != 0) {
 	    // Send a AJAX reques to save the new tag
 		$.post("api/tags/", { "bid": currentPlaceID, "tag": newTag }, function(data) {
+			if("success" == data.trim()) {
+			    console.log("Saved tag");
+			    // Once the ajax request returns successfully, insert the new tag
+			    // into the buildingTags table and update the buildings tags string
+			    // so that the new tag can be used for searching
+			    $.map(tags, function (obj) {
+                    if(obj.GTB_BUILDING_NUMBER == currentPlaceID) {
+                        obj.tag_list.push(newTag);
+                        $("#tags_list #noTagsYet").remove();
+                        $("<span class='tag' id=" + currentPlaceID + "_" 
+                                + newTag + "'>" 
+                                + "<a href='#confirmFlagPopup' data-role='button'"
+                                + " data-inline='true' data-rel='dialog' data-transition='pop'>"
+                                + newTag + "</a>" +" </span> ")
+                        .appendTo("#tags_list").click(function() {
+                            confirmFlagTag(this);
+                         });
 
-			if(data="success"){
-			// Once the ajax request returns successfully, inser the new tag
-			// into the buildingTags table and update the buildings tags string
-			// so that hte new tag can be used for searching
-			jQuery.map(tags,function (obj) {
-		      if(obj.b_id == currentPlaceID) {
-      		   obj.tag_list.push(newTag);
-					$("#tags_list #noTagsYet").remove();
-               $("<span class='tag' id=" + currentPlaceID + "_" + newTag + "'>" + "<a href='#confirmFlagPopup' data-role='button' data-inline='true' data-rel='dialog' data-transition='pop'>"+ newTag + "</a>" +" </span> ").appendTo("#tags_list").click(function(){
-                     confirmFlagTag(this);
-               });
-
-               $("#new_tag").val("");
-               $("#tag_input").hide();
-		      }
-		   });
+                        $("#new_tag").val("");
+                        $("#tag_input").hide();
+                    }
+		       });
 			}
 		});
 	}
