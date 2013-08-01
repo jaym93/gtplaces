@@ -9,7 +9,7 @@ var templateRow;
 var searchTimer = null;
 var screenWidth = 0;
 var currentPlaceID = -1;
-var buildings;
+var buildings = {};
 var tags;
 var startDate = null;
 
@@ -19,6 +19,16 @@ $(document).ready(function() {
 	body_onload();
 });
 
+
+
+function addTag() {
+	if ($("#tag_input").is(":visible")) {
+		$("#tag_input").hide();
+	}
+	else {
+		$("#tag_input").show();
+	}
+}
 
 
 function body_onload() {
@@ -46,125 +56,25 @@ function body_onload() {
 		}
 		return;
 	} catch (err) {
-		displayErrorMessage(err);
+		alert("Error occurred! - " + err);
+		console.log("Error Occurred:");
+		console.log(err);
 	}
 }
 
 
-// Check if the browser supports offline sotrage
-function supports_html5_storage() {
-    try {
-        return 'localStorage' in window && window['localStorage'] !== null;
-    } catch (e) {
-        return false;
-    }
-}
-
-
-// Gets the value of a GET query by param name
-function getParameterByName(name)
-{
-    name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-    var regexS = "[\\?&]" + name + "=([^&#]*)";
-    var regex = new RegExp(regexS);
-    var results = regex.exec(window.location.search);
-    if(results == null) {
-        return "";
-    }
-    else {
-        return decodeURIComponent(results[1].replace(/\+/g, " "));
-    }
-}
-
-
-function init() {
-    // Put the object into storage - added by Janani Narayanan
-   if(supports_html5_storage()) {
-	   	localStorage.clear();
-		$.getJSON("api/buildings/", function(data) {
-		    console.log("Downloaded buildings");
-			localStorage.setItem('OfflineGTplaces', JSON.stringify(data));
-		    loadPlaces();
-		});
-   } else{
-   		console.log("Your Browser Doesn't Support HTML5 Storage");
-   }
-}
-
-
-function loadPlaces() {
-	buildings = JSON.parse(localStorage.getItem('OfflineGTplaces'));
-	populateList(buildings);
-	$.getJSON("api/tags/",function(data){
-	    console.log("Downloaded tags");
-    	localStorage.setItem('GTplacesTags',JSON.stringify(data));		
-	    loadTags();
-    });
-    
-    
-    //Put name of building with supplied buildig id in search field
-    bid = $.url().fparam("bid");
-    if (bid !== undefined && bid.length > 0) {
-        $.getJSON("api/buildings_id/"+bid,function(data){
-            $("input[data-type='search']").val(data[0].GTB_NAME).trigger('change');
+function confirmFlagTag(e) {
+    var selectedTag = $.trim($(e).text());
+	var selectedTagId = $(e).attr("id");
+	$("#txtFlag").empty();
+	$("#txtFlag").append(selectedTag); 
+	
+	$("#btnFlag").click(function() {
+        $.post("api/tags/" + selectedTag +"/flag", { "bid": currentPlaceID}, function(data) {
+            $("#"+selectedTagId).find('a').css("color", "red");
+            $("#"+selectedTagId).css("font-size", "12px");
         });
-    }
-}
-
-
-//Add tags to each element in building listview for searching by tag
-function loadTags() {
-	tags = JSON.parse(localStorage.getItem('GTplacesTags'));	
-	for(var i = 0; i < tags.length; i++) {
-	    $("p#" + tags[i].GTB_BUILDING_NUMBER).append(tags[i].tag_name + ", ");
-	}	
-}
-
-
-function populateList(rows) {
-    var listString;
-	/* Instantiate the global variable as an empty array.*/
-	templateRow = {};
-	$("#building_no_results_message").hide();
-	/* 
-	 * Clear the previous result elements from the HTML DOM, if they exist. This way nothing is attached to 
-	 * the searchResultsList div.
-	 */
-	$("#searchResultsList").empty();
-	if (rows.length > 0) {	
-		var row = null;
-        for (var i = 0; i < rows.length; i++) {
-			/* Add the newly created building name to the array list, with the key "buildingName" 
-			 * Add the newly created building ID to the array list, with the key "buildingName"
-			 */
-			templateRow.buildingID=rows[i].b_id;
-			templateRow.buildingName=rows[i].name.replace("\\","");
-			$("#buildingListTemplate").tmpl(templateRow).appendTo( "#searchResultsList" );
-			$('#searchResultsList').listview('refresh');
-		}
-	} else {
-	    $("#building_no_results_message").show();
-    }
-	$.mobile.hidePageLoadingMsg();//hide loading icons
-	library.changeLinksForOffline();	
-}
-
-
-function searchResultClick(placeID) {
-	showPlaceInfoPage(jQuery.trim(placeID));
-}
-
-
-function emptyFuncHandler() {	}
-
-
-function getPlaceDetails(placeID, callback) {
-	jQuery.map(buildings,function (obj) {
-		if(obj.b_id == placeID) {
-			console.log(obj);
-			callback(obj);
-		}
-	});
+    });	
 }
 
 
@@ -183,11 +93,82 @@ function getPlaceTags(placeID, callback) {
 }
 
 
-function showPlaceInfoPage(placeID) {
-	currentPlaceID = placeID;
-	getPlaceDetails(placeID, populatePlaceInfo);
-	getPlaceTags(placeID, populatePlaceTags);
-	library.changeLinksForOffline();
+function init() {
+    // Put the object into storage - added by Janani Narayanan
+   if(supports_html5_storage()) {
+	   	localStorage.clear();
+		$.getJSON("api/buildings/", function(data) {
+		    console.log("Downloaded buildings");
+			localStorage.setItem('OfflineGTplaces', JSON.stringify(data));
+		    loadPlaces();
+		});
+   } else{
+   		console.log("Your Browser Doesn't Support HTML5 Storage");
+   }
+}
+
+
+function loadPlaces() {	
+	//Load sequential array into associative array
+	var OfflineGTplaces = JSON.parse(localStorage.getItem('OfflineGTplaces'));
+	buildings = {};
+	$.each(OfflineGTplaces, function(){
+        buildings[this.b_id] = this;
+    });
+    
+    //Build buildings list
+	populateList();
+	$.getJSON("api/tags/",function(data){
+	    console.log("Downloaded tags");
+    	localStorage.setItem('GTplacesTags',JSON.stringify(data));		
+	    loadTags();
+    });
+    
+    //Put name of building with supplied building id in search field
+    bid = $.url().fparam("bid");
+    if (bid !== undefined && bid.length > 0) {
+        $.getJSON("api/buildings_id/"+bid,function(data){
+            $("input[data-type='search']").val(data[0].GTB_NAME).trigger('change');
+        });
+    }
+}
+
+
+//Add tags to each element in building listview for searching by tag
+function loadTags() {
+	tags = JSON.parse(localStorage.getItem('GTplacesTags'));	
+	for(var i = 0; i < tags.length; i++) {
+	    $("p#" + tags[i].GTB_BUILDING_NUMBER).append(tags[i].tag_name + ", ");
+	}	
+}
+
+
+function populateList() {
+    var listString;
+	/* Instantiate the global variable as an empty array.*/
+	templateRow = {};
+	$("#building_no_results_message").hide();
+	/* 
+	 * Clear the previous result elements from the HTML DOM, if they exist. This way nothing is attached to 
+	 * the searchResultsList div.
+	 */
+	$("#searchResultsList").empty();
+	if (buildings !== undefined && buildings !== {}) {
+        //for (var i = 0; i < rows.length; i++) {
+        $.each(buildings, function() {
+			/* Add the newly created building name to the array list, with the key "buildingName" 
+			 * Add the newly created building ID to the array list, with the key "buildingName"
+			 */
+			templateRow.buildingID = this.b_id;
+			templateRow.buildingName = this.name.replace("\\","");
+			$("#buildingListTemplate").tmpl(templateRow).appendTo( "#searchResultsList" );
+			$('#searchResultsList').listview('refresh');
+		});
+	} else {
+	    $("#building_no_results_message").show();
+    }
+	$.mobile.hidePageLoadingMsg(); //hide loading icons
+	library.changeLinksForOffline();	
 }
 
 
@@ -229,6 +210,7 @@ function populatePlaceTags(placeTag) {
 	var placeTagList = {};
 	$("#tags_list").empty();
 	$("#noTaginfo").hide();
+	test = placeTag;
 
 	if(placeTag.tag_list != "") {
         var currTokens = placeTag.tag_list;
@@ -244,70 +226,13 @@ function populatePlaceTags(placeTag) {
 }
 
 
-function confirmFlagTag(e) {
-    var selectedTag=$(e).text().trim();
-	var selectedTagId = $(e).attr("id");
-	$("#txtFlag").empty();
-	$("#txtFlag").append(selectedTag); 
-	
-	$("#btnFlag").click(function() {
-        $.post("api/tags/" + selectedTag +"/flag", { "bid": currentPlaceID}, function(data) {
-            $("#"+selectedTagId).find('a').css("color", "red");
-            $("#"+selectedTagId).css("font-size", "12px");
-        });
-    });	
-}
-
-
-function findElemIn(coll, itemName, value) {
-	for (var i= 0 ; i < coll.length; i++) {
-		item = coll[i];
-		if (item[itemName] == value)
-			return item;
-	}
-	return null;
-}
-
-
-function doJSONStuff() {
-	var finalBuildingData = [];
-	for (var i = 0; i < buildingJSONData.length; i++) {
-		var name = buildingJSONData[i]["name"];
-		var item = findElemIn(buildingJSONData2, "name", name);
-		buildingJSONData[i]["id"] = item["b_id"];
-		var item2 = findElemIn(buildingJSONData3, "b_id", item["b_id"]);
-		buildingJSONData[i]["address"] = item2["address"];
-		buildingJSONData[i]["image_url"] = item2["image_url"];
-	}
-}
-
-
-function displayErrorMessage(err) {
-	alert("Error occurred! - " + err);
-	if (console && console.log) {
-		console.log("Error Occurred:");
-		console.log(err);
-	}
-}
-
-
-function addTag() {
-	if ($("#tag_input").is(":visible")) {
-		$("#tag_input").hide();
-	}
-	else {
-		$("#tag_input").show();
-	}
-}
-
-
 function saveTag() {
 	var newTag = $.trim($("#new_tag").val().toLowerCase());
 	
 	if (newTag.length != 0) {
 	    // Send a AJAX reques to save the new tag
 		$.post("api/tags/", { "bid": currentPlaceID, "tag": newTag }, function(data) {
-			if("success" == data.trim()) {
+			if("success" == $.trim(data)) {
 			    console.log("Saved tag");
 			    // Once the ajax request returns successfully, insert the new tag
 			    // into the buildingTags table and update the buildings tags string
@@ -332,5 +257,29 @@ function saveTag() {
 			}
 		});
 	}
+}
+
+
+function searchResultClick(placeID) {
+	showPlaceInfoPage($.trim(placeID));
+}
+
+
+function showPlaceInfoPage(placeID) {
+	currentPlaceID = placeID;
+	console.log(buildings[placeID]);
+	populatePlaceInfo(buildings[placeID]);
+	getPlaceTags(placeID, populatePlaceTags);
+	library.changeLinksForOffline();
+}
+
+
+// Check if the browser supports offline sotrage
+function supports_html5_storage() {
+    try {
+        return 'localStorage' in window && window['localStorage'] !== null;
+    } catch (e) {
+        return false;
+    }
 }
 
