@@ -7,7 +7,7 @@
 					<div data-role="content">					
 					<script id="buildingListTemplate" type="text/x-jquery-tmpl">
 						<li id="buildingList" onclick="searchResultClick('${buildingID}');">
-							<a href="#placeInfoMain">${buildingName}</a>		
+							<a href="#placeInfoMain&bid=${buildingID}">${buildingName}</a>		
 							<p id=${buildingID} style="display:none"></p>
 						</li>	
 					</script>	

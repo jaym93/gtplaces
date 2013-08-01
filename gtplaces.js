@@ -4,19 +4,24 @@
 
 var test;
 
-var db;
-var templateRow;
-var searchTimer = null;
-var screenWidth = 0;
-var currentPlaceID = -1;
-var buildings = {};
+var currentPlaceID;
+var buildings;
 var tags;
-var startDate = null;
 
 
 
 $(document).ready(function() {
 	body_onload();
+	
+	if ("placeInfoMain" === $.mobile.activePage.attr('id')) {
+	    //Put name of building with supplied building id in search field
+        var bid = $.url().fparam("bid");
+        if (bid !== undefined && bid.length > 0) {
+            searchResultClick(bid);
+        }
+	} else if ("placeListMain" === $.mobile.activePage.attr('id')) {   
+	    $('#searchResultsList').listview('refresh');
+    }
 });
 
 
@@ -31,20 +36,12 @@ function addTag() {
 }
 
 
-function body_onload() {
-	$("#mapChoice").live('click',function() {
-        alert("Coming soon!");
-	});
-	
-	$("#add_tag_link").live('click',addTag);
-	$("#tag_button").live('click',saveTag);
-	$("#cancel_new_tag").live('click',function() { $("#tag_input").hide(); })
-	
-	
-	//$("#loadingIndicator").hide();
-    $.mobile.hidePageLoadingMsg();//hide loading icons
-	
-	startDate = Date.now();
+function body_onload() {	
+	$("#add_tag_link").on('click', addTag);
+	$("#tag_button").on('click', saveTag);
+	$("#cancel_new_tag").on('click', function() {
+        $("#tag_input").hide(); 
+    });
 	
 	try {
 		if(placesJSONText = localStorage.getItem('OfflineGTplaces')) {
@@ -85,7 +82,7 @@ Function to query buildings to display tags
 for the selected building.
 */
 function getPlaceTags(placeID, callback) {
-    jQuery.map(tags,function (obj) {
+    jQuery.map(tags, function (obj) {
         if(obj.b_id == placeID) {
             callback(obj);
         }
@@ -94,7 +91,7 @@ function getPlaceTags(placeID, callback) {
 
 
 function init() {
-    // Put the object into storage - added by Janani Narayanan
+   // Put the object into storage - added by Janani Narayanan
    if(supports_html5_storage()) {
 	   	localStorage.clear();
 		$.getJSON("api/buildings/", function(data) {
@@ -120,14 +117,14 @@ function loadPlaces() {
 	populateList();
 	$.getJSON("api/tags/",function(data){
 	    console.log("Downloaded tags");
-    	localStorage.setItem('GTplacesTags',JSON.stringify(data));		
+    	localStorage.setItem('GTplacesTags', JSON.stringify(data));		
 	    loadTags();
     });
     
     //Put name of building with supplied building id in search field
-    bid = $.url().fparam("bid");
+    var bid = $.url().fparam("bid");
     if (bid !== undefined && bid.length > 0) {
-        $.getJSON("api/buildings_id/"+bid,function(data){
+        $.getJSON("api/buildings_id/"+bid, function(data){
             $("input[data-type='search']").val(data[0].GTB_NAME).trigger('change');
         });
     }
@@ -145,60 +142,41 @@ function loadTags() {
 
 function populateList() {
     var listString;
-	/* Instantiate the global variable as an empty array.*/
-	templateRow = {};
+	var templateRow = {};
 	$("#building_no_results_message").hide();
-	/* 
-	 * Clear the previous result elements from the HTML DOM, if they exist. This way nothing is attached to 
-	 * the searchResultsList div.
-	 */
 	$("#searchResultsList").empty();
 	if (buildings !== undefined && buildings !== {}) {
-        //for (var i = 0; i < rows.length; i++) {
         $.each(buildings, function() {
-			/* Add the newly created building name to the array list, with the key "buildingName" 
-			 * Add the newly created building ID to the array list, with the key "buildingName"
-			 */
 			templateRow.buildingID = this.b_id;
 			templateRow.buildingName = this.name.replace("\\","");
 			$("#buildingListTemplate").tmpl(templateRow).appendTo( "#searchResultsList" );
-			$('#searchResultsList').listview('refresh');
 		});
+		if ("placeListMain" === $.mobile.activePage.attr('id')) {   
+		    $('#searchResultsList').listview('refresh');
+	    }
 	} else {
 	    $("#building_no_results_message").show();
     }
-	$.mobile.hidePageLoadingMsg(); //hide loading icons
 	library.changeLinksForOffline();	
 }
 
 
 function populatePlaceInfo(placeInfo) {
-	/* Instantiate the variable as an empty array.*/
 	var templateBuildingInfo = {};
 	var buildingAddressInfo = {};
-	/*Clear the previous result elements from the HTML DOM, if they exist. */
 	$("#buildingDetailInfo").empty();
 	$("#building_address_link").empty();
 	$("#phone_num_link").empty();
 	
 	if (placeInfo.name != "") {
-		
-		/* Add the newly created building place name to the array list, with the key "placeName" 
-
-         * Add the newly created building image url to the array list, with the key "placeImageUrl"
-
-         */
-		templateBuildingInfo.placeName=placeInfo.name;
-		templateBuildingInfo.placeImageUrl= placeInfo.image_url;
-		
-		buildingAddressInfo.placeAddress=placeInfo.address;
-		buildingAddressInfo.placeAddressUrl="http://maps.google.com?q=" + escape(placeInfo.address) + " Georgia Institute of Technology";
-		buildingAddressInfo.phone_num=placeInfo.phone_num;
+		templateBuildingInfo.placeName = placeInfo.name;
+		templateBuildingInfo.placeImageUrl = placeInfo.image_url;
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
-	
-        $('#searchResultsList').listview('refresh');
 		
-		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo( "#building_address_link");
+		buildingAddressInfo.placeAddress = placeInfo.address;
+		buildingAddressInfo.placeAddressUrl = "http://maps.google.com?q=" + escape(placeInfo.address) + " Georgia Institute of Technology";
+		buildingAddressInfo.phone_num = placeInfo.phone_num;		
+		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo("#building_address_link");
 		$("#phoneNumberTemplate").tmpl(buildingAddressInfo).appendTo("#phone_num_link");
 	} else {
 		alert("Place not found!");
@@ -230,7 +208,7 @@ function saveTag() {
 	var newTag = $.trim($("#new_tag").val().toLowerCase());
 	
 	if (newTag.length != 0) {
-	    // Send a AJAX reques to save the new tag
+	    // Send a AJAX request to save the new tag
 		$.post("api/tags/", { "bid": currentPlaceID, "tag": newTag }, function(data) {
 			if("success" == $.trim(data)) {
 			    console.log("Saved tag");
@@ -261,11 +239,6 @@ function saveTag() {
 
 
 function searchResultClick(placeID) {
-	showPlaceInfoPage($.trim(placeID));
-}
-
-
-function showPlaceInfoPage(placeID) {
 	currentPlaceID = placeID;
 	console.log(buildings[placeID]);
 	populatePlaceInfo(buildings[placeID]);
@@ -274,7 +247,7 @@ function showPlaceInfoPage(placeID) {
 }
 
 
-// Check if the browser supports offline sotrage
+// Check if the browser supports offline storage
 function supports_html5_storage() {
     try {
         return 'localStorage' in window && window['localStorage'] !== null;
