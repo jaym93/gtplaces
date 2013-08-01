@@ -1,5 +1,5 @@
-//TODO
 //TODO: Hide tag button if not logged in
+//TODO: permalink on placeInfoMain
 
 
 var test;
@@ -12,54 +12,97 @@ var currentPlaceID = -1;
 var buildings;
 var tags;
 var startDate = null;
+
+
+
 $(document).ready(function() {
 	body_onload();
 });
+
+
+
+function body_onload() {
+	$("#mapChoice").live('click',function() {
+        alert("Coming soon!");
+	});
+	
+	$("#add_tag_link").live('click',addTag);
+	$("#tag_button").live('click',saveTag);
+	$("#cancel_new_tag").live('click',function() { $("#tag_input").hide(); })
+	
+	
+	//$("#loadingIndicator").hide();
+    $.mobile.hidePageLoadingMsg();//hide loading icons
+	
+	startDate = Date.now();
+	
+	try {
+		if(placesJSONText = localStorage.getItem('OfflineGTplaces')) {
+		    console.log("Loading data from localStorage");
+			loadPlaces(placesJSONText);
+		} else {
+		    console.log("Fetching data from servers");
+			init();
+		}
+		return;
+	} catch (err) {
+		displayErrorMessage(err);
+	}
+}
+
+
 // Check if the browser supports offline sotrage
 function supports_html5_storage() {
-  try {
-    return 'localStorage' in window && window['localStorage'] !== null;
-  } catch (e) {
-    return false;
-  }
+    try {
+        return 'localStorage' in window && window['localStorage'] !== null;
+    } catch (e) {
+        return false;
+    }
 }
+
 
 // Gets the value of a GET query by param name
 function getParameterByName(name)
 {
-  name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-  var regexS = "[\\?&]" + name + "=([^&#]*)";
-  var regex = new RegExp(regexS);
-  var results = regex.exec(window.location.search);
-  if(results == null) {
-    return "";
-  }
-  else {
-    return decodeURIComponent(results[1].replace(/\+/g, " "));
-  }
+    name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+    var regexS = "[\\?&]" + name + "=([^&#]*)";
+    var regex = new RegExp(regexS);
+    var results = regex.exec(window.location.search);
+    if(results == null) {
+        return "";
+    }
+    else {
+        return decodeURIComponent(results[1].replace(/\+/g, " "));
+    }
 }
+
 
 function init() {
     // Put the object into storage - added by Janani Narayanan
    if(supports_html5_storage()) {
-	   	//localStorage.clear();
-		$.get("api/buildings",null,function(data) {
-			localStorage.setItem('OfflineGTplaces', data);
-		    loadPlaces(data);
+	   	localStorage.clear();
+		$.getJSON("api/buildings/", function(data) {
+		    console.log("Downloaded buildings");
+			localStorage.setItem('OfflineGTplaces', JSON.stringify(data));
+		    loadPlaces();
 		});
-   }else{
+   } else{
    		console.log("Your Browser Doesn't Support HTML5 Storage");
    }
 }
 
-function loadPlaces(placesJSONText) {
-	buildings = JSON.parse(placesJSONText);
+
+function loadPlaces() {
+	buildings = JSON.parse(localStorage.getItem('OfflineGTplaces'));
 	populateList(buildings);
-	$.getJSON("api/tags",function(tags){
-    	localStorage.setItem('GTplacesTags',JSON.stringify(tags));		
+	$.getJSON("api/tags/",function(data){
+	    console.log("Downloaded tags");
+    	localStorage.setItem('GTplacesTags',JSON.stringify(data));		
 	    loadTags();
     });
     
+    
+    //Put name of building with supplied buildig id in search field
     bid = $.url().fparam("bid");
     if (bid !== undefined && bid.length > 0) {
         $.getJSON("api/buildings_id/"+bid,function(data){
@@ -68,23 +111,20 @@ function loadPlaces(placesJSONText) {
     }
 }
 
+
+//Add tags to each element in building listview for searching by tag
 function loadTags() {
-	tags = JSON.parse(localStorage.getItem('GTplacesTags'));
+	tags = JSON.parse(localStorage.getItem('GTplacesTags'));	
 	for(var i = 0; i < tags.length; i++) {
-		var tagList = "";
-		var tagArray = tags[i].tag_list;
-		for(var j = 0; j < tagArray.length; j++) {
-			tagList += tagArray[j].replace("\\","") + ",";
-		}
-		tagList = tagList.substring(0,tagList.length-1);
-		$("p#" + tags[i].b_id).html(tagList);
+	    $("p#" + tags[i].GTB_BUILDING_NUMBER).append(tags[i].tag_name + ", ");
 	}	
 }
 
+
 function populateList(rows) {
-   var listString;
+    var listString;
 	/* Instantiate the global variable as an empty array.*/
-	templateRow= {};
+	templateRow = {};
 	$("#building_no_results_message").hide();
 	/* 
 	 * Clear the previous result elements from the HTML DOM, if they exist. This way nothing is attached to 
@@ -102,18 +142,21 @@ function populateList(rows) {
 			$("#buildingListTemplate").tmpl(templateRow).appendTo( "#searchResultsList" );
 			$('#searchResultsList').listview('refresh');
 		}
-	}
-	else
+	} else {
 	    $("#building_no_results_message").show();
+    }
 	$.mobile.hidePageLoadingMsg();//hide loading icons
 	library.changeLinksForOffline();	
 }
+
 
 function searchResultClick(placeID) {
 	showPlaceInfoPage(jQuery.trim(placeID));
 }
 
+
 function emptyFuncHandler() {	}
+
 
 function getPlaceDetails(placeID, callback) {
 	jQuery.map(buildings,function (obj) {
@@ -124,6 +167,7 @@ function getPlaceDetails(placeID, callback) {
 	});
 }
 
+
 /*
 Modified by Janani Narayanan
 ****************************
@@ -131,13 +175,13 @@ Function to query buildings to display tags
 for the selected building.
 */
 function getPlaceTags(placeID, callback) {
-    test = tags;
     jQuery.map(tags,function (obj) {
         if(obj.b_id == placeID) {
             callback(obj);
         }
     });
 }
+
 
 function showPlaceInfoPage(placeID) {
 	currentPlaceID = placeID;
@@ -146,10 +190,11 @@ function showPlaceInfoPage(placeID) {
 	library.changeLinksForOffline();
 }
 
+
 function populatePlaceInfo(placeInfo) {
 	/* Instantiate the variable as an empty array.*/
 	var templateBuildingInfo = {};
-	var buildingAddressInfo={};
+	var buildingAddressInfo = {};
 	/*Clear the previous result elements from the HTML DOM, if they exist. */
 	$("#buildingDetailInfo").empty();
 	$("#building_address_link").empty();
@@ -170,14 +215,13 @@ function populatePlaceInfo(placeInfo) {
 		buildingAddressInfo.phone_num=placeInfo.phone_num;
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 	
-      $('#searchResultsList').listview('refresh');
+        $('#searchResultsList').listview('refresh');
 		
 		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo( "#building_address_link");
 		$("#phoneNumberTemplate").tmpl(buildingAddressInfo).appendTo("#phone_num_link");
-	}
-	else
+	} else {
 		alert("Place not found!");
-
+	}
 }
 
 
@@ -188,30 +232,32 @@ function populatePlaceTags(placeTag) {
 
 	if(placeTag.tag_list != "") {
         var currTokens = placeTag.tag_list;
-		for (var i = 0; i < currTokens.length; i++) {
-			placeTagList.buildingId = placeTag.b_id;
-			placeTagList.buildingTag = currTokens[i];
-			$("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
-		}			
+        for (var i = 0; i < currTokens.length; i++) {
+            placeTagList.buildingId = placeTag.b_id;
+            placeTagList.buildingTag = currTokens[i];
+            $("#tagInfoTemplate").tmpl(placeTagList).appendTo( "#tags_list" );
+        }
 	} else {
 		$("#noTaginfo").show();
 	}
 	
 }
 
+
 function confirmFlagTag(e) {
-   var selectedTag=$(e).text().trim();
+    var selectedTag=$(e).text().trim();
 	var selectedTagId = $(e).attr("id");
 	$("#txtFlag").empty();
 	$("#txtFlag").append(selectedTag); 
 	
 	$("#btnFlag").click(function() {
-      $.post("api/tags/" + selectedTag +"/flag", { "bid": currentPlaceID}, function(data) {
-		   $("#"+selectedTagId).find('a').css("color", "red");
-			$("#"+selectedTagId).css("font-size", "12px");
-	   });
-   });	
+        $.post("api/tags/" + selectedTag +"/flag", { "bid": currentPlaceID}, function(data) {
+            $("#"+selectedTagId).find('a').css("color", "red");
+            $("#"+selectedTagId).css("font-size", "12px");
+        });
+    });	
 }
+
 
 function findElemIn(coll, itemName, value) {
 	for (var i= 0 ; i < coll.length; i++) {
@@ -221,6 +267,7 @@ function findElemIn(coll, itemName, value) {
 	}
 	return null;
 }
+
 
 function doJSONStuff() {
 	var finalBuildingData = [];
@@ -234,6 +281,7 @@ function doJSONStuff() {
 	}
 }
 
+
 function displayErrorMessage(err) {
 	alert("Error occurred! - " + err);
 	if (console && console.log) {
@@ -242,14 +290,16 @@ function displayErrorMessage(err) {
 	}
 }
 
+
 function addTag() {
 	if ($("#tag_input").is(":visible")) {
 		$("#tag_input").hide();
-			}
+	}
 	else {
 		$("#tag_input").show();
 	}
 }
+
 
 function saveTag() {
 	var newTag = $.trim($("#new_tag").val().toLowerCase());
@@ -281,36 +331,6 @@ function saveTag() {
 		       });
 			}
 		});
-	}
-}
-
-function body_onload() {
-	$("#mapChoice").live('click',function() {
-	   alert("Coming soon!");
-	});
-	
-	$("#add_tag_link").live('click',addTag);
-	$("#tag_button").live('click',saveTag);
-	$("#cancel_new_tag").live('click',function() { $("#tag_input").hide(); })
-	
-	
-	//$("#loadingIndicator").hide();
-	 $.mobile.hidePageLoadingMsg();//hide loading icons
-	
-	startDate = Date.now();
-	
-	try {
-		if(placesJSONText = localStorage.getItem('OfflineGTplaces')) {
-		    console.log("Loading data from localStorage");
-			loadPlaces(placesJSONText);
-		} else {
-		    console.log("Fetching data from servers");
-			init();
-		}
-		return;
-	}
-	catch (err) {
-		displayErrorMessage(err);
 	}
 }
 
