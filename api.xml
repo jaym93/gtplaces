@@ -4,58 +4,69 @@
 		<![CDATA[This is an API to interact with GTplaces widget]]>
 	</description>
 
+
 	<command id='buildings' security='public'>
-   	<description></description>
-	   <index>
-   	   <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude,image url and tags]]></description>
-      	<action file='gtplaces.php'><![CDATA[getTagsList();]]></action>
-	   </index>
-		<get>
-         <description><![CDATA[Search by Building name]]></description>
-         <action file='gtplaces.php'><![CDATA[searchByBuildingName($_REST['buildings']);]]></action>
-      </get>
-   </command>
+        <description></description>
+        
+        <index>
+            <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude,image url and tags]]></description>
+            <action file='gtplaces.php'><![CDATA[getTagsList();]]></action>
+        </index>
+        
+        <get>
+            <description><![CDATA[Search by Building name]]></description>
+            <action file='gtplaces.php'><![CDATA[searchByBuildingName($_REST['buildings']);]]></action>
+        </get>
+    </command>
+	
 	
     <command id='buildings_id' security='public'>
-      <description></description>
-      <get>
-         <description><![CDATA[Search by building id]]></description>
-         <action file='gtplaces.php'><![CDATA[searchByBuildingId($_REST['buildings_id']);]]></action>
-      </get>
+        <description></description>
+        
+        <get>
+            <description><![CDATA[Search by building id]]></description>
+            <action file='gtplaces.php'><![CDATA[searchByBuildingId($_REST['buildings_id']);]]></action>
+        </get>
    </command>
-	
+   
+   
    <command id='tags' security='public'>
-		<description></description>
-      <index>
-         <description><![CDATA[Returns list of all tags with tag id,building id,tagname,user who created the tag,number of tags,number of flags]]></description>
-         <action file='gtplaces.php'><![CDATA[getTagNames();]]></action>
-      </index>
-      <get>
-         <description><![CDATA[Search by tagname]]></description>
-         <action file='gtplaces.php'><![CDATA[searchByTagName($_REST['tags']);]]></action>
-      </get>
-		<post>
-         <description><![CDATA[Add a tag]]></description>
-         <action file='gtplaces.php'><![CDATA[addTag($_POST['bid'],$_POST['tag']);]]></action>
-			<param id='bid'>
-         	<description><![CDATA[Building id]]></description>
-            <exampleValue><![CDATA[30]]></exampleValue>
-         </param>
-			<param id='tag'>
-            <description><![CDATA[Tag Name]]></description>
-            <exampleValue><![CDATA[admin]]></exampleValue>
-         </param>
-      </post>
-		<command id='flag' security='public'>
-			<description></description>
-	      <post>
-   	      <description><![CDATA[Flag a tag]]></description>
-      	   <action file='gtplaces.php'><![CDATA[flagTag($_POST['bid'],$_REST['tags']);]]></action>
-				<param id='bid'>
-            	<description><![CDATA[Building id]]></description>
-   	         <exampleValue><![CDATA[30]]></exampleValue>
-      	   </param>
-	      </post>
-   	</command>
+        <description></description>
+        
+        <index>
+            <description><![CDATA[Returns list of all tags with tag id,building id,tagname,user who created the tag,number of tags,number of flags]]></description>
+            <action file='gtplaces.php'><![CDATA[getTagNames();]]></action>
+        </index>
+        
+        <get>
+            <description><![CDATA[Search by tagname]]></description>
+            <action file='gtplaces.php'><![CDATA[searchByTagName($_REST['tags']);]]></action>
+        </get>
+        
+        <post>
+            <description><![CDATA[Add a tag]]></description>
+            <action file='gtplaces.php'><![CDATA[addTag($_POST['bid'],$_POST['tag']);]]></action>            
+            <param id='bid'>
+                <description><![CDATA[Building id]]></description>
+                <exampleValue><![CDATA[30]]></exampleValue>
+            </param>            
+            <param id='tag'>
+                <description><![CDATA[Tag Name]]></description>
+                <exampleValue><![CDATA[admin]]></exampleValue>
+            </param>
+        </post>
+        
+        <command id='flag' security='public'>
+            <description></description>
+            
+            <post>
+                <description><![CDATA[Flag a tag]]></description>
+                <action file='gtplaces.php'><![CDATA[flagTag($_POST['bid'],$_REST['tags']);]]></action>
+                <param id='bid'>
+                    <description><![CDATA[Building id]]></description>
+                    <exampleValue><![CDATA[30]]></exampleValue>
+                </param>
+            </post>
+        </command>
 	</command>
 </api>

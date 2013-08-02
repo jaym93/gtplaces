@@ -94,3 +94,7 @@ input.ui-input-text, textarea.ui-input-text, .ui-input-search{
 display: inline-block;
 }
 
+form.ui-listview-filter {
+    margin: -15px -15px -10px -15px !important;
+}
+
