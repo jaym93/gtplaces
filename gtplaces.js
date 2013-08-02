@@ -1,6 +1,3 @@
-//TODO: Hide tag button if not logged in
-
-
 var test;
 
 var currentPlaceID;
@@ -22,6 +19,21 @@ $(document).ready(function() {
 	$("#tag_button").on('click', saveTag);
 	$("#cancel_new_tag").on('click', function() {
         $("#tag_input").hide();
+    });
+    
+    //Hide tag button if not logged in
+    $.ajax({
+        url: 'api/checkuser/',
+        success: function(data) {
+            var username = $.trim(data);
+            if (username === "null") {
+                $("#add_tag_link").hide();
+                console.log("User is not logged in");
+            } else {
+                $("#add_tag_link").show();
+                console.log("User is logged in as " + username);
+            }
+        }
     });
 	
 	//Load building data from localStorage or download from server

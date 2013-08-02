@@ -4,8 +4,14 @@ include_once("Zend/Db.php");
 require_once("Zend/Db/Table.php");
 include_once("db_config.php");
 
+
 function fb($param,$name){
 	//Had to disable
+}
+
+function checkUser() {
+    global $_USER;
+    return $_USER['uid'];
 }
 
 $params = array("host" => $db_host, "username" => $db_username, "password" => $db_password, "dbname" => $db_database);

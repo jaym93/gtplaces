@@ -27,10 +27,20 @@
             <description><![CDATA[Search by building id]]></description>
             <action file='gtplaces.php'><![CDATA[searchByBuildingId($_REST['buildings_id']);]]></action>
         </get>
-   </command>
-   
-   
-   <command id='tags' security='public'>
+    </command>
+    
+
+    <command id='checkuser' security='public'>
+        <description></description>
+        
+        <index>
+            <description><![CDATA[Check if user is logged in]]></description>
+            <action file='gtplaces.php'><![CDATA[echo json_encode(checkUser());]]></action>
+        </index>
+    </command>
+
+
+    <command id='tags' security='public'>
         <description></description>
         
         <index>
@@ -68,5 +78,5 @@
                 </param>
             </post>
         </command>
-	</command>
+    </command>
 </api>
