@@ -1,5 +1,4 @@
 //TODO: Hide tag button if not logged in
-//TODO: Make tags show on building page
 
 
 var test;
@@ -11,8 +10,10 @@ var tags;
 
 
 $(document).ready(function() {
-    //Actions
-	$("#add_tag_link").on('click', addTag);
+    //Event listeners
+	$("#add_tag_link").on('click', function() {
+	     $("#tag_input").toggle();
+	});
 	$("#new_tag").on('keypress', function(e) {
 	    if (e.keyCode == 13) { //13 == Enter
 	        saveTag();
@@ -48,18 +49,13 @@ $(document).ready(function() {
         }
         $('#searchResultsList').listview('refresh');
     }
+    
+    //Cleanup of URL so we can have better client URL support
+    $('#placeInfoMain').bind('pagehide', function() {
+        $(this).attr("data-url",$(this).attr("id"));
+        delete $(this).data()['url'];
+    });
 });
-
-
-
-function addTag() {
-	if ($("#tag_input").is(":visible")) {
-		$("#tag_input").hide();
-	}
-	else {
-		$("#tag_input").show();
-	}
-}
 
 
 function confirmFlagTag(tagSpan) {
@@ -105,6 +101,9 @@ function loadPlaces() {
 	buildings = {};
 	$.each(OfflineGTplaces, function(){
         buildings[this.b_id] = this;
+        if (this.tag_list[0] == "") {
+            this.tag_list = [];
+        }
     });
     
     //Build buildings list
@@ -116,7 +115,7 @@ function loadPlaces() {
         $.each(buildings, function() {
 			templateRow.buildingID = this.b_id;
 			templateRow.buildingName = this.name.replace("\\","");
-			$("#buildingListTemplate").tmpl(templateRow).appendTo( "#searchResultsList" );
+			$("#buildingListTemplate").tmpl(templateRow).appendTo("#searchResultsList");
 		});
 		if ("placeListMain" === $.mobile.activePage.attr('id')) {   
 		    $('#searchResultsList').listview('refresh');
@@ -153,7 +152,7 @@ function populatePlaceInfo(placeInfo) {
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 		
 		buildingAddressInfo.placeAddress = placeInfo.address;
-		buildingAddressInfo.placeAddressUrl = "http://maps.google.com?q=" + escape(placeInfo.address) + " Georgia Institute of Technology";
+		buildingAddressInfo.placeAddressUrl = "http://maps.google.com?q=" + escape(placeInfo.address + " Georgia Institute of Technology");
 		buildingAddressInfo.phone_num = placeInfo.phone_num;		
 		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo("#building_address_link");
 		$("#phoneNumberTemplate").tmpl(buildingAddressInfo).appendTo("#phone_num_link");
@@ -162,7 +161,7 @@ function populatePlaceInfo(placeInfo) {
 		var placeTagList = {};
 	    $("#tags_list").empty();
 	    $("#noTaginfo").hide();
-	    if(placeInfo.tag_list[0] != "") {
+	    if(placeInfo.tag_list.length > 0 && placeInfo.tag_list[0] != "") {
             var currTokens = placeInfo.tag_list;
             for (var i = 0; i < currTokens.length; i++) {
                 placeTagList.buildingId = placeInfo.b_id;
@@ -187,16 +186,13 @@ function saveTag() {
 			    // Once the ajax request returns successfully, insert the new tag
 			    // into the buildingTags table and update the buildings tags string
 			    // so that the new tag can be used for searching
-                buildings[currentPlaceID].tag_list.push(newTag);
+			    buildings[currentPlaceID].tag_list.push(newTag);
                 $("#tags_list #noTagsYet").remove();
-                $("<span class='tag' id=" + currentPlaceID + "_" 
-                        + newTag + "'>" 
-                        + "<a href='#confirmFlagPopup' data-role='button'"
-                        + " data-inline='true' data-rel='dialog' data-transition='pop'>"
-                        + newTag + "</a>" +" </span> ")
-                .appendTo("#tags_list").click(function() {
-                    confirmFlagTag(this);
-                 });
+                
+                var placeTagList = {};
+                placeTagList.buildingId = currentPlaceID;
+                placeTagList.buildingTag = newTag;
+                $("#tagInfoTemplate").tmpl(placeTagList).appendTo("#tags_list");
 
                 $("#new_tag").val("");
                 $("#tag_input").hide();
