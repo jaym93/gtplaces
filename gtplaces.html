@@ -1,140 +1,123 @@
-
-                <!-- Start of first page -->
-				<div id="placeListMain" data-role="page" data-theme='g'>
-					<div data-role="header" data-position="inline" data-theme='g'>
-		               <h1>GT Places</h1>
-	                </div><!-- /header -->
-					<div data-role="content">					
-					<script id="buildingListTemplate" type="text/x-jquery-tmpl">
-						<li id="buildingList" onclick="searchResultClick('${buildingID}');">
-							<a href="#placeInfoMain&bid=${buildingID}">${buildingName}</a>		
-							<p id=${buildingID} style="display:none"></p>
-						</li>	
-					</script>	
-					
-					<ul data-role="listview" data-theme="g" id="searchResultsList" data-filter="true" data-filter-placeholder="Select place name or tag">
-					</ul>
-					
-					<div class="no_results_message" id="building_no_results_message">
-				    <h3>Sorry, No places found on Campus</h3>
-		            </div>
-					
-					</div><!-- /content -->
-			
-				</div><!-- /page -->
-				
-				<!--building info page-->
-		<div id="placeInfoMain" data-role="page" data-theme='g' >
-					
-					<div data-role="header" data-position="inline" data-theme='g'>
-						<a href="#placeListMain" data-icon="back" data-theme="c" data-iconpos="notext">Back</a>
-		               <h1>GT Places</h1>
-	                </div><!-- /header -->
-
-	            <div data-role="content" data-content-theme="c">	
-		                
-	             <script id="buildingInfoTemplate" type="text/x-jquery-tmpl">
-	               
-					<div id="building_information"> 
-					   <div id="building_info_image">           	
-						<img src="${placeImageUrl}">
-					   </div>	
-					   
-					   <div id="building_info_name">	   
-						<h3>${placeName}</h3>
-					   </div>	
-	                </div>
-				     			
-				 </script>
-					
-				<script id="buildingAddressTemplate" type="text/x-jquery-tmpl">
-						  	       
-					<a href="${placeAddressUrl}" id="building_place_address"> ${placeAddress}</a>
-										
-				</script>	
-									
-			    <script id="phoneNumberTemplate" type="text/x-jquery-tmpl">
-					<a href="tel:${phone_num}">${phone_num}</a>
-				 </script>		
-
-					<script id="tagInfoTemplate" type="text/x-jquery-tmpl">
-						<span class="tag" id="${buildingId}_${buildingTag}" onclick="confirmFlagTag(this);">
-							<a href="#confirmFlagPopup" data-role="button" data-inline="true" data-rel="dialog" data-transition="pop">${buildingTag}</a>
-						</span>					
-					</script>	
-					
-				<div id="buildingDetailInfo">
-				</div>		
-				
-				<ul data-role="listview" data-inset="true" id="building_info_others">
-					<li class="list-item-schedule">
-					  <div id="building_address" class="ui-grid-a">
-						 <div class="ui-block-a"><b>Address</b></div>
-						 <div class="ui-block-b" id="building_address_link"></div> 
-					  </div>
-					 </li> 	
-					
-					<li class="list-item-schedule">
-						<div id="building_info_phone" class="ui-grid-a">
-						   <div class="ui-block-a placePhoneLabel"><b>Phone</b></div>
-							<div class="ui-block-b placePhone" id="phone_num_link"></div>
-						</div>
-					</li>
-					
-					<li class="list-item-schedule">
-					<div id="building_info_tag" class="ui-grid-a">
-						    <div class="ui-block-a placeTagsLabel">
-								<b>Tags</b>
-							</div>
-							
-							<div class="ui-block-b" id="taginfo">
-								<div id="tags_list"></div>
-							</div>
-							
-							<div class="ui-block-b" id="noTaginfo">
-								No tags yet.
-							</div>
-							
-	 <div id="placeTagControls">
-		 
-		 <a class="image_buttons" id="add_tag_link" data-role="button" data-theme='c' data-inline="true">Tag building</a>
-			<div class="addTagContainer">
-			   <div id="tag_input" style="display: none;" >
-			      <div data-role="fieldcontain" class="ui-hide-label" >
-	              <!--<label for="new_tag"></label>-->
-	              <input type="text" name="new_tag" id="new_tag" placeholder="New tag" data-inline="true"/>
-				  <input type="button" id="tag_button" value="Add" data-inline="true">
-                  </div>	  	  
-			   </div>
-			</div>
-	    </div>		
-					</div>
-					</li>
-                </ul>
-
-					
-		  </div><!-- /content -->		
-	  </div> <!--/second page-->
-				
-     <div id="confirmFlagPopup"  data-role="page" data-rel="dialog" data-theme='g'>
-     	
-		
-		<div data-role="header" data-theme='g'>
-			<h1 id="txtFlag"></h1>
-	    </div><!-- /header -->
-        
-		<div data-role="content">
-			  
-			  <fieldset class="ui-grid-a">
-	            <div class="ui-block-a" id="btnCancel"><a href="#placeInfoMain" data-role="button" data-rel="back" data-theme="c">Cancel</a></div>
-	            <div class="ui-block-b" id="btnFlag"><a href="#placeInfoMain" data-role="button" data-rel="back" data-theme="b">Flag</a></div>	   
-               </fieldset>
-			 
-		</div><!-- /content -->
-
-	 </div><!--/confirmFlagPopup-->
-					
-				
-									
+<!-- Main page -->
+<div id="placeListMain" data-role="page" data-theme='g'>
+	<div data-role="header" data-position="inline" data-theme='g'>
+       <h1>GT Places</h1>
+    </div><!-- /header -->
+    
+	<div data-role="content">					
+	    <script id="buildingListTemplate" type="text/x-jquery-tmpl">
+		    <li id="buildingList" onclick="searchResultClick('${buildingID}');">
+			    <a href="#placeInfoMain&bid=${buildingID}">${buildingName}</a>		
+			    <p id=${buildingID} style="display:none"></p>
+		    </li>	
+	    </script>	
 	
+	    <ul data-role="listview" data-theme="g" id="searchResultsList" data-filter="true" data-filter-placeholder="Select place name or tag">
+	    </ul>
+	
+	    <div class="no_results_message" id="building_no_results_message">
+            <h3>Sorry, No places found on Campus</h3>
+        </div>
+    </div><!-- /content -->
+</div><!-- /page -->
+
+
+
+<!--Building info page-->
+<div id="placeInfoMain" data-role="page" data-theme='g' >
+    <div data-role="header" data-position="inline" data-theme='g'>
+        <a href="#placeListMain" data-icon="back" data-theme="c" data-iconpos="notext">Back</a>
+        <h1>GT Places</h1>
+    </div><!-- /header -->
+
+    <div data-role="content" data-content-theme="c">	
+        <script id="buildingInfoTemplate" type="text/x-jquery-tmpl">
+            <div id="building_information"> 
+                <div id="building_info_image">           	
+                    <img src="${placeImageUrl}">
+                </div>	
+
+                <div id="building_info_name">	   
+                    <h3>${placeName}</h3>
+                </div>	
+            </div>	
+        </script>
+		
+	    <script id="buildingAddressTemplate" type="text/x-jquery-tmpl">       
+		    <a href="${placeAddressUrl}" id="building_place_address"> ${placeAddress}</a>			
+	    </script>	
+						
+        <script id="phoneNumberTemplate" type="text/x-jquery-tmpl">
+            <a href="tel:${phone_num}">${phone_num}</a>
+        </script>		
+
+		<script id="tagInfoTemplate" type="text/x-jquery-tmpl">
+			<span class="tag" id="${buildingId}_${buildingTag}" onclick="confirmFlagTag(this);">
+			    <a href="#confirmFlagPopup" data-role="button" data-inline="true" data-rel="dialog" data-transition="pop">${buildingTag}</a>
+			</span>					
+		</script>	
+		
+	    <div id="buildingDetailInfo">
+	    </div>		
+	
+	    <ul data-role="listview" data-inset="true" id="building_info_others">
+            <li class="list-item-schedule">
+                <div id="building_address" class="ui-grid-a">
+                    <div class="ui-block-a"><b>Address</b></div>
+                    <div class="ui-block-b" id="building_address_link"></div> 
+                </div>
+            </li> 	
+		
+		    <li class="list-item-schedule">
+                <div id="building_info_phone" class="ui-grid-a">
+                    <div class="ui-block-a placePhoneLabel"><b>Phone</b></div>
+                    <div class="ui-block-b placePhone" id="phone_num_link"></div>
+			    </div>
+		    </li>
+		
+		    <li class="list-item-schedule">
+		        <div id="building_info_tag" class="ui-grid-a">
+		            <div class="ui-block-a placeTagsLabel">
+				        <b>Tags</b>
+			        </div>
+			
+			        <div class="ui-block-b" id="taginfo">
+				        <div id="tags_list"></div>
+			        </div>
+			
+			        <div class="ui-block-b" id="noTaginfo">
+				        No tags yet.
+			        </div>
+				
+                    <div id="placeTagControls">
+                        <a class="image_buttons" id="add_tag_link" data-role="button" data-theme='c' data-inline="true">Tag building</a>
+                        <div class="addTagContainer">
+                            <div id="tag_input" style="display: none;" >
+                                <div data-role="fieldcontain" class="ui-hide-label" >
+                                    <!--<label for="new_tag"></label>-->
+                                    <input type="text" name="new_tag" id="new_tag" placeholder="New tag" data-inline="true"/>
+                                    <input type="button" id="tag_button" value="Add" data-inline="true">
+                                </div>	  	  
+                            </div>
+                        </div>
+                    </div>
+		        </div>
+		    </li>
+        </ul>
+    </div><!-- /content -->		
+</div> <!--/second page-->
+
+				
+<div id="confirmFlagPopup"  data-role="page" data-rel="dialog" data-theme='g'>
+    <div data-role="header" data-theme='g'>
+	    <h1 id="txtFlag"></h1>
+    </div><!-- /header -->
+        
+    <div data-role="content">
+        <fieldset class="ui-grid-a">
+            <div class="ui-block-a" id="btnCancel"><a href="#placeInfoMain" data-role="button" data-rel="back" data-theme="c">Cancel</a></div>
+            <div class="ui-block-b" id="btnFlag"><a href="#placeInfoMain" data-role="button" data-rel="back" data-theme="b">Flag</a></div>	   
+        </fieldset>
+    </div><!-- /content -->
+</div><!--/confirmFlagPopup-->
 
