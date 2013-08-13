@@ -137,9 +137,10 @@ function loadPlaces() {
         	templateRow.buildingID = buildings[building].b_id;
 			templateRow.buildingName = buildings[building].name.replace("\\","");
 			$("#buildingListTemplate").tmpl(templateRow).appendTo("#searchResultsList");
+            $("p#"+buildings[building].b_id).append(buildings[building].b_id + ", ");
         });
 
-		if ("placeListMain" === $.mobile.activePage.attr('id')) {   
+        if ("placeListMain" === $.mobile.activePage.attr('id')) {   
 		    $('#searchResultsList').listview('refresh');
 	    }
 	} else {
@@ -163,7 +164,9 @@ function loadPlaces() {
 function populatePlaceInfo(placeInfo) {
 	var templateBuildingInfo = {};
 	var buildingAddressInfo = {};
+    $("#buildingIdInfo").empty();
 	$("#buildingDetailInfo").empty();
+    $("#building_id_link").empty();
 	$("#building_address_link").empty();
 	$("#phone_num_link").empty();
 	
@@ -173,9 +176,11 @@ function populatePlaceInfo(placeInfo) {
 		templateBuildingInfo.placeImageUrl = placeInfo.image_url;
 		$("#buildingInfoTemplate").tmpl(templateBuildingInfo).appendTo( "#buildingDetailInfo" );
 		
+        buildingAddressInfo.placeId = placeInfo.b_id;
 		buildingAddressInfo.placeAddress = placeInfo.address;
 		buildingAddressInfo.placeAddressUrl = "http://maps.google.com?q=" + escape(placeInfo.address + " Georgia Institute of Technology");
-		buildingAddressInfo.phone_num = placeInfo.phone_num;		
+		buildingAddressInfo.phone_num = placeInfo.phone_num;
+        $("#buildingIdTemplate").tmpl(buildingAddressInfo).appendTo("#building_id_link");        
 		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo("#building_address_link");
 		$("#phoneNumberTemplate").tmpl(buildingAddressInfo).appendTo("#phone_num_link");
 		

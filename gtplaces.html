@@ -43,8 +43,12 @@
             </div>	
         </script>
 		
+		<script id="buildingIdTemplate" type="text/x-jquery-tmpl">       
+		    ${placeId}
+	    </script>	
+		
 	    <script id="buildingAddressTemplate" type="text/x-jquery-tmpl">       
-		    <a href="${placeAddressUrl}" id="building_place_address"> ${placeAddress}</a>			
+		    <a href="${placeAddressUrl}" id="building_place_address">${placeAddress}</a>			
 	    </script>	
 						
         <script id="phoneNumberTemplate" type="text/x-jquery-tmpl">
@@ -61,6 +65,13 @@
 	    </div>		
 	
 	    <ul data-role="listview" data-inset="true" id="building_info_others">
+            <li class="list-item-schedule">
+                <div id="building_id" class="ui-grid-a">
+                    <div class="ui-block-a"><b>Building ID</b></div>
+                    <div class="ui-block-b" id="building_id_link"></div> 
+                </div>
+            </li> 
+            
             <li class="list-item-schedule">
                 <div id="building_address" class="ui-grid-a">
                     <div class="ui-block-a"><b>Address</b></div>
