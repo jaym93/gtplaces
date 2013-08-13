@@ -124,11 +124,21 @@ function loadPlaces() {
 	$("#building_no_results_message").hide();
 	$("#searchResultsList").empty();
 	if (buildings !== undefined && buildings !== {}) {
-        $.each(buildings, function() {
-			templateRow.buildingID = this.b_id;
-			templateRow.buildingName = this.name.replace("\\","");
+        //Sort by key (b_id)
+        var buildingKeyList = Object.keys(buildings)
+        buildingKeyList.sort(function(a, b)
+        {
+           if (a < b) return -1;
+           if (a > b) return 1;
+           return 0;
+        });
+        $.each(buildingKeyList, function(index, building)
+        {
+        	templateRow.buildingID = buildings[building].b_id;
+			templateRow.buildingName = buildings[building].name.replace("\\","");
 			$("#buildingListTemplate").tmpl(templateRow).appendTo("#searchResultsList");
-		});
+        });
+
 		if ("placeListMain" === $.mobile.activePage.attr('id')) {   
 		    $('#searchResultsList').listview('refresh');
 	    }
