@@ -183,6 +183,7 @@ function populatePlaceInfo(placeInfo) {
         $("#buildingIdTemplate").tmpl(buildingAddressInfo).appendTo("#building_id_link");        
 		$("#buildingAddressTemplate").tmpl(buildingAddressInfo).appendTo("#building_address_link");
 		$("#phoneNumberTemplate").tmpl(buildingAddressInfo).appendTo("#phone_num_link");
+		$("#more_info a").attr('href', 'http://data.space.gatech.edu/fac.cfm?fac='+placeInfo.b_id);
 		
 		//Handle tags
 		var placeTagList = {};
