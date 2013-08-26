@@ -336,4 +336,13 @@ function getAllBuildings() {
 	$building->getAll();
 }
 
+function getBuildingIdFromLDAPName($ldap_name) {
+    $_db = new PDO("mysql:host=".OLD_HOST.";dbname=".OLD_DATABASE, OLD_USERNAME, OLD_PASSWORD);
+    $statement = $_db->prepare("SELECT `b_id` FROM `ldap_buildings` WHERE `ldap_name`=:ldap_name");
+    $statement->bindParam(":ldap_name", $ldap_name);
+    $statement->execute();
+    $result = $statement->fetchAll(PDO::FETCH_ASSOC);
+    echo $result[0]['b_id'];
+}
+
 ?>

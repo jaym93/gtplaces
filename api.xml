@@ -4,6 +4,13 @@
 		<![CDATA[This is an API to interact with GTplaces widget]]>
 	</description>
 
+    <command id="ldap" security="public">
+        <description><![CDATA[Returns the building id of a building, given the LDAP name.]]></description>
+
+        <get>
+            <action file="gtplaces.php"><![CDATA[getBuildingIdFromLDAPName($_REST['ldap']);]]></action>
+        </get>
+    </command>
 
 	<command id='buildings' security='public'>
         <description></description>
