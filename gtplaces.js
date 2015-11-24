@@ -155,7 +155,7 @@ function loadPlaces() {
 	    tags = JSON.parse(localStorage.getItem('GTplacesTags'));	
 	    //Add tags to each element in building listview for searching by tag
 	    for(var i = 0; i < tags.length; i++) {
-	        $("p#" + tags[i].GTB_BUILDING_NUMBER).append(tags[i].tag_name + ", ");
+	        $("p#" + tags[i].b_id).append(tags[i].tag_name + ", ");
 	    }
     });
 }
