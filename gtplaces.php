@@ -196,6 +196,12 @@ function getTagNames() {
    echo $ze;
 }
 
+function getCategories() {
+   global $db;
+   $stmt=$db->select()->unique()->from("categories","cat_name");
+   return $stmt->fetchAll();
+}
+
 function getTagsList() {
 	global $db;
    $rvals = $db->select()->from("buildings", array("b_id","name","address","image_url","latitude","longitude","phone_num"))->joinLeftUsing("tags", "b_id", array("tag_name"))->order("b_id ASC");
