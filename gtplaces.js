@@ -36,14 +36,7 @@ $(document).ready(function() {
         }
     });
 	
-	//Load building data from localStorage or download from server
-	if(placesJSONText = localStorage.getItem('OfflineGTplaces')) {
-	    console.log("Loading data from localStorage");
-		loadPlaces(placesJSONText);
-	} else {
-	    console.log("Fetching data from servers");
-		init();
-	}
+	init();
 	
 	//Permalink handling
 	var bid = $.url().fparam("bid");
@@ -95,10 +88,10 @@ function init() {
             dataType: 'json',
             async: false,
             success: function(data) {
-                console.log("Downloaded buildings");
-                localStorage.clear();
-                localStorage.setItem('OfflineGTplaces', JSON.stringify(data));
-                loadPlaces();
+                // console.log("Downloaded buildings");
+                // localStorage.clear();
+                // localStorage.setItem('OfflineGTplaces', JSON.stringify(data));
+                loadPlaces(JSON.stringify(data)));
             }
         });
    } else{
@@ -107,9 +100,10 @@ function init() {
 }
 
 
-function loadPlaces() {	
+function loadPlaces(d
+	) {	
 	//Load places sequential array into associative array
-	var OfflineGTplaces = JSON.parse(localStorage.getItem('OfflineGTplaces'));
+	var OfflineGTplaces = JSON.parse(data);
 	buildings = {};
 	$.each(OfflineGTplaces, function(){
         buildings[this.b_id] = this;
