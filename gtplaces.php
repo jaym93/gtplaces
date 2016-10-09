@@ -198,7 +198,7 @@ function getTagNames() {
 
 function getCategories() {
    global $db;
-   $stmt=$db->select()->unique()->from("categories","cat_name");
+   $stmt=$db->select()->distinct()->from("categories","cat_name");
    return $stmt->fetchAll();
 }
 
