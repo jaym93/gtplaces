@@ -55,8 +55,8 @@
         </index>
         
         <get>
-            <description><![CDATA[Returns list of all categories]]></description>
-            <action file='gtplaces.php'><![CDATA[getCategories();]]></action>
+            <description><![CDATA[Search category for all the buildings]]></description>
+            <action file='gtplaces.php'><![CDATA[getBuildingsByCategory($_REST['category']);]]></action>
         </get>
     </command>
 

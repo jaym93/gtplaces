@@ -308,6 +308,6 @@ function getAllBuildings() {
    $building->getAll();
 }
 
-getBuildingsByCategory('University');
+
 
 ?>
