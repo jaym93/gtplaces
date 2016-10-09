@@ -207,6 +207,19 @@ function getCategories() {
    echo $ze;
 }
 
+function getBuildingsByCategory($category){
+   global $db;
+   $sl = $db->select()->from("buildings", array("b_id","name","address","image_url","phone_num"))->joinLeftUsing("categories","b_id",array("cat_name"))->where("cat_name LIKE ?", $category)->query();
+      $categories=array();
+   
+   foreach($sl->fetchAll() as $row){
+      array_push($categories,$row);
+   }
+   $ze= Zend_Json::encode($categories);
+   echo $ze;
+
+}
+
 function getTagsList() {
 	global $db;
    $rvals = $db->select()->from("buildings", array("b_id","name","address","image_url","latitude","longitude","phone_num"))->joinLeftUsing("tags", "b_id", array("tag_name"))->order("b_id ASC");
@@ -294,5 +307,7 @@ function getAllBuildings() {
    global $building;
    $building->getAll();
 }
+
+getBuildingsByCategory('University');
 
 ?>
