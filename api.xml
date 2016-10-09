@@ -17,7 +17,7 @@
         
         <index>
             <description><![CDATA[Returns list of all buildings with building id,name,address,latitude,longitude,image url and tags]]></description>
-            <action file='gtplaces.php'><![CDATA[getTagsList();]]></action>
+            <action file='gtplaces.php'><![CDATA[getAllBuildings();]]></action>
         </index>
         
         <get>
