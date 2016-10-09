@@ -100,8 +100,7 @@ function init() {
 }
 
 
-function loadPlaces(d
-	) {	
+function loadPlaces(data) {	
 	//Load places sequential array into associative array
 	var OfflineGTplaces = JSON.parse(data);
 	buildings = {};
