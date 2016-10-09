@@ -103,6 +103,7 @@ function init() {
 function loadPlaces(data) {	
 	//Load places sequential array into associative array
 	var OfflineGTplaces = JSON.parse(data);
+	console.log(OfflineGTplaces);
 	buildings = {};
 	$.each(OfflineGTplaces, function(){
         buildings[this.b_id] = this;
