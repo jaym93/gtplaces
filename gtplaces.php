@@ -198,8 +198,13 @@ function getTagNames() {
 
 function getCategories() {
    global $db;
-   $stmt=$db->select()->distinct()->from("categories","cat_name");
-   return $stmt->fetchAll();
+   $categories=array();
+   $stmt=$db->select()->distinct()->from("categories",array("cat_name"))->query();
+   foreach($stmt->fetchAll() as $row){
+	array_push($categories,$row['cat_name']);
+   }
+   $ze= Zend_Json::encode($categories);
+   echo $ze;
 }
 
 function getTagsList() {
@@ -289,5 +294,5 @@ function getAllBuildings() {
    global $building;
    $building->getAll();
 }
-getCategories();
+
 ?>
