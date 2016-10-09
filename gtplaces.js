@@ -91,7 +91,7 @@ function init() {
                 // console.log("Downloaded buildings");
                 // localStorage.clear();
                 // localStorage.setItem('OfflineGTplaces', JSON.stringify(data));
-                loadPlaces(JSON.stringify(data)));
+                loadPlaces(JSON.stringify(data));
             }
         });
    } else{
