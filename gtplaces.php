@@ -289,5 +289,5 @@ function getAllBuildings() {
    global $building;
    $building->getAll();
 }
- 
+getCategories();
 ?>
