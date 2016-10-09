@@ -46,6 +46,19 @@
         </index>
     </command>
 
+    <command id='categories' security='public'>
+        <description></description>
+        
+        <index>
+            <description><![CDATA[Returns list of all categories]]></description>
+            <action file='gtplaces.php'><![CDATA[getCategories();]]></action>
+        </index>
+        
+        <get>
+            <description><![CDATA[Search by Building name]]></description>
+            <action file='gtplaces.php'><![CDATA[searchByBuildingName($_REST['buildings']);]]></action>
+        </get>
+    </command>
 
     <command id='tags' security='public'>
         <description></description>
