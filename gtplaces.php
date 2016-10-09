@@ -19,7 +19,7 @@ $db = Zend_Db::factory("Pdo_Mysql", $params);
 
 class Buildings extends Zend_Db_Table_Abstract {
 
-	protected $_name = "Building";
+	protected $_name = "Buildings";
 
 	public function getIdsNames() {
 		$select = $this->select()->from($this, array("GTB_BUILDING_NUMBER", "GTB_NAME"));
@@ -137,7 +137,7 @@ function getBuildingsTags() {
 
 function searchByTagName($tagname) {
 	global $db;
-	$sl = $db->select()->from("Building", array("GTB_BUILDING_NUMBER","GTB_NAME","GTB_ADDRESS","image_url","phone_num"))->joinLeftUsing("tags","GTB_BUILDING_NUMBER",array("tag_name"))->where("tag_name LIKE ?", (preg_match("/^'.*?'$/", $tagname)) ? $tagname : $db->quote($tagname));
+	$sl = $db->select()->from("Buildings", array("GTB_BUILDING_NUMBER","GTB_NAME","GTB_ADDRESS","image_url","phone_num"))->joinLeftUsing("tags","GTB_BUILDING_NUMBER",array("tag_name"))->where("tag_name LIKE ?", (preg_match("/^'.*?'$/", $tagname)) ? $tagname : $db->quote($tagname));
 	// echo $sl;
 	$qu = $sl->query();
 	fb($sl->__toString(), "Query");
@@ -152,10 +152,10 @@ function searchByTagName($tagname) {
 function searchByBuildingId($bid) {
 	global $db;
 	$sl = $db->select();
-	$sl->from("Building", array("GTB_BUILDING_NUMBER", "GTB_NAME",
+	$sl->from("Buildings", array("GTB_BUILDING_NUMBER", "GTB_NAME",
 				"GTB_ADDRESS"));
 	$sl->joinLeft("GoogleEarth",
-			"Building.GTB_BUILDING_NUMBER = GoogleEarth.Building_GTB_BUILDING_NUMBER",
+			"Buildings.GTB_BUILDING_NUMBER = GoogleEarth.Building_GTB_BUILDING_NUMBER",
 			array("latitude", "longitude", "phone", "image"));
 	$sl->where("GTB_BUILDING_NUMBER LIKE ?", "%".implode("%",
 				explode(" ", strtolower($bid)))."%");
@@ -172,7 +172,7 @@ function searchByBuildingId($bid) {
 function searchByBuildingName($bname) {
 	global $db;
 	$sl = $db->select();
-	$sl->from("Building", array("GTB_BUILDING_NUMBER", "GTB_NAME",
+	$sl->from("Buildings", array("GTB_BUILDING_NUMBER", "GTB_NAME",
 				"GTB_ADDRESS"));
 	$sl->joinLeft("GoogleEarth",
 			"Building.GTB_BUILDING_NUMBER = GoogleEarth.Building_GTB_BUILDING_NUMBER",
@@ -241,7 +241,7 @@ function getTagsList() {
 	global $db;
 	try {
 		$rvals = $db->select();
-		$rvals->from("Building", array("GTB_BUILDING_NUMBER", "GTB_NAME",
+		$rvals->from("Buildings", array("GTB_BUILDING_NUMBER", "GTB_NAME",
 										"GTB_ADDRESS"));
 		$rvals->joinLeft("GoogleEarth",
 			"Building.GTB_BUILDING_NUMBER = GoogleEarth.Building_GTB_BUILDING_NUMBER",
