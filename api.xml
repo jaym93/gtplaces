@@ -54,10 +54,10 @@
             <action file='gtplaces.php'><![CDATA[getCategories();]]></action>
         </index>
         
-        <get>
-            <description><![CDATA[Search category for all the buildings]]></description>
+        <post>
+            <description><![CDATA[Search category for all the buildings. Send <b> category</b> with the name to get all the buildings]]></description>
             <action file='gtplaces.php'><![CDATA[getBuildingsByCategory($_REST['category']);]]></action>
-        </get>
+        </post>
     </command>
 
     <command id='tags' security='public'>
