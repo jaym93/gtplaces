@@ -1,0 +1,222 @@
+# this is an example of the Uber API
+# as a demonstration of an API spec in YAML
+swagger: '2.0'
+info:
+  title: Places API
+  description: This API will allow you to access the information of the places at Georgia Tech. It can be used to find out information about the offices and the buildings such as their names, addresses, phone numbers, images, categories and GPS coordinates.
+  version: "1.0.0"
+# the domain of the service
+host: m.gatech.edu
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /api
+produces:
+  - application/json
+paths:
+  /gtplaces/buildings:
+    get:
+      summary: Returns list of all buildings with their information
+      description: |
+       Returns list of all buildings with building id, name, address, latitude, longtitude, image url and tags.
+      parameters:
+        - name: building_name
+          in: query
+          description: Return information about this specific building
+          required: false
+          type: string
+          format: string
+      tags:
+        - buildings
+      responses:
+        200:
+          description: An array of building information
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/buildings'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  /gtplaces/buildings_id:
+    get:
+      summary: Returns building id number
+      description: |
+        Search by building ID
+      tags:
+        - buildings_id
+      responses:
+        200:
+          description: Soon to be updated
+          schema:
+            type: number
+            items:
+              $ref: '#/definitions/building_id'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  /gtplaces/checkuser:
+    get:
+      summary: Check if user is logged in
+      description: Check if user is logged in
+      tags:
+        - checkuser
+      responses:
+        200:
+          description: Soon to be updated
+          schema:
+            type: boolean
+            items:
+              $ref: '#/definitions/checkuser'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  /gtplaces/categories:
+    get:
+      summary: Return lists of all categories
+      description: Return lists of all categories
+      tags:
+        - categories
+      parameters:
+        - name: category
+          in: query
+          description: Search category for all the buildings. Send category with the name to get all the buildings
+          required: false
+          type: string
+          format: string
+      responses:
+        200:
+          description: List of all gtplaces categories
+          schema:
+            $ref: '#/definitions/categories'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  /gtplaces/tags:
+    get:
+      summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      parameters:
+        - name: tag_name
+          in: query
+          type: string
+          format: string
+          description: Search by tagname
+        - name: bid
+          in: query
+          type: string
+          format: string
+          description: Returns information about the building with the ID
+        - name: tag
+          in: query
+          type: string
+          format: string
+          description: Returns information about the building with the tag
+      tags:
+        - tags
+      responses:
+        200:
+          description: History information for the given user
+          schema:
+            $ref: '#/definitions/tags'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+  /gtplaces/flag:
+    get:
+      summary: Flag a tag
+      description: Flag a tag
+      parameters:
+        - name: bid
+          in: query
+          type: string
+          format: string
+          description: Returns information about the building with the ID
+      tags:
+        - flag
+      responses:
+        200:
+          description: History information for the given user
+          schema:
+            $ref: '#/definitions/flag'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+definitions:
+  buildings:
+    type: object
+    properties:
+      b_id:
+        type: string
+        description: ID of the building.
+      name:
+        type: string
+        description: Name of the building.
+      address:
+        type: string
+        description: Address of the building.
+      image_url:
+        type: string
+        description: Image of the building.
+      latitute:
+        type: string
+        description: Latitute of the building.
+      longitute:
+        type: string
+        description: Longitute of the building.
+      phone_num:
+        type: string
+        description: Phone number of the building.
+      tag_list:
+        type: array
+        description: Tags of the building.
+        
+  buildings_id:
+    type: object
+    properties:
+      soontobeupdated:
+        type: string
+        description: Soon to be updated
+        
+  checkuser:
+    type: object
+    properties:
+      product_id:
+        type: string
+        description: Soon to be updated
+  
+  categories:
+    type: object
+    properties:
+      cat_name:
+        type: array
+        description: Return lists of all categories
+      category:
+        type: object
+        description: Search category for all the buildings. Send category with the name to get all the buildings
+        
+
+
+  Error:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      fields:
+        type: string
