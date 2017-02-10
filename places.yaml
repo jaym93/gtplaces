@@ -20,11 +20,26 @@ paths:
       summary: Returns list of all buildings with their information
       description: |
        Returns list of all buildings with building id, name, address, latitude, longtitude, image url and tags.
+      tags:
+        - buildings
+      responses:
+        200:
+          description: An array of building information
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/buildings'
+              
+  '/gtplaces/buildings/{building_name}':
+    get:
+      summary: Returns list of all buildings with their information
+      description: |
+       Returns list of all buildings with building id, name, address, latitude, longtitude, image url and tags.
       parameters:
         - name: building_name
-          in: query
+          in: path
           description: Return information about this specific building
-          required: false
+          required: true
           type: string
           format: string
       tags:
@@ -36,16 +51,20 @@ paths:
             type: array
             items:
               $ref: '#/definitions/buildings'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+       
             
-  /gtplaces/buildings_id:
+  '/gtplaces/buildings_id/{building_id}':
     get:
       summary: Returns building id number
       description: |
         Search by building ID
+      parameters:
+        - name: building_id
+          in: path
+          description: Return information about this specific building
+          required: true
+          type: string
+          format: string
       tags:
         - buildings_id
       responses:
@@ -54,11 +73,8 @@ paths:
           schema:
             type: number
             items:
-              $ref: '#/definitions/building_id'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+              $ref: '#/definitions/buildings'
+       
             
   /gtplaces/checkuser:
     get:
@@ -73,44 +89,52 @@ paths:
             type: boolean
             items:
               $ref: '#/definitions/checkuser'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+        
             
   /gtplaces/categories:
     get:
-      summary: Return lists of all categories
       description: Return lists of all categories
+      tags:
+        - categories
+      responses:
+        200:
+          description: List of all gtplaces categories
+          schema:
+            $ref: '#/definitions/categories'
+    post:
+      description: Search category for all the buildings. Send category with the name to get all the buildings
       tags:
         - categories
       parameters:
         - name: category
           in: query
-          description: Search category for all the buildings. Send category with the name to get all the buildings
-          required: false
+          description: (Category name e.g. "University")
+          required: true
           type: string
           format: string
       responses:
         200:
           description: List of all gtplaces categories
           schema:
-            $ref: '#/definitions/categories'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+            $ref: '#/definitions/buildingsbycat'
+       
             
   /gtplaces/tags:
     get:
       summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
       description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      tags:
+        - tags
+      responses:
+        200:
+          description: SUCCESS
+          schema:
+            $ref: '#/definitions/tags'
+            
+    post:
+      summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
       parameters:
-        - name: tag_name
-          in: query
-          type: string
-          format: string
-          description: Search by tagname
         - name: bid
           in: query
           type: string
@@ -125,35 +149,44 @@ paths:
         - tags
       responses:
         200:
-          description: History information for the given user
+          description: SUCCESS
+         
+            
+  /gtplaces/tags/{tag_name}:
+    get:
+      summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      parameters:
+        - name: tag_name
+          in: path
+          type: string
+          format: string
+          description: Search by tagname
+          required: true
+      tags:
+        - tags
+      responses:
+        200:
+          description: SUCCESS
           schema:
-            $ref: '#/definitions/tags'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+            $ref: '#/definitions/buildingsbytag'
+        
             
   /gtplaces/flag:
-    get:
-      summary: Flag a tag
+    post:
       description: Flag a tag
       parameters:
         - name: bid
           in: query
           type: string
           format: string
-          description: Returns information about the building with the ID
+          description: (Building id e.g. "30")
       tags:
         - flag
       responses:
         200:
-          description: History information for the given user
-          schema:
-            $ref: '#/definitions/flag'
-        default:
-          description: Unexpected error
-          schema:
-            $ref: '#/definitions/Error'
+          description: SUCCESS
+       
             
 definitions:
   buildings:
@@ -182,14 +215,88 @@ definitions:
         description: Phone number of the building.
       tag_list:
         type: array
+        items:
+           type: string
         description: Tags of the building.
         
-  buildings_id:
+  buildingsbycat:
     type: object
     properties:
-      soontobeupdated:
+      b_id:
         type: string
-        description: Soon to be updated
+        description: ID of the building.
+      name:
+        type: string
+        description: Name of the building.
+      address:
+        type: string
+        description: Address of the building.
+      image_url:
+        type: string
+        description: Image of the building.
+      latitute:
+        type: string
+        description: Latitute of the building.
+      longitute:
+        type: string
+        description: Longitute of the building.
+      phone_num:
+        type: string
+        description: Phone number of the building.
+      cat_name:
+        type: string
+        description: Name of the category.
+        
+  buildingsbytag:
+    type: object
+    properties:
+      b_id:
+        type: string
+        description: ID of the building.
+      name:
+        type: string
+        description: Name of the building.
+      address:
+        type: string
+        description: Address of the building.
+      image_url:
+        type: string
+        description: Image of the building.
+      latitute:
+        type: string
+        description: Latitute of the building.
+      longitute:
+        type: string
+        description: Longitute of the building.
+      phone_num:
+        type: string
+        description: Phone number of the building.
+      tag_name:
+        type: string
+        description: Name of the tag.
+     
+        
+  tags:
+    type: object
+    
+    properties:
+      tag_id:
+        type: string
+      b_id:
+        type: string
+      tag_name:
+        type: string
+      gtuser:
+        type: string
+      auth:
+        type: string
+      times_tag:
+        type: string
+      flag_users:
+        type: string
+      times_flagged:
+        type: string
+       
         
   checkuser:
     type: object
@@ -199,24 +306,10 @@ definitions:
         description: Soon to be updated
   
   categories:
-    type: object
-    properties:
-      cat_name:
-        type: array
-        description: Return lists of all categories
-      category:
-        type: object
-        description: Search category for all the buildings. Send category with the name to get all the buildings
-        
+    type: array
+    items:
+      type: string
+ 
 
 
-  Error:
-    type: object
-    properties:
-      code:
-        type: integer
-        format: int32
-      message:
-        type: string
-      fields:
-        type: string
+  
