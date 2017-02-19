@@ -22,7 +22,7 @@ paths:
         - buildings
       responses:
         200:
-          description: An array of building information
+          description: SUCCESS
           schema:
             type: array
             items:
@@ -36,7 +36,7 @@ paths:
       parameters:
         - name: building_name
           in: path
-          description: Return information about this specific building
+          description: (Building name e.g "College of Computing")
           required: true
           type: string
           format: string
@@ -44,7 +44,7 @@ paths:
         - buildings
       responses:
         200:
-          description: An array of building information
+          description: SUCCESS
           schema:
             type: array
             items:
@@ -59,7 +59,7 @@ paths:
       parameters:
         - name: building_id
           in: path
-          description: Return information about this specific building
+          description: (Building ID e.g "10")
           required: true
           type: string
           format: string
@@ -67,7 +67,7 @@ paths:
         - buildings_id
       responses:
         200:
-          description: Soon to be updated
+          description: An array of building information for specific building ID
           schema:
             type: number
             items:
@@ -82,7 +82,7 @@ paths:
         - checkuser
       responses:
         200:
-          description: Soon to be updated
+          description: SUCCESS
           schema:
             type: boolean
             items:
@@ -112,7 +112,7 @@ paths:
           format: string
       responses:
         200:
-          description: List of all gtplaces categories
+          description: SUCCESS
           schema:
             $ref: '#/definitions/buildingsbycat'
        
@@ -125,7 +125,7 @@ paths:
         - tags
       responses:
         200:
-          description: SUCCESS
+          description: List of all tags with with information
           schema:
             $ref: '#/definitions/tags'
             
@@ -137,12 +137,12 @@ paths:
           in: query
           type: string
           format: string
-          description: Returns information about the building with the ID
+          description: (Building ID e.g "30")
         - name: tag
           in: query
           type: string
           format: string
-          description: Returns information about the building with the tag
+          description: (Tag e.g "Admin")
       tags:
         - tags
       responses:
@@ -159,7 +159,7 @@ paths:
           in: path
           type: string
           format: string
-          description: Search by tagname
+          description: (Tagname e.g. "coc")
           required: true
       tags:
         - tags
@@ -276,7 +276,6 @@ definitions:
         
   tags:
     type: object
-    
     properties:
       tag_id:
         type: string
