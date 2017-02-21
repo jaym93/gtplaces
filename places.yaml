@@ -10,8 +10,12 @@ schemes:
   - https
 # will be prefixed to all paths
 basePath: /api
+consumes:
+  - application/json
+  - text/xml
 produces:
   - application/json
+  - text/html
 paths:
   /gtplaces/buildings:
     get:
@@ -22,7 +26,7 @@ paths:
         - buildings
       responses:
         200:
-          description: SUCCESS
+          description: An array of building information
           schema:
             type: array
             items:
@@ -36,7 +40,7 @@ paths:
       parameters:
         - name: building_name
           in: path
-          description: (Building name e.g "College of Computing")
+          description: Return information about this specific building
           required: true
           type: string
           format: string
@@ -44,7 +48,7 @@ paths:
         - buildings
       responses:
         200:
-          description: SUCCESS
+          description: An array of building information
           schema:
             type: array
             items:
@@ -59,7 +63,7 @@ paths:
       parameters:
         - name: building_id
           in: path
-          description: (Building ID e.g "10")
+          description: Return information about this specific building
           required: true
           type: string
           format: string
@@ -67,7 +71,7 @@ paths:
         - buildings_id
       responses:
         200:
-          description: An array of building information for specific building ID
+          description: Soon to be updated
           schema:
             type: number
             items:
@@ -82,7 +86,7 @@ paths:
         - checkuser
       responses:
         200:
-          description: SUCCESS
+          description: Soon to be updated
           schema:
             type: boolean
             items:
@@ -105,14 +109,15 @@ paths:
         - categories
       parameters:
         - name: category
-          in: query
-          description: (Category name e.g. "University")
+          in: formData
+          description: Category name. Current values are University, Housing and Greek. Refer to the values in /gtplaces/categories for the up-to-date values.
           required: true
           type: string
           format: string
+          default: 'University'
       responses:
         200:
-          description: SUCCESS
+          description: List of all gtplaces categories
           schema:
             $ref: '#/definitions/buildingsbycat'
        
@@ -125,7 +130,7 @@ paths:
         - tags
       responses:
         200:
-          description: List of all tags with with information
+          description: SUCCESS
           schema:
             $ref: '#/definitions/tags'
             
@@ -137,12 +142,12 @@ paths:
           in: query
           type: string
           format: string
-          description: (Building ID e.g "30")
+          description: Returns information about the building with the ID
         - name: tag
           in: query
           type: string
           format: string
-          description: (Tag e.g "Admin")
+          description: Returns information about the building with the tag
       tags:
         - tags
       responses:
@@ -159,7 +164,7 @@ paths:
           in: path
           type: string
           format: string
-          description: (Tagname e.g. "coc")
+          description: Search by tagname
           required: true
       tags:
         - tags
@@ -276,6 +281,7 @@ definitions:
         
   tags:
     type: object
+    
     properties:
       tag_id:
         type: string
