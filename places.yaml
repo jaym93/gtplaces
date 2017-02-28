@@ -40,10 +40,11 @@ paths:
       parameters:
         - name: building_name
           in: path
-          description: Return information about this specific building
+          description: Name of the building. Refer to the 'name' property in /gtplaces/buildings for the up-to-date values.
           required: true
           type: string
           format: string
+          default: 'College of Computing'
       tags:
         - buildings
       responses:
@@ -63,10 +64,11 @@ paths:
       parameters:
         - name: building_id
           in: path
-          description: Return information about this specific building
+          description: Id of the building. Refer to the 'b_id' property in /gtplaces/buildings for the up-to-date values.
           required: true
           type: string
           format: string
+          default: '50'
       tags:
         - buildings_id
       responses:
@@ -135,19 +137,18 @@ paths:
             $ref: '#/definitions/tags'
             
     post:
-      summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
-      description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      description: Add a tag
       parameters:
         - name: bid
           in: query
           type: string
           format: string
-          description: Returns information about the building with the ID
+          description: Id of the building. Refer to the 'b_id' property in /gtplaces/buildings for the up-to-date values.
         - name: tag
           in: query
           type: string
           format: string
-          description: Returns information about the building with the tag
+          description: Name of the tag that you want to add to the building.
       tags:
         - tags
       responses:
@@ -157,15 +158,15 @@ paths:
             
   /gtplaces/tags/{tag_name}:
     get:
-      summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
-      description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      description: Search by tagname
       parameters:
         - name: tag_name
           in: path
           type: string
           format: string
-          description: Search by tagname
+          description: Name of the tag. Refer to the 'tag_name' property in /gtplaces/tags for the up-to-date values.
           required: true
+          default: 'coc'
       tags:
         - tags
       responses:
