@@ -158,6 +158,19 @@ function searchByBuildingName($bname) {
    echo $ze;
 }
 
+function searchByBuildingId($bid) {
+   global $db;
+   $sl = $db->select()->from("buildings", array("b_id", "name", "address", "image_url","longitude","latitude","phone_num"))->where("b_id LIKE ?", $bid);
+   $qu = $sl->query();
+   fb($sl->__toString(), "Query");
+   $row_values = array();
+   foreach ($qu->fetchAll() as $row) {
+      array_push($row_values, $row);
+   }
+   $ze = Zend_Json::encode($row_values);
+   echo $ze;
+}
+
 function getRowById($bid) {
 	global $building;
 	echo $building->getRow($bid);
