@@ -23,7 +23,7 @@ $(document).ready(function() {
     
     //Hide tag button if not logged in
     $.ajax({
-        url: 'http://m.gatech.edu/api/gtplaces/checkuser/',
+        url: '/api/gtplaces/checkuser/',
         success: function(data) {
             var username = $.trim(data);
             if (username === "null") {
@@ -70,7 +70,7 @@ function confirmFlagTag(tagSpan) {
 	$("#txtFlag").append(selectedTag);
 	
 	$("#btnFlag").click(function() {
-        $.post("http://m.gatech.edu/api/gtplaces/tags/" + selectedTag + "/flag", {"bid": currentPlaceID}, function(data) {
+        $.post("/api/gtplaces/tags/" + selectedTag + "/flag", {"bid": currentPlaceID}, function(data) {
             console.log(data);
             test = data;
             $("#"+selectedTagId).find('a').css("color", "red");
@@ -84,7 +84,7 @@ function init() {
    // Put the object into storage - added by Janani Narayanan
    if(supports_html5_storage()) {
         $.ajax({
-            url: "http://m.gatech.edu/api/gtplaces/buildings/",
+            url: "/api/gtplaces/buildings/",
             dataType: 'json',
             async: false,
             success: function(data) {
@@ -143,7 +143,7 @@ function loadPlaces(data) {
 	library.changeLinksForOffline();
 	
 	//Get tags
-	$.getJSON("http://m.gatech.edu/api/gtplaces/tags/",function(data){
+	$.getJSON("/api/gtplaces/tags/",function(data){
 	    console.log("Downloaded tags");
     	localStorage.setItem('GTplacesTags', JSON.stringify(data));		
 	    tags = JSON.parse(localStorage.getItem('GTplacesTags'));	
@@ -202,7 +202,7 @@ function populatePlaceInfo(placeInfo) {
 function saveTag() {
 	var newTag = $.trim($("#new_tag").val().toLowerCase());
 	if (newTag.length != 0) {
-		$.post("http://m.gatech.edu/api/gtplaces/tags/", { "bid": currentPlaceID, "tag": newTag }, function(data) {
+		$.post("/api/gtplaces/tags/", { "bid": currentPlaceID, "tag": newTag }, function(data) {
 			if("success" == $.trim(data)) {
 			    console.log("Saved tag");
 			    // Once the ajax request returns successfully, insert the new tag
