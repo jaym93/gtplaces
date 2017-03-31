@@ -56,7 +56,7 @@
         
         <post>
             <description><![CDATA[Search category for all the buildings. Send <b> category</b> with the name to get all the buildings]]></description>
-            <action file='gtplaces.php'><![CDATA[getBuildingsByCategory($_REST['category']);]]></action>
+            <action file='gtplaces.php'><![CDATA[getBuildingsByCategory($_POST['category']);]]></action>
         </post>
     </command>
 
