@@ -129,5 +129,5 @@ def getTags():
 ##            response.append(res_to_json(result))
     return flask.jsonify(response)
 
-app.run(debug=True)    
+app.run(host='0.0.0.0', debug=True)    
 
