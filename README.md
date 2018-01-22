@@ -7,6 +7,11 @@ A Dockerfile is a **_must_** for any repositories we are currently migrating. Ev
 ## TODO:
   * Need to fix SSH access to github.gatech.edu for pulling the codebase directly from the repository. Tested with manually adding the source code to the container.
   * Decide on how best to pass the Environment Variables
+  * As per the code, the application is running on port 5000, so use the following to start the container (as a daemon)
+    
+    ```docker run -d -p 80:5000 -e <DB_USERNAME> -e <DB_PASSWORD> <image_name>```
+    
+    Note that we are passing the required environment variables for connecting to the DB service while starting the container. Could be done by mentioning them in the Dockerfile as well. Needs to be decided.
 
 ### Requirement of a new Branch
 This branch ```gtmobile-gtplaces/docker_api_dev``` will only be used for development purposes. 
