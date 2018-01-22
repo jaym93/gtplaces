@@ -1,35 +1,20 @@
-# Dockerfile to deploy Python services to dockertest.rnoc.gatech.edu
+FROM alpine:3.7
 
-FROM ubuntu
-MAINTAINER Jayanth Mohana Krishna "jayanthm@gatech.edu"
+# update 
+RUN apk update && apk upgrade
+# install git and python3
+RUN apk add python3 git
 
-# Port to expose
+WORKDIR /app
+
+# 700 permissions is mandatory for Github else it throws error.
+	# Host key checking is necessary to avoid the question, "Are you sure you want to add <host> to list of known hosts"
+RUN	chmod 700 /root/.ssh/id_rsa && echo -e "Host github.gatech.edu\n\tStrictHostKeyChecking no\n" >> /root/.ssh/config && \
+    git clone https://github.gatech.edu/gtjourney/gtmobile-gtplaces.git -b docker_api_dev && \
+    rm -rf /root/.ssh/
+
+RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
+
 EXPOSE 5000
 
-# Arguments
-ARG repo # the git repo we will be pulling from
-ARG service # the name of the API (like gtplaces or gtpower)
-
-# Base update
-RUN apt-get update && apt-get -y upgrade
-
-# Install required packages
-RUN apt-get isntall python3 python3-pip
-RUN apt-get install build-tools
-RUN apt-get install git
-
-# Install Python packages
-RUN pip3 install flask
-RUN pip3 install pymysql
-
-# Get the CAS authenticator for Flask
-RUN git clone git@github.com:cameronbwhite/Flask-CAS.git
-RUN cd Flask-CAS
-RUN python3 setup.py install
-RUN cd ..
-
-# Get the python server from github
-RUN git clone #...github.gatech.edu URL here
-
-# Run the service
-CMD ["python","./app.py"]
+CMD ["python3", "places_api.py"]
