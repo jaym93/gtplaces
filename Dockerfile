@@ -15,6 +15,7 @@ RUN	chmod 700 /root/.ssh/id_rsa && echo -e "Host github.gatech.edu\n\tStrictHost
 
 RUN pip3 install --trusted-host pypi.python.org -r requirements.txt
 
+EXPOSE 80
 EXPOSE 5000
 
 CMD ["python3", "places_api.py"]

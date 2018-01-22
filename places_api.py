@@ -3,7 +3,7 @@ import pymysql
 import flask
 from flask import request
 from flask_cas import CAS, login_required
-import OS
+import os
 
 app = flask.Flask(__name__)
 CAS(app)
