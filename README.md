@@ -4,6 +4,8 @@ A widget for getting campus building information
 ## Important
 A Dockerfile is a **_must_** for any repositories we are currently migrating. Even if it is not used at the end, with using docker-compose instead, presence of a Dockerfile will greatly help in understanding the dependencies of the application.
 
+## TODO:
+  * Need to fix SSH access to github.gatech.edu for pulling the codebase directly from the repository. Tested with manually adding the source code to the container.
 
 ### Requirement of a new Branch
 This branch ```gtmobile-gtplaces/docker_api_dev``` will only be used for development purposes. 
