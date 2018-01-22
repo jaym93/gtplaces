@@ -6,6 +6,7 @@ A Dockerfile is a **_must_** for any repositories we are currently migrating. Ev
 
 ## TODO:
   * Need to fix SSH access to github.gatech.edu for pulling the codebase directly from the repository. Tested with manually adding the source code to the container.
+  * Decide on how best to pass the Environment Variables
 
 ### Requirement of a new Branch
 This branch ```gtmobile-gtplaces/docker_api_dev``` will only be used for development purposes. 
