@@ -1,0 +1,316 @@
+swagger: '2.0'
+info:
+  title: Places API
+  description: This API will allow you to access the information of the places at Georgia Tech. It can be used to find out information about the offices and the buildings such as their names, addresses, phone numbers, images, categories and GPS coordinates.
+  version: "2.0.0"
+# the domain of the service
+host: dockertest.rnoc.gatech.edu
+# array of all schemes that your API supports
+schemes:
+  - https
+# will be prefixed to all paths
+basePath: /api
+consumes:
+  - application/json
+  - text/xml
+  - application/x-www-form-urlencoded
+produces:
+  - application/json
+  - text/html
+paths:
+  /gtplaces/buildings:
+    get:
+      summary: Returns list of all buildings with their information
+      description: |
+       Returns list of all buildings with building id, name, address, latitude, longtitude, image url and tags.
+      tags:
+        - buildings
+      responses:
+        200:
+          description: An array of building information
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/buildings'
+
+  '/gtplaces/buildings/{building_name}':
+    get:
+      summary: Returns list of all buildings with their information
+      description: |
+       Returns list of all buildings with building id, name, address, latitude, longtitude, image url and tags.
+      parameters:
+        - name: building_name
+          in: path
+          description: Name of the building. Refer to the 'name' property in /gtplaces/buildings for the up-to-date values.
+          required: true
+          type: string
+          format: string
+          default: 'College of Computing'
+      tags:
+        - buildings
+      responses:
+        200:
+          description: An array of building information
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/buildings'
+
+
+  '/gtplaces/buildings_id/{building_id}':
+    get:
+      summary: Returns building id number
+      description: |
+        Search by building ID
+      parameters:
+        - name: building_id
+          in: path
+          description: Id of the building. Refer to the 'b_id' property in /gtplaces/buildings for the up-to-date values.
+          required: true
+          type: string
+          format: string
+          default: '50'
+      tags:
+        - buildings_id
+      responses:
+        200:
+          description: Soon to be updated
+          schema:
+            type: number
+            items:
+              $ref: '#/definitions/buildings'
+
+
+  /gtplaces/checkuser:
+    get:
+      summary: Check if user is logged in
+      description: Check if user is logged in
+      tags:
+        - checkuser
+      responses:
+        200:
+          description: Soon to be updated
+          schema:
+            type: boolean
+            items:
+              $ref: '#/definitions/checkuser'
+
+
+  /gtplaces/categories:
+    get:
+      description: Return lists of all categories
+      tags:
+        - categories
+      responses:
+        200:
+          description: List of all gtplaces categories
+          schema:
+            $ref: '#/definitions/categories'
+    post:
+      description: Search category for all the buildings. Send category with the name to get all the buildings
+      tags:
+        - categories
+      parameters:
+        - name: category
+          in: formData
+          description: Category name. Current values are University, Housing and Greek. Refer to the values in /gtplaces/categories for the up-to-date values.
+          required: true
+          type: string
+          format: string
+          default: 'University'
+      responses:
+        200:
+          description: List of all gtplaces categories
+          schema:
+            $ref: '#/definitions/buildingsbycat'
+
+
+  /gtplaces/tags:
+    get:
+      summary: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      description: Returns lists of all tags with tag id, building id, tagname, user who created the tag, number of tags, number of flags
+      tags:
+        - tags
+      responses:
+        200:
+          description: SUCCESS
+          schema:
+            $ref: '#/definitions/tags'
+
+    post:
+      description: Add a tag
+      parameters:
+        - name: bid
+          in: query
+          type: string
+          format: string
+          description: Id of the building. Refer to the 'b_id' property in /gtplaces/buildings for the up-to-date values.
+        - name: tag
+          in: query
+          type: string
+          format: string
+          description: Name of the tag that you want to add to the building.
+      tags:
+        - tags
+      responses:
+        200:
+          description: SUCCESS
+
+
+  /gtplaces/tags/{tag_name}:
+    get:
+      description: Search by tagname
+      parameters:
+        - name: tag_name
+          in: path
+          type: string
+          format: string
+          description: Name of the tag. Refer to the 'tag_name' property in /gtplaces/tags for the up-to-date values.
+          required: true
+          default: 'coc'
+      tags:
+        - tags
+      responses:
+        200:
+          description: SUCCESS
+          schema:
+            $ref: '#/definitions/buildingsbytag'
+
+
+  /gtplaces/flag:
+    post:
+      description: Flag a tag
+      parameters:
+        - name: bid
+          in: query
+          type: string
+          format: string
+          description: (Building id e.g. "30")
+      tags:
+        - flag
+      responses:
+        200:
+          description: SUCCESS
+
+
+definitions:
+  buildings:
+    type: object
+    properties:
+      b_id:
+        type: string
+        description: ID of the building.
+      name:
+        type: string
+        description: Name of the building.
+      address:
+        type: string
+        description: Address of the building.
+      image_url:
+        type: string
+        description: Image of the building.
+      latitute:
+        type: string
+        description: Latitute of the building.
+      longitute:
+        type: string
+        description: Longitute of the building.
+      phone_num:
+        type: string
+        description: Phone number of the building.
+      tag_list:
+        type: array
+        items:
+           type: string
+        description: Tags of the building.
+
+  buildingsbycat:
+    type: object
+    properties:
+      b_id:
+        type: string
+        description: ID of the building.
+      name:
+        type: string
+        description: Name of the building.
+      address:
+        type: string
+        description: Address of the building.
+      image_url:
+        type: string
+        description: Image of the building.
+      latitute:
+        type: string
+        description: Latitute of the building.
+      longitute:
+        type: string
+        description: Longitute of the building.
+      phone_num:
+        type: string
+        description: Phone number of the building.
+      cat_name:
+        type: string
+        description: Name of the category.
+
+  buildingsbytag:
+    type: object
+    properties:
+      b_id:
+        type: string
+        description: ID of the building.
+      name:
+        type: string
+        description: Name of the building.
+      address:
+        type: string
+        description: Address of the building.
+      image_url:
+        type: string
+        description: Image of the building.
+      latitute:
+        type: string
+        description: Latitute of the building.
+      longitute:
+        type: string
+        description: Longitute of the building.
+      phone_num:
+        type: string
+        description: Phone number of the building.
+      tag_name:
+        type: string
+        description: Name of the tag.
+
+
+  tags:
+    type: object
+
+    properties:
+      tag_id:
+        type: string
+      b_id:
+        type: string
+      tag_name:
+        type: string
+      gtuser:
+        type: string
+      auth:
+        type: string
+      times_tag:
+        type: string
+      flag_users:
+        type: string
+      times_flagged:
+        type: string
+
+
+  checkuser:
+    type: object
+    properties:
+      product_id:
+        type: string
+        description: Soon to be updated
+
+  categories:
+    type: array
+    items:
+      type: string
