@@ -29,7 +29,7 @@ swagger_template = {
 
 app = flask.Flask(__name__)
 cas = CAS(app)
-swag = Swagger(app, template=swagger_template)
+swag = Swagger(app, template=swagger_template, sanitizer=MK_SANITIZER)
 app.config['CAS_SERVER'] = 'https://login.gatech.edu/cas'
 app.config['CAS_VALIDATE_ROUTE'] = '/serviceValidate'
 app.config['SECRET_KEY'] = '6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d' #set a random key, otherwise the authentication will throw errors
