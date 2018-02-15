@@ -110,6 +110,56 @@ def getAll():
     responses:
         200:
             description: An array of building information
+            schema:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      b_id:
+                        type: string
+                        description: ID of the building
+                        required: true
+                      name:
+                        type: string
+                        description: Name of the building
+                        required: true
+                      address:
+                        type: string
+                        description: Address of the building
+                      address2:
+                        type: string
+                        description: City and state
+                      zipcode:
+                        type: string
+                        description: Zipcode of the building
+                      category:
+                        type: array
+                        items:
+                            type:string
+                        description: The categories the building belongs to
+                      image_url:
+                        type: string
+                        description: Image of the building
+                      website_url:
+                        type: string
+                        description: Website of the building
+                      phone_num:
+                        type: string
+                        description: Phone number of the building
+                      latitute:
+                        type: string
+                        description: Latitute of the building
+                      longitute:
+                        type: string
+                        description: Longitute of the building
+                      shape_coordinates:
+                        type: string
+                        description: Map poly-coordinates of the building
+                      tag_list:
+                        type: array
+                        items:
+                          type: string
+                        description: Tags of the building
     """
     query = "select * from buildings"
     cur.execute(query)
@@ -139,6 +189,56 @@ def getById(b_id):
     responses:
         200:
             description: An array of building information
+            schema:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      b_id:
+                        type: string
+                        description: ID of the building
+                        required: true
+                      name:
+                        type: string
+                        description: Name of the building
+                        required: true
+                      address:
+                        type: string
+                        description: Address of the building
+                      address2:
+                        type: string
+                        description: City and state
+                      zipcode:
+                        type: string
+                        description: Zipcode of the building
+                      category:
+                        type: array
+                        items:
+                            type:string
+                        description: The categories the building belongs to
+                      image_url:
+                        type: string
+                        description: Image of the building
+                      website_url:
+                        type: string
+                        description: Website of the building
+                      phone_num:
+                        type: string
+                        description: Phone number of the building
+                      latitute:
+                        type: string
+                        description: Latitute of the building
+                      longitute:
+                        type: string
+                        description: Longitute of the building
+                      shape_coordinates:
+                        type: string
+                        description: Map poly-coordinates of the building
+                      tag_list:
+                        type: array
+                        items:
+                          type: string
+                        description: Tags of the building
     """
     query = "select * from buildings where b_id = '"+b_id+"'"
     cur.execute(query)
@@ -168,6 +268,56 @@ def getByName(name):
     responses:
         200:
             description: An array of building information
+            schema:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      b_id:
+                        type: string
+                        description: ID of the building
+                        required: true
+                      name:
+                        type: string
+                        description: Name of the building
+                        required: true
+                      address:
+                        type: string
+                        description: Address of the building
+                      address2:
+                        type: string
+                        description: City and state
+                      zipcode:
+                        type: string
+                        description: Zipcode of the building
+                      category:
+                        type: array
+                        items:
+                            type:string
+                        description: The categories the building belongs to
+                      image_url:
+                        type: string
+                        description: Image of the building
+                      website_url:
+                        type: string
+                        description: Website of the building
+                      phone_num:
+                        type: string
+                        description: Phone number of the building
+                      latitute:
+                        type: string
+                        description: Latitute of the building
+                      longitute:
+                        type: string
+                        description: Longitute of the building
+                      shape_coordinates:
+                        type: string
+                        description: Map poly-coordinates of the building
+                      tag_list:
+                        type: array
+                        items:
+                          type: string
+                        description: Tags of the building
     """
     query = "select * from buildings where name like '%" + name + "%'"
     cur.execute(query)
@@ -181,15 +331,22 @@ def getByName(name):
 def getCategories():
     """
     Return lists of all categories
-    Lists all the categories in the GTPlaces database
+    Lists all the categories in the GTPlaces database.
+    _Categories are one of "University", "Housing" or "Greek", and is being preserved for legacy reasons._
     ---
     tags:
         - categories
+    deprecated: true
     produces:
         - application/json
     responses:
         200:
             description: List of all gtplaces categories
+            schema:
+                type: array
+                items:
+                  type: string
+                description: List of all categories
     """
     response = []
     query = "select distinct cat_name from categories"
@@ -204,33 +361,78 @@ def postCategories():
     """
     List all buildings in a certain category
     Send 'category' in body with the category name to get all the buildings and associated information.
+    _Categories are one of "University", "Housing" or "Greek", and is being preserved for legacy reasons._
     ---
     tags:
         - categories
+    deprecated: true
     consumes:
-        - application/json
+        - application/x-www-form-urlencoded
     parameters:
         - name: category
-          in: body
+          in: formData
           description: Category name. Current values are University, Housing and Greek.
           required: true
-          schema:
-            type: object
-            required:
-                - category
-            properties:
-                category:
-                    type: string
-                    default: University
-          default: '{"category":"University"}'
+          type: string
+          default: University
     produces:
         - application/json
     responses:
         200:
             description: List of all gtplaces categories
+            schema:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      b_id:
+                        type: string
+                        description: ID of the building
+                        required: true
+                      name:
+                        type: string
+                        description: Name of the building
+                        required: true
+                      address:
+                        type: string
+                        description: Address of the building
+                      address2:
+                        type: string
+                        description: City and state
+                      zipcode:
+                        type: string
+                        description: Zipcode of the building
+                      category:
+                        type: array
+                        items:
+                            type:string
+                        description: The categories the building belongs to
+                      image_url:
+                        type: string
+                        description: Image of the building
+                      website_url:
+                        type: string
+                        description: Website of the building
+                      phone_num:
+                        type: string
+                        description: Phone number of the building
+                      latitute:
+                        type: string
+                        description: Latitute of the building
+                      longitute:
+                        type: string
+                        description: Longitute of the building
+                      shape_coordinates:
+                        type: string
+                        description: Map poly-coordinates of the building
+                      tag_list:
+                        type: array
+                        items:
+                          type: string
+                        description: Tags of the building
     """
     response = []
-    category = request.get_json()['category']
+    category = request.form["category"]
     query = "select * from buildings b, categories c where c.cat_name = '"+category+"' and c.b_id = b.b_id"
     cur.execute(query)
     results = cur.fetchall()
@@ -244,6 +446,7 @@ def getTags():
     """
     Return lists of all tags
     Lists all the tags in the GTPlaces database, with the associated information (Tag ID, Building ID it is associated with, User who created it, number of times it has been tagged or flagged).
+    _Tags let users search by substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results._
     ---
     tags:
         - tags
@@ -252,6 +455,37 @@ def getTags():
     responses:
         200:
             description: List of all gtplaces tags
+            schema:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      tag_id:
+                        type: string
+                        required: true
+                        description: ID of the tag (autoincrement)
+                      b_id:
+                        type: string
+                        required: true
+                        description: ID of the building the tag is associated with
+                      tag_name:
+                        type: string
+                        description: Tag label
+                      gtuser:
+                        type: string
+                        description: User who created the tag (First user, in case of multiple times tagged)
+                      auth:
+                        type: string
+                        description: (only here for compatibility reasons, not used)
+                      times_tag:
+                        type: string
+                        description: Number of times this building has been tagged (possibly by different users)
+                      flag_users:
+                        type: string
+                        description: Users who have flagged this tag (First user, in case of multiple times tagged)
+                      times_flagged:
+                        type: string
+                        description: Number of times this tag has been flagged
     """
     response = []
     query = "select * from tags"
@@ -275,18 +509,22 @@ def getTags():
 def addTag():
     """
     Add a tag
-    Send 'b_id' (building ID), 'tag' (Tag Name) in POST body to add to the database. Using this method requires you to be logged in via CAS.
+    Send 'b_id' (building ID), 'tag' (Tag Name) in POST body to add to the database.
+    Tags let users create searchable substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
+    *Using this method requires you to be logged in via CAS.*
     ---
     tags:
         - tags
+    consumes:
+        - application/x-www-form-urlencoded
     parameters:
         - name: b_id
-          in: query
+          in: formData
           description: Id of the building
           required: true
           type: string
         - name: tag
-          in: query
+          in: formData
           description: Name of the tag that you want to add to the building
           required: true
           type: string
@@ -298,9 +536,9 @@ def addTag():
         400:
             description: Bad request, Building ID ('b_id') or Tag Name ('tag') missing in POST body
     """
-    bid = request.get_json(force=True)['b_id']
-    tag = request.get_json(force=True)['tag']
-    if(bid=="" or tag==""):
+    bid = request.form['b_id']
+    tag = request.form['tag']
+    if (bid=="" or tag==""):
         return flask.jsonify({"error": "Building ID or Tag Name cannot be empty!"}), 400
     query = "insert into tags (b_id,tag_name,gtuser,auth,times_tag,flag_users,times_flagged) values ('"+bid+"','"+tag+"','"+cas.username+"',0,1,'',0) ON DUPLICATE KEY UPDATE times_tag=times_tag+1"
     cur.execute(query)
@@ -325,7 +563,38 @@ def getByTagName(name):
         - application/json
     responses:
         200:
-            description: List of all gtplaces tags
+            description: List of all places associated with a certain tag
+            schema:
+                type: array
+                items:
+                    type: object
+                    properties:
+                      tag_id:
+                        type: string
+                        required: true
+                        description: ID of the tag (autoincrement)
+                      b_id:
+                        type: string
+                        required: true
+                        description: ID of the building the tag is associated with
+                      tag_name:
+                        type: string
+                        description: Tag label
+                      gtuser:
+                        type: string
+                        description: User who created the tag (First user, in case of multiple times tagged)
+                      auth:
+                        type: string
+                        description: (only here for compatibility reasons, not used)
+                      times_tag:
+                        type: string
+                        description: Number of times this building has been tagged (possibly by different users)
+                      flag_users:
+                        type: string
+                        description: Users who have flagged this tag (First user, in case of multiple times tagged)
+                      times_flagged:
+                        type: string
+                        description: Number of times this tag has been flagged
     """
     response = []
     query = "select t.tag_id, t.b_id, t.tag_name, t.gtuser, t.auth, t.times_tag, t.flag_users, t.times_flagged from buildings b, tags t where tag_name like '%" + name + "%' and b.b_id = t.b_id"
@@ -348,14 +617,18 @@ def getByTagName(name):
 @login_required
 def flagTag():
     """
-    Flags a certain tagging
-    Send 'tag_id' (Tag ID) in POST body to flag an existing tag in the database. If Tag ID does not exist, your flag will be ignored. Using this method requires you to be logged in via CAS.
+    Flag a certain tag as being incorrect
+    Send 'tag_id' (Tag ID) as form data to flag an existing tag in the database.
+    If Tag ID does not exist, your flag will be ignored.
+    *Using this method requires you to be logged in via CAS.*
     ---
     tags:
         - tags
+    consumes:
+        - application/x-www-form-urlencoded
     parameters:
         - name: tag_id
-          in: query
+          in: formData
           description: Tag ID to flag (example, 30)
           required: true
           type: string
@@ -367,12 +640,11 @@ def flagTag():
         400:
             description: Bad request, Tag ID ('tag_id') missing in POST body
     """
-    tag_id = request.get_json(force=True)['tag_id'] # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
-    if tag_id=="":
-        return flask.jsonify({"error":"Tag ID is required"}), 400
+    tag_id = request.form['tag_id'] # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
+    if tag_id == "":
+        return flask.jsonify({"error": "Tag ID is required"}), 400
     query = "update tags set flag_users = concat(flag_users, '" +cas.username+ ",'), times_flagged=times_flagged+1 where tag_id="+ tag_id
     cur.execute(query)
-    return flask.jsonify({"status":"tag flagged"}), 201
+    return flask.jsonify({"status": "tag flagged"}), 201
 
 app.run(host='0.0.0.0', port=5000, debug=True)
-
