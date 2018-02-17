@@ -1,7 +1,7 @@
 import json
 import pymysql
 import flask
-from flasgger import Swagger
+from flasgger import Swagger, MK_SANITIZER
 from flask import request
 from flask_cas import CAS, login_required
 from flask_cas import login, logout
