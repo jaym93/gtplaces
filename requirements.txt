@@ -2,3 +2,4 @@ Flask
 PyMySql
 Flask-CAS
 flasgger
+sqlalchemy
