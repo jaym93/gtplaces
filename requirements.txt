@@ -2,4 +2,6 @@ Flask
 PyMySql
 flasgger
 sqlalchemy
+# the pypi distribution is not up-to-date with the latest bug fixes present on the repo.
+# therefore, installing Flask-CAS directly from the github repository present until a working version is pushed
 git+https://github.com/cameronbwhite/Flask-CAS#egg=Flask-CAS
