@@ -1,5 +1,5 @@
 Flask
 PyMySql
-Flask-CAS
 flasgger
 sqlalchemy
+git+https://github.com/cameronbwhite/Flask-CAS#egg=Flask-CAS

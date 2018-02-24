@@ -1,8 +1,10 @@
 import json
 import pymysql
 import flask
-from sqlalchemy import create_engine, Table
+from sqlalchemy import create_engine, MetaData, Table, Column, Index, UniqueConstraint
+from sqlalchemy import  Integer, Float, String, Text
 from sqlalchemy.sql import select, and_
+from sqlalchemy.orm import mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 from flasgger import Swagger
@@ -39,60 +41,52 @@ app.config['CAS_SERVER'] = 'https://login.gatech.edu/cas'
 app.config['CAS_VALIDATE_ROUTE'] = '/serviceValidate'
 app.config['SECRET_KEY'] = '6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d' # set a random key, otherwise the authentication will throw errors
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['CAS_AFTER_LOGIN'] ='.'
+app.config['CAS_AFTER_LOGIN'] =''
 
 # SQLAlchemy stuff
-print(os.environ)
 db = create_engine('mysql+pymysql://' + os.environ["DB_USERNAME"] + ':' + os.environ["DB_PASSWORD"] + '@db0.rnoc.gatech.edu:3306/CORE_gtplaces', echo=True)
 Base = declarative_base()
-metadata = Base.metadata
-buildings = Table('buildings', metadata, autoload_with=db)
-categories = Table('categories', metadata, autoload_with=db)
-tags = Table('tags', metadata, autoload_with=db)
-flags = Table('flags', metadata, autoload_with=db)
+metadata = MetaData(bind=db)
 
-# We do not need class definitions for these tables since we are not creating them, but here they are anyway.
-# class Building(Base):
-#     __tablename__ = 'buildings'
-#     b_id = Column(String(8), primary_key=True)
-#     api_id = Column(Text, nullable=False)
-#     name = Column(Text, nullable=False)
-#     address = Column(Text, nullable=False)
-#     city = Column(Text, nullable=False)
-#     zipcode = Column(Text, nullable=False)
-#     image_url = Column(Text, nullable=False)
-#     website_url = Column(Text, nullable=False)
-#     longitude = Column(Float, nullable=False)
-#     latitude = Column(Float, nullable=False)
-#     shape_coordinates = Column(Text, nullable=False)
-#     phone_num = Column(String(15), nullable=False)
-#
-#
-# class Category(Base):
-#     __tablename__ = 'categories'
-#     cat_id = Column(Integer, primary_key=True)
-#     b_id = Column(String(11), nullable=False)
-#     cat_name = Column(Text, nullable=False)
-#
-# class Tag(Base):
-#     __tablename__ = 'tags'
-#     __table_args__ = (
-#         Index('unique_index', 'b_id', 'tag_name', unique=True),
-#     )
-#     tag_id = Column(Integer, primary_key=True)
-#     b_id = Column(Text, nullable=False)
-#     tag_name = Column(Text, nullable=False)
-#     gtuser = Column(Text, nullable=False)
-#     auth = Column(Integer, nullable=False)
-#     times_tag = Column(Integer, nullable=False)
-#     flag_users = Column(Text, nullable=False)
-#     times_flagged = Column(Integer, nullable=False)
-#
-# class Flag(Base):
-#     __tablename__ = 'flags'
-#     flag_id = Column(Integer, primary_key=True)
-#     tag_id = Column(Integer, nullable=False)
-#     gtuser = Column(Text, nullable=False)
+# SQL Table definitions
+buildings = Table('buildings', metadata,
+    Column('b_id', String(8), primary_key=True),
+    Column('api_id', Text, nullable=False),
+    Column('name', Text, nullable=False),
+    Column('address', Text, nullable=False),
+    Column('city', Text, nullable=False),
+    Column('zipcode', Text, nullable=False),
+    Column('image_url', Text, nullable=False),
+    Column('website_url', Text, nullable=False),
+    Column('longitude', Float, nullable=False),
+    Column('latitude', Float, nullable=False),
+    Column('shape_coordinates', Text, nullable=False),
+    Column('phone_num', String(15), nullable=False)
+    )
+
+categories = Table('categories', metadata,
+    Column('cat_id', Integer, primary_key=True),
+    Column('b_id', String(11), nullable=False),
+    Column('cat_name', Text, nullable=False)
+    )
+
+tags = Table('tags', metadata, 
+    Column('tag_id', Integer, primary_key=True),
+    Column('b_id', Text, nullable=False),
+    Column('tag_name', Text, nullable=False),
+    Column('gtuser', Text, nullable=False),
+    Column('auth', Integer, nullable=False),
+    Column('times_tag', Integer, nullable=False),
+    Column('flag_users', Text, nullable=False),
+    Column('times_flagged', Integer, nullable=False),
+    UniqueConstraint('b_id', 'tag_name')
+    )
+
+flags = Table('flags', metadata,
+    Column('flag_id', Integer, primary_key=True),
+    Column('tag_id', Integer, nullable=False),
+    Column('gtuser', Text, nullable=False)
+    )
 
 def get_categories(b_id):
     """
@@ -139,14 +133,41 @@ def res_to_json(row):
     }
     return(output)
 
-@app.route("/",methods=['GET'])
+@app.route("/checkuser",methods=['GET'])
 @login_required
 def index():
     """
+    Check if user is logged in, or ask user to log in
     Simply test to see if the user is authenticated, and return their login name
+    ---
+    tags:
+        - user
+    produces:
+	- application/json
+    responses:
+        200:
+	    description: User is logged in
+            schema:
+                type: object
+                properties:
+                    username:
+                         type: string
+                         description: username of the user currently logged in
+                         required: true
+        403:
+            description: Unable to authenticate
+            schema:
+                type: object
+                properties:
+                    error:
+                        type: string
+                        description: unable to authenticate
+                        required: true
     """
-    username = cas.username
-    return "Logged in as: " + username
+    try:
+        return flask.jsonify({"username":cas.username}), 200
+    except:
+        return flask.jsonify({"error":"Unable to authenticate"}), 403
 
 @app.route("/gtplaces/buildings", methods=['GET'])
 def getAll():
