@@ -92,7 +92,6 @@ def get_categories(b_id):
     """
     Get all the categories a building belongs to
     """
-    # query = "select distinct cat_name from categories where b_id='"+b_id+"'"
     query = select([categories.c.cat_name], categories.c.b_id ==  b_id).distinct()
     results = db.execute(query).fetchall()
     categories_ret = []
@@ -104,7 +103,6 @@ def get_tags(b_id):
     """
     Get all the tags a building is associated with
     """
-    # query = "select distinct tag_name from tags where b_id='"+b_id+"'"
     query = select([tags.c.tag_name], tags.c.b_id == b_id).distinct()
     results = db.execute(query).fetchall()
     tags_ret = []
@@ -233,7 +231,6 @@ def getAll():
                           type: string
                         description: Tags of the building
     """
-    # query = "select * from buildings"
     query = buildings.select()
     results = db.execute(query)
     response = []
@@ -312,7 +309,6 @@ def getById(b_id):
                           type: string
                         description: Tags of the building
     """
-    # query = "select * from buildings where b_id = '"+b_id+"'"
     query = select([buildings], buildings.c.b_id == b_id)
     results = db.execute(query).fetchall()
     response = []
@@ -391,7 +387,6 @@ def getByName(name):
                           type: string
                         description: Tags of the building
     """
-    # query = "select * from buildings where name like '%" + name + "%'"
     query = select([buildings], buildings.c.name.like('%' + name + '%'))
     results = db.execute(query).fetchall()
     response = []
@@ -421,7 +416,6 @@ def getCategories():
                 description: List of all categories
     """
     response = []
-    # query = "select distinct cat_name from categories"
     query = select([categories.c.cat_name]).distinct()
     results = db.execute(query).fetchall()
     for result in results:
@@ -505,7 +499,6 @@ def postCategories():
     """
     response = []
     category = request.form["category"]
-    # query = "select * from buildings b, categories c where c.cat_name = '"+category+"' and c.b_id = b.b_id"
     query = select([buildings, categories], and_(categories.c.cat_name == category, categories.c.b_id == buildings.c.b_id))
     results = db.execute(query).fetchall()
     response = []
@@ -560,7 +553,6 @@ def getTags():
                         description: Number of times this tag has been flagged
     """
     response = []
-    # query = "select * from tags"
     query = select([tags])
     results = db.execute(query)
     for result in results:
@@ -613,7 +605,6 @@ def addTag():
     tag = "'"+tag+"'" # for some weird reason, each tag in the database is surrounded with single quotes
     if bid=="" or tag=="":
         return flask.jsonify({"error": "Building ID or Tag Name cannot be empty!"}), 400
-    # query = "insert into tags (b_id,tag_name,gtuser,auth,times_tag,flag_users,times_flagged) values ('"+bid+"','"+tag+"','"+cas.username+"',0,1,'',0) ON DUPLICATE KEY UPDATE times_tag=times_tag+1"
     try:  # SQLAlchemy does not have a ON DUPLICATE UPDATE method, this is the best workaround I found
         query = tags.insert().values(b_id=bid, tag_name=tag, gtuser=cas.username, auth=0, times_tag=1, flag_users='', times_flagged=0)
         db.execute(query)
@@ -675,7 +666,6 @@ def getByTagName(name):
                         description: Number of times this tag has been flagged
     """
     response = []
-    # query = "select t.tag_id, t.b_id, t.tag_name, t.gtuser, t.auth, t.times_tag, t.flag_users, t.times_flagged from buildings b, tags t where tag_name like '%" + name + "%' and b.b_id = t.b_id"
     query = select([tags.c.tag_id, tags.c.b_id, tags.c.tag_name, tags.c.gtuser, tags.c.auth, tags.c.times_tag, tags.c.flag_users, tags.c.times_flagged], and_(tags.c.tag_name.like('%' + name + '%'), tags.c.b_id == buildings.c.b_id))
     results = db.execute(query)
     for result in results:
@@ -721,7 +711,6 @@ def flagTag():
     tag_id = request.form['tag_id']  # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
     if tag_id == "":
         return flask.jsonify({"error": "Tag ID is required"}), 400
-    # query = "update tags set flag_users = concat(flag_users, '" +cas.username+ ",'), times_flagged=times_flagged+1 where tag_id="+ tag_id
     query = tags.update(tags.c.tag_id == tag_id, values={tags.c.flag_users: tags.c.flag_users+cas.username+',', tags.c.times_flagged: tags.c.times_flagged+1})
     db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
