@@ -29,7 +29,7 @@ Pretty much the only file you need to modify is places_api.py if you want to mod
 
 The reason to make this a single-file architecture was to ensure documentation and all the relevant parts are updated before any code is changed.
 
-MySQL operations have been replaced by SQLAlchemy ORM. You can still find the equivalent MySQL query commented out before the SQLAlchemy-style query.
+MySQL operations have been replaced by SQLAlchemy ORM. The database structure is defined ORM-style at the beginning, instead of reading from MySQL database at runtime.
 
 API documentation can be accessed from _<url>_/apidocs currently at [http://dockertest.rnoc.gatech.edu:5000/apidocs](http://dockertest.rnoc.gatech.edu:5000/apidocs)
 
