@@ -1,7 +1,13 @@
 import json
 import pymysql
 import flask
-from flasgger import Swagger, MK_SANITIZER
+from sqlalchemy import create_engine, MetaData, Table, Column, Index, UniqueConstraint
+from sqlalchemy import  Integer, Float, String, Text
+from sqlalchemy.sql import select, and_
+from sqlalchemy.orm import mapper
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.exc import IntegrityError
+from flasgger import Swagger
 from flask import request
 from flask_cas import CAS, login_required
 from flask_cas import login, logout
@@ -27,45 +33,82 @@ swagger_template = {
 
 }
 
+# Flask stuff
 app = flask.Flask(__name__)
 cas = CAS(app)
-swag = Swagger(app, template=swagger_template, sanitizer=MK_SANITIZER)
+swag = Swagger(app, template=swagger_template)
 app.config['CAS_SERVER'] = 'https://login.gatech.edu/cas'
 app.config['CAS_VALIDATE_ROUTE'] = '/serviceValidate'
-app.config['SECRET_KEY'] = '6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d' #set a random key, otherwise the authentication will throw errors
+app.config['SECRET_KEY'] = '6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d' # set a random key, otherwise the authentication will throw errors
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['CAS_AFTER_LOGIN'] =''
 
-conn = pymysql.connect(host='db0.rnoc.gatech.edu', port=3306, user=os.environ['DB_USERNAME'], passwd=os.environ['DB_PASSWORD'], db='CORE_gtplaces')
-cur = conn.cursor()
+# SQLAlchemy stuff
+db = create_engine('mysql+pymysql://' + os.environ["DB_USERNAME"] + ':' + os.environ["DB_PASSWORD"] + '@db0.rnoc.gatech.edu:3306/CORE_gtplaces', echo=True)
+Base = declarative_base()
+metadata = MetaData(bind=db)
 
-@app.errorhandler(pymysql.DatabaseError)
-def dbconnectionhandler(error):
-    return flask.jsonify({"error":"Database connection failed"}), 500
+# SQL Table definitions
+buildings = Table('buildings', metadata,
+    Column('b_id', String(8), primary_key=True),
+    Column('api_id', Text, nullable=False),
+    Column('name', Text, nullable=False),
+    Column('address', Text, nullable=False),
+    Column('city', Text, nullable=False),
+    Column('zipcode', Text, nullable=False),
+    Column('image_url', Text, nullable=False),
+    Column('website_url', Text, nullable=False),
+    Column('longitude', Float, nullable=False),
+    Column('latitude', Float, nullable=False),
+    Column('shape_coordinates', Text, nullable=False),
+    Column('phone_num', String(15), nullable=False)
+    )
+
+categories = Table('categories', metadata,
+    Column('cat_id', Integer, primary_key=True),
+    Column('b_id', String(11), nullable=False),
+    Column('cat_name', Text, nullable=False)
+    )
+
+tags = Table('tags', metadata, 
+    Column('tag_id', Integer, primary_key=True),
+    Column('b_id', Text, nullable=False),
+    Column('tag_name', Text, nullable=False),
+    Column('gtuser', Text, nullable=False),
+    Column('auth', Integer, nullable=False),
+    Column('times_tag', Integer, nullable=False),
+    Column('flag_users', Text, nullable=False),
+    Column('times_flagged', Integer, nullable=False),
+    UniqueConstraint('b_id', 'tag_name')
+    )
+
+flags = Table('flags', metadata,
+    Column('flag_id', Integer, primary_key=True),
+    Column('tag_id', Integer, nullable=False),
+    Column('gtuser', Text, nullable=False)
+    )
 
 def get_categories(b_id):
     """
     Get all the categories a building belongs to
     """
-    query = "select distinct cat_name from categories where b_id='"+b_id+"'"
-    results = cur.execute(query)
-    results = cur.fetchall()
-    categories = []
+    query = select([categories.c.cat_name], categories.c.b_id ==  b_id).distinct()
+    results = db.execute(query).fetchall()
+    categories_ret = []
     for res in results:
-        categories.append(res[0])
-    return categories
+        categories_ret.append(res[0])
+    return categories_ret
 
 def get_tags(b_id):
     """
     Get all the tags a building is associated with
     """
-    query = "select distinct tag_name from tags where b_id='"+b_id+"'"
-    results = cur.execute(query)
-    results = cur.fetchall()
-    categories = []
+    query = select([tags.c.tag_name], tags.c.b_id == b_id).distinct()
+    results = db.execute(query).fetchall()
+    tags_ret = []
     for res in results:
-        categories.append(res[0])
-    return categories
+        tags_ret.append(res[0])
+    return tags_ret
 
 def res_to_json(row):
     """
@@ -88,14 +131,41 @@ def res_to_json(row):
     }
     return(output)
 
-@app.route("/",methods=['GET'])
+@app.route("/checkuser",methods=['GET'])
 @login_required
 def index():
     """
+    Check if user is logged in, or ask user to log in
     Simply test to see if the user is authenticated, and return their login name
+    ---
+    tags:
+        - user
+    produces:
+	- application/json
+    responses:
+        200:
+	    description: User is logged in
+            schema:
+                type: object
+                properties:
+                    username:
+                         type: string
+                         description: username of the user currently logged in
+                         required: true
+        403:
+            description: Unable to authenticate
+            schema:
+                type: object
+                properties:
+                    error:
+                        type: string
+                        description: unable to authenticate
+                        required: true
     """
-    username = cas.username
-    return "Logged in as: " + username
+    try:
+        return flask.jsonify({"username":cas.username}), 200
+    except:
+        return flask.jsonify({"error":"Unable to authenticate"}), 403
 
 @app.route("/gtplaces/buildings", methods=['GET'])
 def getAll():
@@ -161,9 +231,8 @@ def getAll():
                           type: string
                         description: Tags of the building
     """
-    query = "select * from buildings"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = buildings.select()
+    results = db.execute(query)
     response = []
     for result in results:
         response.append(res_to_json(result))
@@ -240,9 +309,8 @@ def getById(b_id):
                           type: string
                         description: Tags of the building
     """
-    query = "select * from buildings where b_id = '"+b_id+"'"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = select([buildings], buildings.c.b_id == b_id)
+    results = db.execute(query).fetchall()
     response = []
     for result in results:
         response = res_to_json(result)
@@ -319,9 +387,8 @@ def getByName(name):
                           type: string
                         description: Tags of the building
     """
-    query = "select * from buildings where name like '%" + name + "%'"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = select([buildings], buildings.c.name.like('%' + name + '%'))
+    results = db.execute(query).fetchall()
     response = []
     for result in results:
         response.append(res_to_json(result))
@@ -331,8 +398,8 @@ def getByName(name):
 def getCategories():
     """
     Return lists of all categories
-    Lists all the categories in the GTPlaces database.
-    _Categories are one of "University", "Housing" or "Greek", and is being preserved for legacy reasons._
+    Lists all the categories in the GTPlaces database
+    Categories are one of "University", "Housing" or "Greek", and is being preserved for legacy reasons.
     ---
     tags:
         - categories
@@ -349,9 +416,8 @@ def getCategories():
                 description: List of all categories
     """
     response = []
-    query = "select distinct cat_name from categories"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = select([categories.c.cat_name]).distinct()
+    results = db.execute(query).fetchall()
     for result in results:
         response.append(result[0])
     return flask.jsonify(response)
@@ -361,7 +427,7 @@ def postCategories():
     """
     List all buildings in a certain category
     Send 'category' in body with the category name to get all the buildings and associated information.
-    _Categories are one of "University", "Housing" or "Greek", and is being preserved for legacy reasons._
+    Categories are one of "University", "Housing" or "Greek", and is being preserved for legacy reasons.
     ---
     tags:
         - categories
@@ -433,9 +499,8 @@ def postCategories():
     """
     response = []
     category = request.form["category"]
-    query = "select * from buildings b, categories c where c.cat_name = '"+category+"' and c.b_id = b.b_id"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = select([buildings, categories], and_(categories.c.cat_name == category, categories.c.b_id == buildings.c.b_id))
+    results = db.execute(query).fetchall()
     response = []
     for result in results:
         response.append(res_to_json(result))
@@ -446,7 +511,7 @@ def getTags():
     """
     Return lists of all tags
     Lists all the tags in the GTPlaces database, with the associated information (Tag ID, Building ID it is associated with, User who created it, number of times it has been tagged or flagged).
-    _Tags let users search by substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results._
+    Tags let users search by substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
     ---
     tags:
         - tags
@@ -488,9 +553,8 @@ def getTags():
                         description: Number of times this tag has been flagged
     """
     response = []
-    query = "select * from tags"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = select([tags])
+    results = db.execute(query)
     for result in results:
         response.append({
             "tag_id": result[0],
@@ -538,10 +602,15 @@ def addTag():
     """
     bid = request.form['b_id']
     tag = request.form['tag']
-    if (bid=="" or tag==""):
+    tag = "'"+tag+"'" # for some weird reason, each tag in the database is surrounded with single quotes
+    if bid=="" or tag=="":
         return flask.jsonify({"error": "Building ID or Tag Name cannot be empty!"}), 400
-    query = "insert into tags (b_id,tag_name,gtuser,auth,times_tag,flag_users,times_flagged) values ('"+bid+"','"+tag+"','"+cas.username+"',0,1,'',0) ON DUPLICATE KEY UPDATE times_tag=times_tag+1"
-    cur.execute(query)
+    try:  # SQLAlchemy does not have a ON DUPLICATE UPDATE method, this is the best workaround I found
+        query = tags.insert().values(b_id=bid, tag_name=tag, gtuser=cas.username, auth=0, times_tag=1, flag_users='', times_flagged=0)
+        db.execute(query)
+    except IntegrityError:
+        query = tags.update(and_(tags.c.tag_name == tag, tags.c.b_id == bid), values={tags.c.times_tag: tags.c.times_tag+1})
+        db.execute(query)
     return flask.jsonify({"status": "tag inserted"}), 201
 
 @app.route("/gtplaces/tags/<name>", methods=['GET'])
@@ -597,9 +666,8 @@ def getByTagName(name):
                         description: Number of times this tag has been flagged
     """
     response = []
-    query = "select t.tag_id, t.b_id, t.tag_name, t.gtuser, t.auth, t.times_tag, t.flag_users, t.times_flagged from buildings b, tags t where tag_name like '%" + name + "%' and b.b_id = t.b_id"
-    cur.execute(query)
-    results = cur.fetchall()
+    query = select([tags.c.tag_id, tags.c.b_id, tags.c.tag_name, tags.c.gtuser, tags.c.auth, tags.c.times_tag, tags.c.flag_users, tags.c.times_flagged], and_(tags.c.tag_name.like('%' + name + '%'), tags.c.b_id == buildings.c.b_id))
+    results = db.execute(query)
     for result in results:
         response.append({
             "tag_id": result[0],
@@ -640,11 +708,11 @@ def flagTag():
         400:
             description: Bad request, Tag ID ('tag_id') missing in POST body
     """
-    tag_id = request.form['tag_id'] # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
+    tag_id = request.form['tag_id']  # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
     if tag_id == "":
         return flask.jsonify({"error": "Tag ID is required"}), 400
-    query = "update tags set flag_users = concat(flag_users, '" +cas.username+ ",'), times_flagged=times_flagged+1 where tag_id="+ tag_id
-    cur.execute(query)
+    query = tags.update(tags.c.tag_id == tag_id, values={tags.c.flag_users: tags.c.flag_users+cas.username+',', tags.c.times_flagged: tags.c.times_flagged+1})
+    db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
 app.run(host='0.0.0.0', port=5000, debug=True)
