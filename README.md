@@ -34,3 +34,5 @@ MySQL operations have been replaced by SQLAlchemy ORM. The database structure is
 API documentation can be accessed from _<url>_/apidocs currently at [http://dockertest.rnoc.gatech.edu:5000/apidocs](http://dockertest.rnoc.gatech.edu:5000/apidocs)
 
 To extract the API spec, use URL _<hostname>_/apispec_1.json, currently at [http://dockertest.rnoc.gatech.edu:5000/apispec_1.json](http://dockertest.rnoc.gatech.edu:5000/apispec_1.json)
+
+Configurations for development and release are stored in conf.py as separate classes, edit them when you need to change any parameter you'd normally need to change. Add other parameters to it as necessary.

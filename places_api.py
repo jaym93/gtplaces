@@ -1,8 +1,7 @@
-import json
-import pymysql
+import sys
 import flask
 from sqlalchemy import create_engine, MetaData, Table, Column, Index, UniqueConstraint
-from sqlalchemy import  Integer, Float, String, Text
+from sqlalchemy import Integer, Float, String, Text
 from sqlalchemy.sql import select, and_
 from sqlalchemy.orm import mapper
 from sqlalchemy.ext.declarative import declarative_base
@@ -11,82 +10,87 @@ from flasgger import Swagger
 from flask import request
 from flask_cas import CAS, login_required
 from flask_cas import login, logout
-import os
+import conf  # all configurations are stored here, change individually for development and release configurations.
+
+# Import the right configuration from conf.py, based on if it is the development environment or release environment
+# Run 'python3 places_api.py release' for deployment to release, 'python3 places_api.py dev' or 'python3 places_api.py' will deploy to development environment
+if __name__ == '__main__':
+    env = sys.argv[1] if len(sys.argv) > 2 else 'dev'  # always fall back to dev environment
+    config = conf.get_conf(env)
 
 swagger_template = {
     "swagger": "2.0",
     "info": {
-        "title": "Places API",
-        "description": "This API will allow you to access the information of the places at Georgia Tech. It can be used to find out information about the offices and the buildings such as their names, addresses, phone numbers, images, categories and GPS coordinates.",
+        "title": config['SWAGGER_Title'],
+        "description": config['SWAGGER_Description'],
         "contact": {
-            "responsibleOrganization": "GT-RNOC",
-            "responsibleDeveloper": "Jayanth Mohana Krishna",
-            "email": "jayanth6@gatech.edu",
-            "url": "http://rnoc.gatech.edu/",
+            "responsibleOrganization": config['SWAGGER_Organization'],
+            "responsibleDeveloper": config['SWAGGER_Developer'],
+            "email": config['SWAGGER_Email'],
+            "url": config['SWAGGER_Url'],
         },
         # "termsOfService": "http://me.com/terms",
         "version": "2.0"
     },
-    "host": "dockertest.rnoc.gatech.edu:5000",  # Places API is hosted here
+    "host": config['SWAGGER_Host'],  # Places API is hosted here
     "basePath": "/",  # base bash for blueprint registration
     "schemes": ["http", "https"],
-
 }
 
 # Flask stuff
 app = flask.Flask(__name__)
 cas = CAS(app)
 swag = Swagger(app, template=swagger_template)
-app.config['CAS_SERVER'] = 'https://login.gatech.edu/cas'
-app.config['CAS_VALIDATE_ROUTE'] = '/serviceValidate'
-app.config['SECRET_KEY'] = '6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d' # set a random key, otherwise the authentication will throw errors
+app.config['CAS_SERVER'] = config['CAS_Server']
+app.config['CAS_VALIDATE_ROUTE'] = config['CAS_ValRoute']
+app.config['SECRET_KEY'] = config['CAS_Secret']  # set a random key, otherwise the authentication will throw errors
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['CAS_AFTER_LOGIN'] =''
 
 # SQLAlchemy stuff
-db = create_engine('mysql+pymysql://' + os.environ["DB_USERNAME"] + ':' + os.environ["DB_PASSWORD"] + '@db0.rnoc.gatech.edu:3306/CORE_gtplaces', echo=True)
+db = create_engine(config['SQLA_ConnString'], echo=config['SQLA_Echo'])
 Base = declarative_base()
 metadata = MetaData(bind=db)
 
 # SQL Table definitions
 buildings = Table('buildings', metadata,
-    Column('b_id', String(8), primary_key=True),
-    Column('api_id', Text, nullable=False),
-    Column('name', Text, nullable=False),
-    Column('address', Text, nullable=False),
-    Column('city', Text, nullable=False),
-    Column('zipcode', Text, nullable=False),
-    Column('image_url', Text, nullable=False),
-    Column('website_url', Text, nullable=False),
-    Column('longitude', Float, nullable=False),
-    Column('latitude', Float, nullable=False),
-    Column('shape_coordinates', Text, nullable=False),
-    Column('phone_num', String(15), nullable=False)
-    )
+                  Column('b_id', String(8), primary_key=True),
+                  Column('api_id', Text, nullable=False),
+                  Column('name', Text, nullable=False),
+                  Column('address', Text, nullable=False),
+                  Column('city', Text, nullable=False),
+                  Column('zipcode', Text, nullable=False),
+                  Column('image_url', Text, nullable=False),
+                  Column('website_url', Text, nullable=False),
+                  Column('longitude', Float, nullable=False),
+                  Column('latitude', Float, nullable=False),
+                  Column('shape_coordinates', Text, nullable=False),
+                  Column('phone_num', String(15), nullable=False)
+                  )
 
 categories = Table('categories', metadata,
-    Column('cat_id', Integer, primary_key=True),
-    Column('b_id', String(11), nullable=False),
-    Column('cat_name', Text, nullable=False)
-    )
+                   Column('cat_id', Integer, primary_key=True),
+                   Column('b_id', String(11), nullable=False),
+                   Column('cat_name', Text, nullable=False)
+                   )
 
-tags = Table('tags', metadata, 
-    Column('tag_id', Integer, primary_key=True),
-    Column('b_id', Text, nullable=False),
-    Column('tag_name', Text, nullable=False),
-    Column('gtuser', Text, nullable=False),
-    Column('auth', Integer, nullable=False),
-    Column('times_tag', Integer, nullable=False),
-    Column('flag_users', Text, nullable=False),
-    Column('times_flagged', Integer, nullable=False),
-    UniqueConstraint('b_id', 'tag_name')
-    )
+tags = Table('tags', metadata,
+             Column('tag_id', Integer, primary_key=True),
+             Column('b_id', Text, nullable=False),
+             Column('tag_name', Text, nullable=False),
+             Column('gtuser', Text, nullable=False),
+             Column('auth', Integer, nullable=False),
+             Column('times_tag', Integer, nullable=False),
+             Column('flag_users', Text, nullable=False),
+             Column('times_flagged', Integer, nullable=False),
+             UniqueConstraint('b_id', 'tag_name')
+             )
 
 flags = Table('flags', metadata,
-    Column('flag_id', Integer, primary_key=True),
-    Column('tag_id', Integer, nullable=False),
-    Column('gtuser', Text, nullable=False)
-    )
+              Column('flag_id', Integer, primary_key=True),
+              Column('tag_id', Integer, nullable=False),
+              Column('gtuser', Text, nullable=False)
+              )
 
 def get_categories(b_id):
     """
@@ -715,4 +719,4 @@ def flagTag():
     db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
-app.run(host='0.0.0.0', port=5000, debug=True)
+app.run(host=config['FLASK_Host'], port=config['FLASK_Port'], debug=config['FLASK_Debug'])
