@@ -3,13 +3,11 @@ import flask
 from sqlalchemy import create_engine, MetaData, Table, Column, Index, UniqueConstraint
 from sqlalchemy import Integer, Float, String, Text
 from sqlalchemy.sql import select, and_
-from sqlalchemy.orm import mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 from flasgger import Swagger
 from flask import request
 from flask_cas import CAS, login_required
-from flask_cas import login, logout
 import conf  # all configurations are stored here, change individually for development and release configurations.
 
 # Import the right configuration from conf.py, based on if it is the development environment or release environment
@@ -24,10 +22,10 @@ swagger_template = {
         "title": config['SWAGGER_Title'],
         "description": config['SWAGGER_Description'],
         "contact": {
-            "responsibleOrganization": config['SWAGGER_Organization'],
-            "responsibleDeveloper": config['SWAGGER_Developer'],
-            "email": config['SWAGGER_Email'],
-            "url": config['SWAGGER_Url'],
+            "responsibleOrganization": "GT-RNOC",
+            "responsibleDeveloper": "RNOC Lab Staff",
+            "email": "rnoc-lab-staff@lists.gatech.edu",
+            "url": "http://rnoc.gatech.edu/"
         },
         # "termsOfService": "http://me.com/terms",
         "version": "2.0"
@@ -48,7 +46,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['CAS_AFTER_LOGIN'] =''
 
 # SQLAlchemy stuff
-db = create_engine(config['SQLA_ConnString'], echo=config['SQLA_Echo'])
+db = create_engine(config['SQLA_ConnString'] + config['SQLA_DbName'], echo=config['SQLA_Echo'])
 Base = declarative_base()
 metadata = MetaData(bind=db)
 
@@ -720,3 +718,4 @@ def flagTag():
     return flask.jsonify({"status": "tag flagged"}), 201
 
 app.run(host=config['FLASK_Host'], port=config['FLASK_Port'], debug=config['FLASK_Debug'])
+
