@@ -15,13 +15,6 @@ A Dockerfile is a **_must_** for any repositories we are currently migrating. Ev
     
     Note that we are passing the required environment variables for connecting to the DB service while starting the container. Could be done by mentioning them in the Dockerfile as well. Needs to be decided.
 
-### Requirement of a new Branch
-This branch ```gtmobile-gtplaces/docker_api_dev``` will only be used for development purposes. 
-The aim is to use seperate development and production branches for the duration of our migration to Openshift Origin and to the newer frontend and backend for the application. 
-
-We also have a similar ```docker_api_release``` branch where the working changes will be merged after testing them on the development branch.
-
-Testing this paradigm for gtplaces only currently, and if it works well, will then replicate similar behaviour to all other applications sequentially.
 
 ## Notes about the GTPlaces API branch
 ---
@@ -37,6 +30,12 @@ To extract the API spec, use URL _<hostname>_/apispec_1.json, currently at [http
 
 Configurations for development and release are stored in conf.py as separate classes, edit them when you need to change any parameter you'd normally need to change. Add other parameters to it as necessary.
 
+## How to contribute
+
+Work on all m.gatech.edu-related projects should follow
+**[our general contribution guidelines](https://github.gatech.edu/gtjourney/gtmobile/blob/master/CONTRIBUTING.md)**
+
+Before beginning work, **please read the contribution guidelines**.
 ## Legacy Code
 In Spring of 2018, this project underwent major changes:
  - API rewritten using Python / Flask
