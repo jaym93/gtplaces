@@ -36,3 +36,11 @@ API documentation can be accessed from _<url>_/apidocs currently at [http://dock
 To extract the API spec, use URL _<hostname>_/apispec_1.json, currently at [http://dockertest.rnoc.gatech.edu:5000/apispec_1.json](http://dockertest.rnoc.gatech.edu:5000/apispec_1.json)
 
 Configurations for development and release are stored in conf.py as separate classes, edit them when you need to change any parameter you'd normally need to change. Add other parameters to it as necessary.
+
+## Legacy Code
+In Spring of 2018, this project underwent major changes:
+ - API rewritten using Python / Flask
+ - Production deployment moved to OpenShift
+ - m.gatech.edu web app moved to the [gtmobile repository](https://github.gatech.edu/gtjourney/gtmobile)
+
+ Branches supporting the legacy PHP application have been tagged __legacy/__ for preservation.
