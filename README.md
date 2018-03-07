@@ -3,7 +3,8 @@
 API for getting campus building information.
 
 Supports the [GT Places web app](https://github.gatech.edu/gtjourney/gtmobile)
-of the [m.gatech.edu](https://m.gatech.edu).
+of [m.gatech.edu](https://m.gatech.edu).
+In production at https://m.gatech.edu/api/gtplaces.
 
 ## Developer quick start
 
@@ -16,7 +17,7 @@ Before beginning work, **please read the contribution guidelines**.
 
 ### Requirements
 
-Requires Python X.XX (TODO)
+- Python X.XX (TODO)
 
 ### Installation for development
 
@@ -28,9 +29,37 @@ TODO: Steps required for
 
 TODO: Steps for running unit/integration tests
 
-## OpenAPI / Swagger documentation
+## OpenAPI / Swagger specification
 
-TODO: Move Swagger details here
+We use [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification)
+(aka Swagger Specification) to specify and document the API.
+This machine readable documentation can be used to generate interactive
+documentation, client implementations, test suites and perform other
+useful functions.
+
+Our OpenAPI spec is authored is authored as inline Python docstring rather
+than an external YAML or JSON file to ease the process of and improve the
+ likelihood of keeping the spec and source code in sync.
+
+The API reclies on the [flasgger](https://github.com/rochacbruno/flasgger)
+library, which extracts our inline OpenAPI Spec to provide interactive
+documentation via [Swagger UI](https://swagger.io/swagger-ui/),
+perform request validation, and generate stand-alone OpenAPI Spec files.
+
+### Interactive API documentation - Swagger UI
+
+To access interactive [Swagger UI](https://swagger.io/swagger-ui/)
+documentation, point a browser to:
+```
+<API_URL>/apidocs
+```
+
+### Extracting an OpenAPI Specification file
+
+To exract an OpenAPI Specification JSON file, point a browser to:
+```
+<API_URL>/apispec_1.json
+```
 
 ## Deployment for production
 
@@ -56,13 +85,7 @@ A Dockerfile is a **_must_** for any repositories we are currently migrating. Ev
 ## Development notes
 Pretty much the only file you need to modify is places_api.py if you want to modify the behavior of the API. The file contains both the Flask API endpoints and Swagger API documentation in the function documentation of each API call.
 
-The reason to make this a single-file architecture was to ensure documentation and all the relevant parts are updated before any code is changed.
-
 MySQL operations have been replaced by SQLAlchemy ORM. The database structure is defined ORM-style at the beginning, instead of reading from MySQL database at runtime.
-
-API documentation can be accessed from _<url>_/apidocs currently at [http://dockertest.rnoc.gatech.edu:5000/apidocs](http://dockertest.rnoc.gatech.edu:5000/apidocs)
-
-To extract the API spec, use URL _<hostname>_/apispec_1.json, currently at [http://dockertest.rnoc.gatech.edu:5000/apispec_1.json](http://dockertest.rnoc.gatech.edu:5000/apispec_1.json)
 
 Configurations for development and release are stored in conf.py as separate classes, edit them when you need to change any parameter you'd normally need to change. Add other parameters to it as necessary.
 
