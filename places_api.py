@@ -8,13 +8,13 @@ from sqlalchemy.exc import IntegrityError
 from flasgger import Swagger
 from flask import request
 from flask_cas import CAS, login_required
-import conf  # all configurations are stored here, change individually for development and release configurations.
+import config  # all configurations are stored here, change individually for development and release configurations.
 
 # Import the right configuration from conf.py, based on if it is the development environment or release environment
 # Run 'python3 places_api.py release' for deployment to release, 'python3 places_api.py dev' or 'python3 places_api.py' will deploy to development environment
 if __name__ == '__main__':
     env = sys.argv[1] if len(sys.argv) > 2 else 'dev'  # always fall back to dev environment
-    config = conf.get_conf(env)
+    config = config.get_conf(env)
 
 swagger_template = {
     "swagger": "2.0",
