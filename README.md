@@ -65,6 +65,20 @@ To exract an OpenAPI Specification JSON file, point a browser to:
 
 TODO: Steps for production deployment
 
+### Set environment variables
+ TODO: Document environment varibles
+ 
+Set the following environment variables to provide configuration:
+- **CAS_SERVER** - (optional)
+- **CAS_VALIDATE_ROUTE** - (optional)
+- **SECRET_KEY** - (optional)
+- **DB_URL**
+- **SWAGGER_HOST**
+- **SWAGGER_BASE_PATH** - (optional)
+- **SWAGGER_SCHEMES**
+- **FLASK_HOST**
+- **FLASK_PORT**
+
 ### TODO: Revise the following content from old README:
 
 #### Important
