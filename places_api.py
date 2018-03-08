@@ -46,7 +46,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['CAS_AFTER_LOGIN'] =''
 
 # SQLAlchemy stuff
-db = create_engine(config.SQLA_ConnString + config.SQLA_DbName, echo=config.SQLA_Echo)
+db = create_engine(config.SQLA_DbUrl, echo=config.SQLA_Echo)
 Base = declarative_base()
 metadata = MetaData(bind=db)
 

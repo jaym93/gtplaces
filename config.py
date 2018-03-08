@@ -10,8 +10,7 @@ class BaseConf(object):
     CAS_ValidateRoute = "/serviceValidate"
     CAS_Secret = "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d"  # session secret, does not matter - just a random key.
 
-    SQLA_ConnString = None
-    SQLA_DbName = "CORE_gtplaces" # TODO: Remove in subsequent refactoring commit - skip getting from environment var
+    SQLA_DbUrl = None
     SQLA_Echo = True
 
     FLASK_Host = os.environ.get("FLASK_HOST", "0.0.0.0")
@@ -20,12 +19,12 @@ class BaseConf(object):
 
 
 class DevConf(BaseConf):
-    SQLA_ConnString = os.environ.get("DB_URL", None) # TODO: Replace with default SQLite DB connection string
+    SQLA_DbUrl = os.environ.get("DB_URL", None) # TODO: Replace with default SQLite DB connection string
 
 
 class ProdConf(BaseConf):
     # require that production get DB configuration from environment - no defaults
-    SQLA_ConnString = os.environ["DB_URL"]
+    SQLA_DbUrl = os.environ["DB_URL"]
     SQLA_Echo = False
 
     FLASK_Debug = False
