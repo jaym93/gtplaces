@@ -12,8 +12,9 @@ import config  # all configurations are stored here, change individually for dev
 
 app = flask.Flask(__name__)
 
-# Import the right configuration from conf.py, based on if it is the development environment or release environment
-# Run 'python3 places_api.py release' for deployment to release, 'python3 places_api.py dev' or 'python3 places_api.py' will deploy to development environment
+# Import the right configuration from conf.py, based on if it is the development environment or production environment
+# Run 'python3 places_api.py prod' for deployment to production, 'python3 places_api.py dev' or 'python3 places_api.py'
+# will deploy to development environment
 if __name__ == '__main__':
     env = sys.argv[1] if len(sys.argv) > 2 else 'dev'  # always fall back to dev environment
     app.config.from_object(config.get_conf(env))
