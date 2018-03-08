@@ -19,8 +19,8 @@ if __name__ == '__main__':
 swagger_template = {
     "swagger": "2.0",
     "info": {
-        "title": config['SWAGGER_Title'],
-        "description": config['SWAGGER_Description'],
+        "title": config.SWAGGER_Title,
+        "description": config.SWAGGER_Description,
         "contact": {
             "responsibleOrganization": "GT-RNOC",
             "responsibleDeveloper": "RNOC Lab Staff",
@@ -30,7 +30,7 @@ swagger_template = {
         # "termsOfService": "http://me.com/terms",
         "version": "2.0"
     },
-    "host": config['SWAGGER_Host'],  # Places API is hosted here
+    "host": config.SWAGGER_Host,  # Places API is hosted here
     "basePath": "/",  # base bash for blueprint registration
     "schemes": ["http", "https"],
 }
@@ -39,14 +39,14 @@ swagger_template = {
 app = flask.Flask(__name__)
 cas = CAS(app)
 swag = Swagger(app, template=swagger_template)
-app.config['CAS_SERVER'] = config['CAS_Server']
-app.config['CAS_VALIDATE_ROUTE'] = config['CAS_ValRoute']
-app.config['SECRET_KEY'] = config['CAS_Secret']  # set a random key, otherwise the authentication will throw errors
+app.config['CAS_SERVER'] = config.CAS_Server
+app.config['CAS_VALIDATE_ROUTE'] = config.CAS_ValidateRoute
+app.config['SECRET_KEY'] = config.CAS_Secret  # set a random key, otherwise the authentication will throw errors
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['CAS_AFTER_LOGIN'] =''
 
 # SQLAlchemy stuff
-db = create_engine(config['SQLA_ConnString'] + config['SQLA_DbName'], echo=config['SQLA_Echo'])
+db = create_engine(config.SQLA_ConnString + config.SQLA_DbName, echo=config.SQLA_Echo)
 Base = declarative_base()
 metadata = MetaData(bind=db)
 
@@ -717,5 +717,5 @@ def flagTag():
     db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
-app.run(host=config['FLASK_Host'], port=config['FLASK_Port'], debug=config['FLASK_Debug'])
+app.run(host=config.FLASK_Host, port=config.FLASK_Port, debug=config.FLASK_Debug)
 
