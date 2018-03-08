@@ -7,9 +7,9 @@ class BaseConf(object):
     SWAGGER_Host = os.environ.get("SWAGGER_HOST", "dockertest.rnoc.gatech.edu:5000")
 
     CAS_Server = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
-    CAS_ValidateRoute = "/serviceValidate"
-    CAS_Secret = "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d"  # session secret, does not matter - just a random key.
-
+    CAS_ValidateRoute = os.environ.get("CAS_VALIDATE_ROUTE", "/serviceValidate")
+    # session secret, does not matter - just a random key.
+    CAS_Secret = os.environ.get("SECRET_KEY", "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d")
     SQLA_DbUrl = None
     SQLA_Echo = True
 
