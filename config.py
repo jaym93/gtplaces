@@ -27,13 +27,15 @@ class DevConf(BaseConf):
 
 class ProdConf(BaseConf):
     # require that production get DB configuration from environment - no defaults
-    SQLA_DbUrl = os.environ["DB_URL"]
+    # TODO: Production should fail immediately if not provided
+    SQLA_DbUrl = os.environ.get("DB_URL", None)
     SQLA_Echo = False
 
-    SWAGGER_Host = os.environ["SWAGGER_HOST"]
+    # TODO: Production should fail immediately if this aren't provided
+    SWAGGER_Host = os.environ.get("SWAGGER_HOST", None)
+
     SWAGGER_Scheme = os.environ.get("SWAGGER_SCHEME", "https")
 
-    FLASK_Debug = False
 
 
 def get_conf(env="dev"):
