@@ -19,8 +19,10 @@ if __name__ == '__main__':
 swagger_template = {
     "swagger": "2.0",
     "info": {
-        "title": config.SWAGGER_Title,
-        "description": config.SWAGGER_Description,
+        "title": "Places API",
+        "description": "This API will allow you to access the information of the places at Georgia Tech. It can be used "
+                       "to find out information about  the offices and the buildings such as their names, addresses, phone"
+                       " numbers, images, categories and GPS coordinates.",
         "contact": {
             "responsibleOrganization": "GT-RNOC",
             "responsibleDeveloper": "RNOC Lab Staff",
