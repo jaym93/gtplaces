@@ -33,8 +33,9 @@ swagger_template = {
         "version": "2.0"
     },
     "host": config.SWAGGER_Host,  # Places API is hosted here
-    "basePath": "/",  # base bash for blueprint registration
-    "schemes": ["http", "https"],
+    "basePath": config.SWAGGER_BasePath,
+    "schemes": config.SWAGGER_Schemes.split(),
+
 }
 
 # Flask stuff
