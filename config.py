@@ -2,38 +2,37 @@ import os
 
 
 class BaseConf(object):
-    CAS_Server = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
-    CAS_ValidateRoute = os.environ.get("CAS_VALIDATE_ROUTE", "/serviceValidate")
+    CAS_SERVER = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
+    CAS_VALIDATE_ROUTE = os.environ.get("CAS_VALIDATE_ROUTE", "/serviceValidate")
     # session secret, does not matter - just a random key.
-    CAS_Secret = os.environ.get("SECRET_KEY", "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d")
+    SECRET_KEY = os.environ.get("SECRET_KEY", "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d")
 
-    SQLA_DbUrl = None
-    SQLA_Echo = True
+    SQLA_DB_URL = None
+    SQLA_ECHO = True
 
-    SWAGGER_Host = os.environ.get("SWAGGER_HOST", "0.0.0.0:5000")
-    SWAGGER_BasePath = os.environ.get("SWAGGER_BASE_PATH", "/")
+    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", "0.0.0.0:5000")
+    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", "/")
     # multiple schemes may be space delimited
-    SWAGGER_Schemes = os.environ.get("SWAGGER_SCHEMES", "http")
+    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "http")
 
-    FLASK_Host = os.environ.get("FLASK_HOST", "0.0.0.0")
-    FLASK_Port = os.environ.get("FLASK_PORT", 5000)
-    FLASK_Debug = True
+    FLASK_HOST = os.environ.get("FLASK_HOST", "0.0.0.0")
+    FLASK_PORT = os.environ.get("FLASK_PORT", 5000)
+    FLASK_DEBUG = True
 
 
 class DevConf(BaseConf):
-    SQLA_DbUrl = os.environ.get("DB_URL", None) # TODO: Replace with default SQLite DB connection string
+    SQLA_DB_URL = os.environ.get("DB_URL", None) # TODO: Replace with default SQLite DB connection string
 
 
 class ProdConf(BaseConf):
     # require that production get DB configuration from environment - no defaults
     # TODO: Production should fail immediately if not provided
-    SQLA_DbUrl = os.environ.get("DB_URL", None)
-    SQLA_Echo = False
+    SQLA_DB_URL = os.environ.get("DB_URL", None)
+    SQLA_ECHO = False
 
     # TODO: Production should fail immediately if not provided
-    SWAGGER_Host = os.environ.get("SWAGGER_HOST", None)
-
-    SWAGGER_Scheme = os.environ.get("SWAGGER_SCHEMES", "https")
+    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", None)
+    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "https")
 
 
 

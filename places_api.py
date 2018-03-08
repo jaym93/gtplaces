@@ -10,12 +10,22 @@ from flask import request
 from flask_cas import CAS, login_required
 import config  # all configurations are stored here, change individually for development and release configurations.
 
+app = flask.Flask(__name__)
+
 # Import the right configuration from conf.py, based on if it is the development environment or release environment
 # Run 'python3 places_api.py release' for deployment to release, 'python3 places_api.py dev' or 'python3 places_api.py' will deploy to development environment
 if __name__ == '__main__':
     env = sys.argv[1] if len(sys.argv) > 2 else 'dev'  # always fall back to dev environment
-    config = config.get_conf(env)
+    app.config.from_object(config.get_conf(env))
 
+# Flask
+app.config['SESSION_TYPE'] = 'filesystem'
+
+# CAS
+cas = CAS(app)
+app.config['CAS_AFTER_LOGIN'] =''
+
+# Swagger
 swagger_template = {
     "swagger": "2.0",
     "info": {
@@ -32,24 +42,14 @@ swagger_template = {
         # "termsOfService": "http://me.com/terms",
         "version": "2.0"
     },
-    "host": config.SWAGGER_Host,  # Places API is hosted here
-    "basePath": config.SWAGGER_BasePath,
-    "schemes": config.SWAGGER_Schemes.split(),
-
+    "host": app.config["SWAGGER_HOST"],  # Places API is hosted here
+    "basePath": app.config["SWAGGER_BASE_PATH"],
+    "schemes": app.config["SWAGGER_SCHEMES"].split(),
 }
-
-# Flask stuff
-app = flask.Flask(__name__)
-cas = CAS(app)
 swag = Swagger(app, template=swagger_template)
-app.config['CAS_SERVER'] = config.CAS_Server
-app.config['CAS_VALIDATE_ROUTE'] = config.CAS_ValidateRoute
-app.config['SECRET_KEY'] = config.CAS_Secret  # set a random key, otherwise the authentication will throw errors
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['CAS_AFTER_LOGIN'] =''
 
-# SQLAlchemy stuff
-db = create_engine(config.SQLA_DbUrl, echo=config.SQLA_Echo)
+# SQLAlchemy
+db = create_engine(app.config["SQLA_DB_URL"], echo=app.config["SQLA_ECHO"])
 Base = declarative_base()
 metadata = MetaData(bind=db)
 
@@ -720,5 +720,5 @@ def flagTag():
     db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
-app.run(host=config.FLASK_Host, port=config.FLASK_Port, debug=config.FLASK_Debug)
+app.run(host=app.config["FLASK_HOST"], port=app.config["FLASK_PORT"], debug=app.config["FLASK_DEBUG"])
 
