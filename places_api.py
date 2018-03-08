@@ -721,5 +721,5 @@ def flagTag():
     db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
-app.run(host=app.config["FLASK_HOST"], port=int(app.config["FLASK_PORT"]), debug=app.config["FLASK_DEBUG"])
+app.run(host=app.config["FLASK_HOST"], port=app.config["FLASK_PORT"], debug=app.config["FLASK_DEBUG"])
 
