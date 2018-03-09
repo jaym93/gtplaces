@@ -78,6 +78,7 @@ Set the following environment variables to provide configuration:
 - **SWAGGER_SCHEMES**
 - **FLASK_HOST**
 - **FLASK_PORT**
+- **FLASK_BASE_PATH**
 
 ### TODO: Revise the following content from old README:
 
