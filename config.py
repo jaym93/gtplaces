@@ -11,12 +11,13 @@ class BaseConf(object):
     SQLA_ECHO = True
 
     SWAGGER_HOST = os.environ.get("SWAGGER_HOST", "0.0.0.0:5000")
-    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", "/")
+    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", "/gtplaces")
     # multiple schemes may be space delimited
     SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "http")
 
     FLASK_HOST = os.environ.get("FLASK_HOST", "0.0.0.0")
     FLASK_PORT = int(os.environ.get("FLASK_PORT", 5000))
+    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", "/gtplaces")
     FLASK_DEBUG = True
 
 
@@ -43,4 +44,5 @@ def get_conf(env="dev"):
         return ProdConf()
     else:
         raise ValueError('Invalid environment name')
+
 

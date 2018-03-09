@@ -6,7 +6,7 @@ from sqlalchemy.sql import select, and_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 from flasgger import Swagger
-from flask import request
+from flask import request, Blueprint
 from flask_cas import CAS, login_required
 import config  # all configurations are stored here, change individually for development and release configurations.
 
@@ -20,6 +20,7 @@ if __name__ == '__main__':
     app.config.from_object(config.get_conf(env))
 
 # Flask
+api = Blueprint('gtplaces', __name__)
 app.config['SESSION_TYPE'] = 'filesystem'
 
 # CAS
@@ -137,7 +138,7 @@ def res_to_json(row):
     }
     return(output)
 
-@app.route("/checkuser",methods=['GET'])
+@api.route("/checkuser",methods=['GET'])
 @login_required
 def index():
     """
@@ -173,7 +174,7 @@ def index():
     except:
         return flask.jsonify({"error":"Unable to authenticate"}), 403
 
-@app.route("/gtplaces/buildings", methods=['GET'])
+@api.route("/buildings", methods=['GET'])
 def getAll():
     """
     Returns list of all buildings with their information
@@ -244,7 +245,7 @@ def getAll():
         response.append(res_to_json(result))
     return flask.jsonify(response)
 
-@app.route("/gtplaces/buildings_id/<b_id>", methods=['GET'])
+@api.route("/buildings_id/<b_id>", methods=['GET'])
 def getById(b_id):
     """
     Search building by ID
@@ -322,7 +323,7 @@ def getById(b_id):
         response = res_to_json(result)
     return flask.jsonify(response)
 
-@app.route("/gtplaces/buildings/<name>", methods=['GET'])
+@api.route("/buildings/<name>", methods=['GET'])
 def getByName(name):
     """
     Search building by name
@@ -400,7 +401,7 @@ def getByName(name):
         response.append(res_to_json(result))
     return flask.jsonify(response)
 
-@app.route("/gtplaces/categories", methods=['GET'])
+@api.route("/categories", methods=['GET'])
 def getCategories():
     """
     Return lists of all categories
@@ -428,7 +429,7 @@ def getCategories():
         response.append(result[0])
     return flask.jsonify(response)
 
-@app.route("/gtplaces/categories", methods=['POST'])
+@api.route("/categories", methods=['POST'])
 def postCategories():
     """
     List all buildings in a certain category
@@ -512,7 +513,7 @@ def postCategories():
         response.append(res_to_json(result))
     return flask.jsonify(response)
 
-@app.route("/gtplaces/tags", methods=['GET'])
+@api.route("/tags", methods=['GET'])
 def getTags():
     """
     Return lists of all tags
@@ -574,7 +575,7 @@ def getTags():
         })
     return flask.jsonify(response)
 
-@app.route("/gtplaces/tags", methods=['POST'])
+@api.route("/tags", methods=['POST'])
 @login_required
 def addTag():
     """
@@ -619,7 +620,7 @@ def addTag():
         db.execute(query)
     return flask.jsonify({"status": "tag inserted"}), 201
 
-@app.route("/gtplaces/tags/<name>", methods=['GET'])
+@api.route("/tags/<name>", methods=['GET'])
 def getByTagName(name):
     """
     Returns info about a particular tag
@@ -687,7 +688,7 @@ def getByTagName(name):
         })
     return flask.jsonify(response)
 
-@app.route("/gtplaces/flag", methods=['POST'])
+@api.route("/flag", methods=['POST'])
 @login_required
 def flagTag():
     """
@@ -721,5 +722,7 @@ def flagTag():
     db.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
+
+app.register_blueprint(api, url_prefix=app.config["FLASK_BASE_PATH"])
 app.run(host=app.config["FLASK_HOST"], port=app.config["FLASK_PORT"], debug=app.config["FLASK_DEBUG"])
 
