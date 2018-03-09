@@ -18,6 +18,7 @@ app = flask.Flask(__name__)
 if __name__ == '__main__':
     env = sys.argv[1] if len(sys.argv) > 2 else 'dev'  # always fall back to dev environment
     app.config.from_object(config.get_conf(env))
+    app.config['ENV'] = env
 
 # Flask
 api = Blueprint('gtplaces', __name__)
@@ -52,7 +53,8 @@ swag = Swagger(app, template=swagger_template)
 
 # SQLAlchemy
 db = create_engine(app.config["SQLA_DB_URL"], echo=app.config["SQLA_ECHO"])
-Base = declarative_base()
+# TODO: Base not needed unless we are using object mapping?
+# Base = declarative_base()
 metadata = MetaData(bind=db)
 
 # SQL Table definitions
@@ -94,6 +96,11 @@ flags = Table('flags', metadata,
               Column('tag_id', Integer, nullable=False),
               Column('gtuser', Text, nullable=False)
               )
+
+if app.config['ENV'] == 'dev':
+    # create the tables if needed and in dev mode
+    # don't do this on a production system
+    metadata.create_all(db)
 
 def get_categories(b_id):
     """
