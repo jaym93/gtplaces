@@ -4,8 +4,7 @@ import os
 class BaseConf(object):
     CAS_SERVER = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
     CAS_VALIDATE_ROUTE = os.environ.get("CAS_VALIDATE_ROUTE", "/serviceValidate")
-    # session secret, does not matter - just a random key.
-    SECRET_KEY = os.environ.get("SECRET_KEY", "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d")
+    SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
     SQLA_DB_URL = None
     SQLA_ECHO = True
@@ -26,12 +25,15 @@ class DevConf(BaseConf):
 
 
 class ProdConf(BaseConf):
-    # require that production get DB configuration from environment - no defaults
-    # TODO: Production should fail immediately if not provided
+    # require that production get critical configuration from environment - no defaults
+    # TODO: Production systems should fail immediately if not provided
+
+    # production systems should use a secure, randomly generated secret
+    SECRET_KEY = os.environ.get("SECRET_KEY", None)
+
     SQLA_DB_URL = os.environ.get("DB_URL", None)
     SQLA_ECHO = False
 
-    # TODO: Production should fail immediately if not provided
     SWAGGER_HOST = os.environ.get("SWAGGER_HOST", None)
     SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "https")
 
