@@ -1,38 +1,46 @@
 import os
 
-class DevConf(object):
-    SWAGGER_Title = "Places API - Development Version"
-    SWAGGER_Description = "**DEVELOPMENT VERSION ** This API will allow you to access the information of the places at Georgia Tech. It can be used to find out information about  the offices and the buildings such as their names, addresses, phone numbers, images, categories and GPS coordinates."
-    SWAGGER_Host = "dockertest.rnoc.gatech.edu:5000"
-    CAS_Server = "https://login.gatech.edu/cas"
-    CAS_ValRoute = "/serviceValidate"
-    CAS_Secret = "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d"  # session secret, does not matter - just a random key.
-    SQLA_ConnString = os.environ["DB_CONN"]
-    SQLA_DbName = "CORE_gtplaces"
-    SQLA_Echo = True
-    FLASK_Host = "0.0.0.0"
-    FLASK_Port = 5000
-    FLASK_Debug = True
 
-class ProdConf(object):
-    SWAGGER_Title = "Places API"
-    SWAGGER_Description = "This API will allow you to access the information of the places at Georgia Tech. It can be used to find out information about the offices and the buildings such as their names, addresses, phone numbers, images, categories and GPS coordinates."
-    SWAGGER_Host = "dockertest.rnoc.gatech.edu:5000"
-    CAS_Server = "https://login.gatech.edu/cas"
-    CAS_ValRoute = "/serviceValidate"
-    CAS_Secret = "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d"  # session secret, does not matter - just a random key.
-    SQLA_ConnString = os.environ["DB_CONN"]
-    SQLA_DbName = "CORE_gtplaces"
-    SQLA_Echo = False
-    FLASK_Host = "0.0.0.0"
-    FLASK_Port = 5000
-    FLASK_Debug = False
+class BaseConf(object):
+    CAS_SERVER = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
+    CAS_VALIDATE_ROUTE = os.environ.get("CAS_VALIDATE_ROUTE", "/serviceValidate")
+    # session secret, does not matter - just a random key.
+    SECRET_KEY = os.environ.get("SECRET_KEY", "6d4e24b1bbaec5f6f7ac35878920b8ebdfdf71bc53521f31bc4ec47885de610d")
+
+    SQLA_DB_URL = None
+    SQLA_ECHO = True
+
+    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", "0.0.0.0:5000")
+    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", "/")
+    # multiple schemes may be space delimited
+    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "http")
+
+    FLASK_HOST = os.environ.get("FLASK_HOST", "0.0.0.0")
+    FLASK_PORT = int(os.environ.get("FLASK_PORT", 5000))
+    FLASK_DEBUG = True
+
+
+class DevConf(BaseConf):
+    SQLA_DB_URL = os.environ.get("DB_URL", None) # TODO: Replace with default SQLite DB connection string
+
+
+class ProdConf(BaseConf):
+    # require that production get DB configuration from environment - no defaults
+    # TODO: Production should fail immediately if not provided
+    SQLA_DB_URL = os.environ.get("DB_URL", None)
+    SQLA_ECHO = False
+
+    # TODO: Production should fail immediately if not provided
+    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", None)
+    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "https")
+
+
 
 def get_conf(env="dev"):
     if env == "dev":
-        return vars(DevConf)
+        return DevConf()
     elif env == "prod":
-        return vars(ProdConf)
+        return ProdConf()
     else:
         raise ValueError('Invalid environment name')
 
