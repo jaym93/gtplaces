@@ -71,7 +71,8 @@ TODO: Steps for production deployment
 Set the following environment variables to provide configuration:
 - **CAS_SERVER** - (optional)
 - **CAS_VALIDATE_ROUTE** - (optional)
-- **SECRET_KEY** - (optional)
+- **SECRET_KEY**
+  * Secret used by Flask for any crypto.  Should be secure and randomly generated.
 - **DB_URL**
 - **SWAGGER_HOST**
 - **SWAGGER_BASE_PATH** - (optional)
