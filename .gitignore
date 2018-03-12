@@ -63,3 +63,5 @@ venv
 
 # SQLite databases
 *.db
+# EXCEPTION for the sample database
+!sample.db

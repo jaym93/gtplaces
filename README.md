@@ -25,6 +25,13 @@ TODO: Steps required for
  * setting up the development environment
  * starting a local development instance
 
+### Local development database
+
+For development, Sequel Alchemy is configured by default to use a local SQLite database, `dev.db`, which is ignored by Git.
+
+The provided `sample.db` contains a dump of the production database as of 3/18/2018.  To use this sample data for
+development, copy `sample.db` and rename to `dev.db`.
+
 ### Running tests
 
 TODO: Steps for running unit/integration tests
