@@ -6,7 +6,7 @@ Supports the [GT Places web app](https://github.gatech.edu/gtjourney/gtmobile)
 of [m.gatech.edu](https://m.gatech.edu).
 In production at https://m.gatech.edu/api/gtplaces.
 
-## Developer quick start
+## Development
 
 ### How to contribute
 
@@ -17,6 +17,7 @@ Before beginning work, **please read the contribution guidelines**.
 
 ### Prerequisites
 
+##### Python and pip
 Ensure you have the latest version of [Python 3](https://www.python.org/downloads/) and 
 [pip](https://packaging.python.org/key_projects/#pip) and that both are available from the command line  You can check this
 by running:
@@ -26,35 +27,71 @@ pip --version
 
 ```
 
+##### Virtualenv
 It's highly recommended that you use [Virtualenv](https://virtualenv.pypa.io/en/latest/) during development.  For a
 breif overview of how to work with Virtualenv and the Flask CLI, check out the 
-[Flask installation guide](http://flask.pocoo.org/docs/0.12/installation/#virtualenv)
-
-
-TODO: Steps required for
- * setting up the development environment
- * starting a local development instance
-
-TODO: How to run local development instance w/ `flask` CLI.
-```
-set FLASK_APP=autoapp
-set FLASK_DEBUG=true
-flask run -h localhost -p 8080
-```
-or
-```
-set FLASK_APP=autoapp
-set FLASK_DEBUG=true
-python -m flask run
-```
-
-TODO: Create database tables if they do not exist
-```
-flask create_db_tables
+[Flask installation guide](http://flask.pocoo.org/docs/0.12/installation/#virtualenv).  To install:
 
 ```
-TODO: running in PyCharm
-https://github.com/pallets/flask/blob/master/docs/cli.rst
+sudo pip install virtualenv
+```
+
+##### A good Python IDE
+Using an IDE like [PyCharm](https://www.jetbrains.com/pycharm) is recommended and [free for student use](https://www.jetbrains.com/student/).
+Among other benefits, the built in code analysis can help you write better code.
+
+
+### Developer quick start
+
+* Clone the repository
+  ```
+  $ git clone https://github.gatech.edu/gtjourney/gtmobile-gtplaces.git
+  $ cd gtmobile-gtplaces
+  ```
+  
+* Set up virtualenv
+  ``` 
+  $ virtualenv -p python3 venv
+  $ source venv/bin/activate
+  ```
+  
+* Install requirements
+  ```
+  (venv)$ pip install -r requirements.txt
+  ```
+  
+* Set environment variables required by the `flask` CLI
+  ```
+  (venv)$ set FLASK_APP=autoapp
+  (venv)$ set FLASK_DEBUG=true
+  ```
+  You may want to add this to your `venv/bin/activate` script.
+  
+* Setup your development SQLite database
+
+  You may either use the provided `sample.db`
+  ```
+  (venv)$ cp sample.db dev.db
+  ```
+  or initialize an empty database
+  ```
+  (venv)$ flask create_db_tables
+  ```
+  
+* Run it!
+  ```
+  (venv)$ flask run
+   * Serving Flask app "autoapp"
+   * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+  ```
+  You may also specify the host and port: `flask run -h localhost -p 8080`
+  
+  Point a web browser to [http://localhost:5000/apidocs](http://localhost:5000/apidocs) to test drive!
+
+* Run in your IDE
+
+  PyCharm 2018 supports executing with `flask run` out of the box.  For earlier version of PyCharm
+  or other IDEs, see [these configuration steps from the Flask docs](https://github.com/pallets/flask/blob/master/docs/cli.rst)
 
 
 ### Local development database
