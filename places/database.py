@@ -1,7 +1,7 @@
 from sqlalchemy import MetaData, Table, Column, UniqueConstraint, Integer, Float, String, Text
 from sqlalchemy.sql import select
 
-from extensions import db
+from places.extensions import db
 
 metadata = MetaData(bind=db)
 

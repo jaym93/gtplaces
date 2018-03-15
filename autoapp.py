@@ -1,16 +1,16 @@
 """
-Create an application instance.
-
-Since we are use the Flask Application Factory pattern, the 'flask' CLI needs ann entry point script to create the app.
+Application entry point for the Flask CLI
 
 See http://flask.pocoo.org/docs/0.12/cli/
 
 """
 from flask.helpers import get_debug_flag
 
-from app import create_app
-from config import DevConf, ProdConf
+from places import create_app
+from places.config import DevConf, ProdConf
 
 CONFIG = DevConf if get_debug_flag() else ProdConf
 
+# Create the Flask app.
+# By convention, the Flask CLI looks for the Flask app to be called 'app'.
 app = create_app(CONFIG)

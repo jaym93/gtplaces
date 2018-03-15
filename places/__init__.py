@@ -1,16 +1,14 @@
 """
-The app module, containing the app factory function.
+Initialize the places package.
 
 Based on Flask Application Factory pattern: http://flask.pocoo.org/docs/patterns/appfactories/
-
-For an example, see https://github.com/sloria/cookiecutter-flask/blob/master/%7B%7Bcookiecutter.app_name%7D%7D/%7B%7Bcookiecutter.app_name%7D%7D/app.py
 """
 
 from flask import Flask
 
-from extensions import cas, swagger
-from database import db
-from places_api import api
+from places.extensions import cas, swagger
+from places.database import db
+from places.routes import api
 
 
 def create_app(config=None):

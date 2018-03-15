@@ -3,6 +3,7 @@ import os
 
 class BaseConf(object):
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
+    PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
@@ -29,7 +30,7 @@ class DevConf(BaseConf):
 
     # Using local SQLite DB in project root dir for development
     SQLALCHEMY_DATABASE_NAME = os.environ.get("DB_NAME",'dev.db')
-    SQLALCHEMY_DATABASE_PATH = os.path.join(BaseConf.APP_DIR, SQLALCHEMY_DATABASE_NAME)
+    SQLALCHEMY_DATABASE_PATH = os.path.join(BaseConf.PROJECT_ROOT, SQLALCHEMY_DATABASE_NAME)
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", "sqlite:///{0}".format(SQLALCHEMY_DATABASE_PATH))
 
 

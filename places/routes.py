@@ -1,18 +1,21 @@
-import sys
+'''
+Places API route / endpoint implementations
+
+Uses Flask Blueprints as explained here:
+http://flask.pocoo.org/docs/0.12/blueprints/#blueprints
+
+Blueprints allow for a configurable base path for the routes.
+'''
+
 import flask
-from sqlalchemy import create_engine, MetaData, Table, Column, Index, UniqueConstraint
-from sqlalchemy import Integer, Float, String, Text
 from sqlalchemy.sql import select, and_
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
-from flasgger import Swagger
-from flask import request, Blueprint, current_app
-from flask_cas import CAS, login_required
-import config  # all configurations are stored here, change individually for development and release configurations.
+from flask import request, Blueprint
+from flask_cas import login_required
 
 # from extensions import cas
-from extensions import db
-from database import get_categories, get_tags, buildings, categories, tags
+from places.extensions import db
+from places.database import get_categories, get_tags, buildings, categories, tags
 
 api = Blueprint('gtplaces', __name__)
 
