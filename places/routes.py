@@ -6,26 +6,23 @@ http://flask.pocoo.org/docs/0.12/blueprints/#blueprints
 '''
 
 import flask
-from sqlalchemy.sql import select, and_
-from sqlalchemy.exc import IntegrityError
 from flask import request, Blueprint
 from flask_cas import login_required
 
-# from extensions import cas
-from places.extensions import db
-from places.database import get_categories, get_tags, buildings, categories, tags
+from places import database
+from places.extensions import cas
 
 api = Blueprint('gtplaces', __name__)
 
 
-def res_to_json(row):
+def building_row_to_json(row):
     """
     Encode the result of a place-related SQL query to JSON
     """
     output = {
         "b_id": row[0],
         "name": row[2],
-        "category": get_categories(row[0]),
+        "category": database.get_categories_for_building(row[0]),
         "address": row[3],
         "address2": row[4],
         "zipcode": row[5],
@@ -35,9 +32,10 @@ def res_to_json(row):
         "longitude": row[9],
         "shape_coordinates": row[10],
         "phone_num": row[11],
-        "tags": get_tags(row[0])
+        "tags": database.get_tags_for_building(row[0])
     }
-    return(output)
+    return output
+
 
 # @api.route("/checkuser",methods=['GET'])
 # @login_required
@@ -74,6 +72,7 @@ def res_to_json(row):
 #         return flask.jsonify({"username":cas.username}), 200
 #     except:
 #         return flask.jsonify({"error":"Unable to authenticate"}), 403
+
 
 @api.route("/buildings", methods=['GET'])
 def getAll():
@@ -139,12 +138,12 @@ def getAll():
                           type: string
                         description: Tags of the building
     """
-    query = buildings.select()
-    results = db.engine.execute(query)
+    results = database.get_buildings()
     response = []
     for result in results:
-        response.append(res_to_json(result))
+        response.append(building_row_to_json(result))
     return flask.jsonify(response)
+
 
 @api.route("/buildings_id/<b_id>", methods=['GET'])
 def getById(b_id):
@@ -217,12 +216,12 @@ def getById(b_id):
                           type: string
                         description: Tags of the building
     """
-    query = select([buildings], buildings.c.b_id == b_id)
-    results = db.engine.execute(query).fetchall()
+    results = database.get_building(b_id)
     response = []
     for result in results:
-        response = res_to_json(result)
+        response = building_row_to_json(result)
     return flask.jsonify(response)
+
 
 @api.route("/buildings/<name>", methods=['GET'])
 def getByName(name):
@@ -295,12 +294,12 @@ def getByName(name):
                           type: string
                         description: Tags of the building
     """
-    query = select([buildings], buildings.c.name.like('%' + name + '%'))
-    results = db.engine.execute(query).fetchall()
+    results = database.get_buildings_by_name(name)
     response = []
     for result in results:
-        response.append(res_to_json(result))
+        response.append(building_row_to_json(result))
     return flask.jsonify(response)
+
 
 @api.route("/categories", methods=['GET'])
 def getCategories():
@@ -324,11 +323,11 @@ def getCategories():
                 description: List of all categories
     """
     response = []
-    query = select([categories.c.cat_name]).distinct()
-    results = db.engine.execute(query).fetchall()
+    results = database.get_categories()
     for result in results:
         response.append(result[0])
     return flask.jsonify(response)
+
 
 @api.route("/categories", methods=['POST'])
 def postCategories():
@@ -407,12 +406,12 @@ def postCategories():
     """
     response = []
     category = request.form["category"]
-    query = select([buildings, categories], and_(categories.c.cat_name == category, categories.c.b_id == buildings.c.b_id))
-    results = db.engine.execute(query).fetchall()
+    results = database.get_buildings_by_category(category)
     response = []
     for result in results:
-        response.append(res_to_json(result))
+        response.append(building_row_to_json(result))
     return flask.jsonify(response)
+
 
 @api.route("/tags", methods=['GET'])
 def getTags():
@@ -461,8 +460,7 @@ def getTags():
                         description: Number of times this tag has been flagged
     """
     response = []
-    query = select([tags])
-    results = db.engine.execute(query)
+    results = database.get_tags()
     for result in results:
         response.append({
             "tag_id": result[0],
@@ -475,6 +473,7 @@ def getTags():
             "times_flagged": result[7]
         })
     return flask.jsonify(response)
+
 
 @api.route("/tags", methods=['POST'])
 @login_required
@@ -510,16 +509,11 @@ def addTag():
     """
     bid = request.form['b_id']
     tag = request.form['tag']
-    tag = "'"+tag+"'" # for some weird reason, each tag in the database is surrounded with single quotes
     if bid=="" or tag=="":
         return flask.jsonify({"error": "Building ID or Tag Name cannot be empty!"}), 400
-    try:  # SQLAlchemy does not have a ON DUPLICATE UPDATE method, this is the best workaround I found
-        query = tags.insert().values(b_id=bid, tag_name=tag, gtuser=cas.username, auth=0, times_tag=1, flag_users='', times_flagged=0)
-        db.engine.execute(query)
-    except IntegrityError:
-        query = tags.update(and_(tags.c.tag_name == tag, tags.c.b_id == bid), values={tags.c.times_tag: tags.c.times_tag+1})
-        db.engine.execute(query)
+    database.create_tag(bid, tag, cas.username)
     return flask.jsonify({"status": "tag inserted"}), 201
+
 
 @api.route("/tags/<name>", methods=['GET'])
 def getByTagName(name):
@@ -574,8 +568,7 @@ def getByTagName(name):
                         description: Number of times this tag has been flagged
     """
     response = []
-    query = select([tags.c.tag_id, tags.c.b_id, tags.c.tag_name, tags.c.gtuser, tags.c.auth, tags.c.times_tag, tags.c.flag_users, tags.c.times_flagged], and_(tags.c.tag_name.like('%' + name + '%'), tags.c.b_id == buildings.c.b_id))
-    results = db.engine.execute(query)
+    results = database.get_tag(name)
     for result in results:
         response.append({
             "tag_id": result[0],
@@ -588,6 +581,7 @@ def getByTagName(name):
             "times_flagged": result[7]
         })
     return flask.jsonify(response)
+
 
 @api.route("/flag", methods=['POST'])
 @login_required
@@ -619,8 +613,5 @@ def flagTag():
     tag_id = request.form['tag_id']  # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
     if tag_id == "":
         return flask.jsonify({"error": "Tag ID is required"}), 400
-    query = tags.update(tags.c.tag_id == tag_id, values={tags.c.flag_users: tags.c.flag_users+cas.username+',', tags.c.times_flagged: tags.c.times_flagged+1})
-    db.engine.execute(query)
+    database.flag_tag(tag_id, cas.username)
     return flask.jsonify({"status": "tag flagged"}), 201
-
-
