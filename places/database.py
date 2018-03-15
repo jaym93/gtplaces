@@ -46,6 +46,13 @@ flags = Table('flags', metadata,
               )
 
 
+def create_tables():
+    """
+    Create database tables, if needed
+    """
+    metadata.create_all(db.engine)
+
+
 def get_categories(b_id):
     """
     Get all the categories a building belongs to
@@ -68,3 +75,4 @@ def get_tags(b_id):
     for res in results:
         tags_ret.append(res[0])
     return tags_ret
+

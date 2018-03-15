@@ -50,6 +50,11 @@ python -m flask run
 
 ```
 
+TODO: Create database tables if they do not exist
+```
+flask create_db_tables
+
+```
 TODO: running in PyCharm
 https://github.com/pallets/flask/blob/master/docs/cli.rst
 

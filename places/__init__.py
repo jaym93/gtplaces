@@ -3,16 +3,16 @@ Initialize the places package.
 
 Based on Flask Application Factory pattern: http://flask.pocoo.org/docs/patterns/appfactories/
 """
-from flasgger import LazyJSONEncoder
 from flask import Flask
-
-from places.extensions import cas, swagger
-from places.database import db
-from places.routes import api
+from places import commands, routes, extensions
 
 
 def create_app(config=None):
-    """An application factory, as explained here: http://flask.pocoo.org/docs/patterns/appfactories/.
+    """
+    Create an instance of the Flask application.
+
+    This follows the Flask Application Factory pattern, as explained here:
+    http://flask.pocoo.org/docs/patterns/appfactories/
 
     :param config: The configuration object to use.
     """
@@ -22,22 +22,23 @@ def create_app(config=None):
     app.config.from_object(config)
     register_extensions(app)
     register_blueprints(app)
-
-    # TODO: create tables if needed. (use command?)
-    # # TODO: move creation of SQL Alchemy tables somewhere else
-    # if app.config['ENV'] == 'dev':
-    #     # create the tables if needed and in dev mode
-    #     # don't do this on a production system
-    #     metadata.create_all(db)
+    register_commands(app)
 
     return app
 
 
 def register_extensions(app):
-    db.init_app(app)
-    cas.init_app(app)
-    swagger.init_app(app)
+    """Register Flask extensions"""
+    extensions.db.init_app(app)
+    extensions.cas.init_app(app)
+    extensions.swagger.init_app(app)
 
 
 def register_blueprints(app):
-    app.register_blueprint(api, url_prefix=app.config["FLASK_BASE_PATH"])
+    """Register Flask Blueprints"""
+    app.register_blueprint(routes.api, url_prefix=app.config["FLASK_BASE_PATH"])
+
+
+def register_commands(app):
+    """Register Click commands for the Flask CLI"""
+    app.cli.add_command(commands.create_db_tables)
