@@ -3,8 +3,6 @@ Places API route / endpoint implementations
 
 Uses Flask Blueprints as explained here:
 http://flask.pocoo.org/docs/0.12/blueprints/#blueprints
-
-Blueprints allow for a configurable base path for the routes.
 '''
 
 import flask
@@ -18,32 +16,6 @@ from places.extensions import db
 from places.database import get_categories, get_tags, buildings, categories, tags
 
 api = Blueprint('gtplaces', __name__)
-
-# TODO: configure swagger while avoiding circular dependency
-# # Swagger
-# swagger_template = {
-#     "swagger": "2.0",
-#     "info": {
-#         "title": "Places API",
-#         "description": "This API will allow you to access the information of the places at Georgia Tech. It can be used "
-#                        "to find out information about  the offices and the buildings such as their names, addresses, phone"
-#                        " numbers, images, categories and GPS coordinates.",
-#         "contact": {
-#             "responsibleOrganization": "GT-RNOC",
-#             "responsibleDeveloper": "RNOC Lab Staff",
-#             "email": "rnoc-lab-staff@lists.gatech.edu",
-#             "url": "http://rnoc.gatech.edu/"
-#         },
-#         # "termsOfService": "http://me.com/terms",
-#         "version": "2.0"
-#     },
-#
-#     # TODO: Can refactor host, basePath and other props can be set in app.config, which are read by swagger.init_app
-#     "host": current_app.config["SWAGGER_HOST"],  # Places API is hosted here
-#     "basePath": current_app.config["SWAGGER_BASE_PATH"],
-#     "schemes": current_app.config["SWAGGER_SCHEMES"].split(),
-# }
-
 
 
 def res_to_json(row):

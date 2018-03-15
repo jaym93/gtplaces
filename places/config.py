@@ -5,6 +5,8 @@ class BaseConf(object):
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
     PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
 
+    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", "/gtplaces")
+
     SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
     CAS_SERVER = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
@@ -16,12 +18,34 @@ class BaseConf(object):
     SQLALCHEMY_ECHO = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", "0.0.0.0:5000")
-    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", "/gtplaces")
-    # multiple schemes may be space delimited
-    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "http")
+    # Swagger config defaults to lazy loading values from the Flask request
+    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", "localhost:5000")
+    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", FLASK_BASE_PATH)
+    # multiple schemes may be space delimited: e.g. 'http https'
+    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", 'http')
+    SWAGGER = {
+        "swagger": "2.0",
+        "info": {
+            "title": "Places API",
+            "description": "This API will allow you to access the information of the places at Georgia Tech. It can be"
+                           " used to find out information about  the offices and the buildings such as their names, "
+                           "addresses, phone numbers, images, categories and GPS coordinates.",
+            "contact": {
+                "responsibleOrganization": "GT-RNOC",
+                "responsibleDeveloper": "RNOC Lab Staff",
+                "email": "rnoc-lab-staff@lists.gatech.edu",
+                "url": "http://rnoc.gatech.edu/"
+            },
+            "version": "1",
+        },
 
-    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", "/gtplaces")
+        "host": SWAGGER_HOST,
+        # not setting basePath, as flasgger is reading it from the blueprint base path
+        "basePath": SWAGGER_BASE_PATH,
+        "schemes": SWAGGER_SCHEMES,
+        # prefix for the the 'apidocs' endpoint
+        "url_prefix": SWAGGER_BASE_PATH
+    }
 
 
 class DevConf(BaseConf):
@@ -46,10 +70,6 @@ class ProdConf(BaseConf):
 
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", None)
     SQLALCHEMY_ECHO = False
-
-    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", None)
-    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", "https")
-
 
 
 def get_conf(env="dev"):

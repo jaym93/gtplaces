@@ -3,7 +3,7 @@ Initialize the places package.
 
 Based on Flask Application Factory pattern: http://flask.pocoo.org/docs/patterns/appfactories/
 """
-
+from flasgger import LazyJSONEncoder
 from flask import Flask
 
 from places.extensions import cas, swagger
