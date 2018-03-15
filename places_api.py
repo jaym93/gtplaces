@@ -6,123 +6,42 @@ from sqlalchemy.sql import select, and_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
 from flasgger import Swagger
-from flask import request, Blueprint
+from flask import request, Blueprint, current_app
 from flask_cas import CAS, login_required
 import config  # all configurations are stored here, change individually for development and release configurations.
 
-app = flask.Flask(__name__)
+# from extensions import cas
+from extensions import db
+from database import get_categories, get_tags, buildings, categories, tags
 
-# Import the right configuration from conf.py, based on if it is the development environment or production environment
-# Run 'python3 places_api.py prod' for deployment to production, 'python3 places_api.py dev' or 'python3 places_api.py'
-# will deploy to development environment
-if __name__ == '__main__':
-    env = sys.argv[1] if len(sys.argv) > 2 else 'dev'  # always fall back to dev environment
-    app.config.from_object(config.get_conf(env))
-    app.config['ENV'] = env
-
-# Flask
 api = Blueprint('gtplaces', __name__)
-app.config['SESSION_TYPE'] = 'filesystem'
 
-# CAS
-cas = CAS(app)
-app.config['CAS_AFTER_LOGIN'] =''
+# TODO: configure swagger while avoiding circular dependency
+# # Swagger
+# swagger_template = {
+#     "swagger": "2.0",
+#     "info": {
+#         "title": "Places API",
+#         "description": "This API will allow you to access the information of the places at Georgia Tech. It can be used "
+#                        "to find out information about  the offices and the buildings such as their names, addresses, phone"
+#                        " numbers, images, categories and GPS coordinates.",
+#         "contact": {
+#             "responsibleOrganization": "GT-RNOC",
+#             "responsibleDeveloper": "RNOC Lab Staff",
+#             "email": "rnoc-lab-staff@lists.gatech.edu",
+#             "url": "http://rnoc.gatech.edu/"
+#         },
+#         # "termsOfService": "http://me.com/terms",
+#         "version": "2.0"
+#     },
+#
+#     # TODO: Can refactor host, basePath and other props can be set in app.config, which are read by swagger.init_app
+#     "host": current_app.config["SWAGGER_HOST"],  # Places API is hosted here
+#     "basePath": current_app.config["SWAGGER_BASE_PATH"],
+#     "schemes": current_app.config["SWAGGER_SCHEMES"].split(),
+# }
 
-# Swagger
-swagger_template = {
-    "swagger": "2.0",
-    "info": {
-        "title": "Places API",
-        "description": "This API will allow you to access the information of the places at Georgia Tech. It can be used "
-                       "to find out information about  the offices and the buildings such as their names, addresses, phone"
-                       " numbers, images, categories and GPS coordinates.",
-        "contact": {
-            "responsibleOrganization": "GT-RNOC",
-            "responsibleDeveloper": "RNOC Lab Staff",
-            "email": "rnoc-lab-staff@lists.gatech.edu",
-            "url": "http://rnoc.gatech.edu/"
-        },
-        # "termsOfService": "http://me.com/terms",
-        "version": "2.0"
-    },
-    "host": app.config["SWAGGER_HOST"],  # Places API is hosted here
-    "basePath": app.config["SWAGGER_BASE_PATH"],
-    "schemes": app.config["SWAGGER_SCHEMES"].split(),
-}
-swag = Swagger(app, template=swagger_template)
 
-# SQLAlchemy
-db = create_engine(app.config["SQLA_DB_URL"], echo=app.config["SQLA_ECHO"])
-# TODO: Base not needed unless we are using object mapping?
-# Base = declarative_base()
-metadata = MetaData(bind=db)
-
-# SQL Table definitions
-buildings = Table('buildings', metadata,
-                  Column('b_id', String(8), primary_key=True),
-                  Column('api_id', Text, nullable=False),
-                  Column('name', Text, nullable=False),
-                  Column('address', Text, nullable=False),
-                  Column('city', Text, nullable=False),
-                  Column('zipcode', Text, nullable=False),
-                  Column('image_url', Text, nullable=False),
-                  Column('website_url', Text, nullable=False),
-                  Column('longitude', Float, nullable=False),
-                  Column('latitude', Float, nullable=False),
-                  Column('shape_coordinates', Text, nullable=False),
-                  Column('phone_num', String(15), nullable=False)
-                  )
-
-categories = Table('categories', metadata,
-                   Column('cat_id', Integer, primary_key=True),
-                   Column('b_id', String(11), nullable=False),
-                   Column('cat_name', Text, nullable=False)
-                   )
-
-tags = Table('tags', metadata,
-             Column('tag_id', Integer, primary_key=True),
-             Column('b_id', Text, nullable=False),
-             Column('tag_name', Text, nullable=False),
-             Column('gtuser', Text, nullable=False),
-             Column('auth', Integer, nullable=False),
-             Column('times_tag', Integer, nullable=False),
-             Column('flag_users', Text, nullable=False),
-             Column('times_flagged', Integer, nullable=False),
-             UniqueConstraint('b_id', 'tag_name')
-             )
-
-flags = Table('flags', metadata,
-              Column('flag_id', Integer, primary_key=True),
-              Column('tag_id', Integer, nullable=False),
-              Column('gtuser', Text, nullable=False)
-              )
-
-if app.config['ENV'] == 'dev':
-    # create the tables if needed and in dev mode
-    # don't do this on a production system
-    metadata.create_all(db)
-
-def get_categories(b_id):
-    """
-    Get all the categories a building belongs to
-    """
-    query = select([categories.c.cat_name], categories.c.b_id ==  b_id).distinct()
-    results = db.execute(query).fetchall()
-    categories_ret = []
-    for res in results:
-        categories_ret.append(res[0])
-    return categories_ret
-
-def get_tags(b_id):
-    """
-    Get all the tags a building is associated with
-    """
-    query = select([tags.c.tag_name], tags.c.b_id == b_id).distinct()
-    results = db.execute(query).fetchall()
-    tags_ret = []
-    for res in results:
-        tags_ret.append(res[0])
-    return tags_ret
 
 def res_to_json(row):
     """
@@ -145,41 +64,41 @@ def res_to_json(row):
     }
     return(output)
 
-@api.route("/checkuser",methods=['GET'])
-@login_required
-def index():
-    """
-    Check if user is logged in, or ask user to log in
-    Simply test to see if the user is authenticated, and return their login name
-    ---
-    tags:
-        - user
-    produces:
-	- application/json
-    responses:
-        200:
-	    description: User is logged in
-            schema:
-                type: object
-                properties:
-                    username:
-                         type: string
-                         description: username of the user currently logged in
-                         required: true
-        403:
-            description: Unable to authenticate
-            schema:
-                type: object
-                properties:
-                    error:
-                        type: string
-                        description: unable to authenticate
-                        required: true
-    """
-    try:
-        return flask.jsonify({"username":cas.username}), 200
-    except:
-        return flask.jsonify({"error":"Unable to authenticate"}), 403
+# @api.route("/checkuser",methods=['GET'])
+# @login_required
+# def index():
+#     """
+#     Check if user is logged in, or ask user to log in
+#     Simply test to see if the user is authenticated, and return their login name
+#     ---
+#     tags:
+#         - user
+#     produces:
+# 	- application/json
+#     responses:
+#         200:
+# 	    description: User is logged in
+#             schema:
+#                 type: object
+#                 properties:
+#                     username:
+#                          type: string
+#                          description: username of the user currently logged in
+#                          required: true
+#         403:
+#             description: Unable to authenticate
+#             schema:
+#                 type: object
+#                 properties:
+#                     error:
+#                         type: string
+#                         description: unable to authenticate
+#                         required: true
+#     """
+#     try:
+#         return flask.jsonify({"username":cas.username}), 200
+#     except:
+#         return flask.jsonify({"error":"Unable to authenticate"}), 403
 
 @api.route("/buildings", methods=['GET'])
 def getAll():
@@ -246,7 +165,7 @@ def getAll():
                         description: Tags of the building
     """
     query = buildings.select()
-    results = db.execute(query)
+    results = db.engine.execute(query)
     response = []
     for result in results:
         response.append(res_to_json(result))
@@ -324,7 +243,7 @@ def getById(b_id):
                         description: Tags of the building
     """
     query = select([buildings], buildings.c.b_id == b_id)
-    results = db.execute(query).fetchall()
+    results = db.engine.execute(query).fetchall()
     response = []
     for result in results:
         response = res_to_json(result)
@@ -402,7 +321,7 @@ def getByName(name):
                         description: Tags of the building
     """
     query = select([buildings], buildings.c.name.like('%' + name + '%'))
-    results = db.execute(query).fetchall()
+    results = db.engine.execute(query).fetchall()
     response = []
     for result in results:
         response.append(res_to_json(result))
@@ -431,7 +350,7 @@ def getCategories():
     """
     response = []
     query = select([categories.c.cat_name]).distinct()
-    results = db.execute(query).fetchall()
+    results = db.engine.execute(query).fetchall()
     for result in results:
         response.append(result[0])
     return flask.jsonify(response)
@@ -514,7 +433,7 @@ def postCategories():
     response = []
     category = request.form["category"]
     query = select([buildings, categories], and_(categories.c.cat_name == category, categories.c.b_id == buildings.c.b_id))
-    results = db.execute(query).fetchall()
+    results = db.engine.execute(query).fetchall()
     response = []
     for result in results:
         response.append(res_to_json(result))
@@ -568,7 +487,7 @@ def getTags():
     """
     response = []
     query = select([tags])
-    results = db.execute(query)
+    results = db.engine.execute(query)
     for result in results:
         response.append({
             "tag_id": result[0],
@@ -621,10 +540,10 @@ def addTag():
         return flask.jsonify({"error": "Building ID or Tag Name cannot be empty!"}), 400
     try:  # SQLAlchemy does not have a ON DUPLICATE UPDATE method, this is the best workaround I found
         query = tags.insert().values(b_id=bid, tag_name=tag, gtuser=cas.username, auth=0, times_tag=1, flag_users='', times_flagged=0)
-        db.execute(query)
+        db.engine.execute(query)
     except IntegrityError:
         query = tags.update(and_(tags.c.tag_name == tag, tags.c.b_id == bid), values={tags.c.times_tag: tags.c.times_tag+1})
-        db.execute(query)
+        db.engine.execute(query)
     return flask.jsonify({"status": "tag inserted"}), 201
 
 @api.route("/tags/<name>", methods=['GET'])
@@ -681,7 +600,7 @@ def getByTagName(name):
     """
     response = []
     query = select([tags.c.tag_id, tags.c.b_id, tags.c.tag_name, tags.c.gtuser, tags.c.auth, tags.c.times_tag, tags.c.flag_users, tags.c.times_flagged], and_(tags.c.tag_name.like('%' + name + '%'), tags.c.b_id == buildings.c.b_id))
-    results = db.execute(query)
+    results = db.engine.execute(query)
     for result in results:
         response.append({
             "tag_id": result[0],
@@ -726,10 +645,7 @@ def flagTag():
     if tag_id == "":
         return flask.jsonify({"error": "Tag ID is required"}), 400
     query = tags.update(tags.c.tag_id == tag_id, values={tags.c.flag_users: tags.c.flag_users+cas.username+',', tags.c.times_flagged: tags.c.times_flagged+1})
-    db.execute(query)
+    db.engine.execute(query)
     return flask.jsonify({"status": "tag flagged"}), 201
 
-
-app.register_blueprint(api, url_prefix=app.config["FLASK_BASE_PATH"])
-app.run(host=app.config["FLASK_HOST"], port=app.config["FLASK_PORT"], debug=app.config["FLASK_DEBUG"])
 

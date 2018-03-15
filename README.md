@@ -15,15 +15,44 @@ Work on all m.gatech.edu-related projects should follow
 
 Before beginning work, **please read the contribution guidelines**.
 
-### Requirements
+### Prerequisites
 
-- Python X.XX (TODO)
+Ensure you have the latest version of [Python 3](https://www.python.org/downloads/) and 
+[pip](https://packaging.python.org/key_projects/#pip) and that both are available from the command line  You can check this
+by running:
+```
+python --version
+pip --version
 
-### Installation for development
+```
+
+It's highly recommended that you use [Virtualenv](https://virtualenv.pypa.io/en/latest/) during development.  For a
+breif overview of how to work with Virtualenv and the Flask CLI, check out the 
+[Flask installation guide](http://flask.pocoo.org/docs/0.12/installation/#virtualenv)
+
 
 TODO: Steps required for
  * setting up the development environment
  * starting a local development instance
+
+TODO: How to run local development instance w/ `flask` CLI.
+```
+set FLASK_APP=autoapp
+set FLASK_DEBUG=true
+flask run -h localhost -p 8080
+
+```
+or
+```
+set FLASK_APP=autoapp
+set FLASK_DEBUG=true
+python -m flask run
+
+```
+
+TODO: running in PyCharm
+https://github.com/pallets/flask/blob/master/docs/cli.rst
+
 
 ### Local development database
 
@@ -84,8 +113,6 @@ Set the following environment variables to provide configuration:
 - **SWAGGER_HOST**
 - **SWAGGER_BASE_PATH** - (optional)
 - **SWAGGER_SCHEMES**
-- **FLASK_HOST**
-- **FLASK_PORT**
 - **FLASK_BASE_PATH**
 
 ### TODO: Revise the following content from old README:
