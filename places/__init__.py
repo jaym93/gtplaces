@@ -5,21 +5,22 @@ Based on Flask Application Factory pattern: http://flask.pocoo.org/docs/patterns
 """
 from flask import Flask
 from places import commands, routes, extensions
+from places.config import CONFIG_NAME_MAP
 
 
-def create_app(config=None):
+def create_app(config_name='development'):
     """
     Create an instance of the Flask application.
 
     This follows the Flask Application Factory pattern, as explained here:
     http://flask.pocoo.org/docs/patterns/appfactories/
 
-    :param config: The configuration object to use.
+    :param config_name: The name of the configuration
     """
 
     app = Flask(__name__)
 
-    app.config.from_object(config)
+    app.config.from_object(CONFIG_NAME_MAP[config_name])
     register_extensions(app)
     register_blueprints(app)
     register_commands(app)

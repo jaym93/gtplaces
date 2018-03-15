@@ -40,14 +40,12 @@ TODO: How to run local development instance w/ `flask` CLI.
 set FLASK_APP=autoapp
 set FLASK_DEBUG=true
 flask run -h localhost -p 8080
-
 ```
 or
 ```
 set FLASK_APP=autoapp
 set FLASK_DEBUG=true
 python -m flask run
-
 ```
 
 TODO: Create database tables if they do not exist
@@ -110,6 +108,7 @@ TODO: Steps for production deployment
  TODO: Document environment varibles
  
 Set the following environment variables to provide configuration:
+- **ENV** - 'production'
 - **CAS_SERVER** - (optional)
 - **CAS_VALIDATE_ROUTE** - (optional)
 - **SECRET_KEY**

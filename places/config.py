@@ -1,7 +1,10 @@
+"""
+Application configuration classes.
+"""
+
 import os
 
-
-class BaseConf(object):
+class BaseConfig(object):
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
     PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
 
@@ -48,22 +51,17 @@ class BaseConf(object):
     }
 
 
-class DevConf(BaseConf):
-    ENV = "dev"
+class DevelopmentConfig(BaseConfig):
     DEBUG = True
 
     # Using local SQLite DB in project root dir for development
     SQLALCHEMY_DATABASE_NAME = os.environ.get("DB_NAME",'dev.db')
-    SQLALCHEMY_DATABASE_PATH = os.path.join(BaseConf.PROJECT_ROOT, SQLALCHEMY_DATABASE_NAME)
+    SQLALCHEMY_DATABASE_PATH = os.path.join(BaseConfig.PROJECT_ROOT, SQLALCHEMY_DATABASE_NAME)
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", "sqlite:///{0}".format(SQLALCHEMY_DATABASE_PATH))
 
 
-class ProdConf(BaseConf):
-    ENV = "prod"
-    DEBUG = False
-
+class ProductionConfig(BaseConfig):
     # require that production get critical configuration from environment - no defaults
-    # TODO: Production systems should fail immediately if not provided
 
     # production systems should use a secure, randomly generated secret
     SECRET_KEY = os.environ.get("SECRET_KEY", None)
@@ -71,13 +69,11 @@ class ProdConf(BaseConf):
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", None)
     SQLALCHEMY_ECHO = False
 
-
-def get_conf(env="dev"):
-    if env == "dev":
-        return DevConf()
-    elif env == "prod":
-        return ProdConf()
-    else:
-        raise ValueError('Invalid environment name')
+    DEBUG = False
 
 
+# Map configuration name (supplied by the ENV environment variable) to configuration class
+CONFIG_NAME_MAP = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig
+}
