@@ -18,13 +18,12 @@ Before beginning work, **please read the contribution guidelines**.
 ### Prerequisites
 
 ##### Python and pip
-Ensure you have the latest version of [Python 3](https://www.python.org/downloads/) and 
+Ensure you have the latest version of [Python 3](https://www.python.org/downloads/) (>=3.6) and 
 [pip](https://packaging.python.org/key_projects/#pip) and that both are available from the command line  You can check this
 by running:
 ```
-python --version
-pip --version
-
+$ python --version
+$ pip --version
 ```
 
 ##### Virtualenv
@@ -33,7 +32,7 @@ breif overview of how to work with Virtualenv and the Flask CLI, check out the
 [Flask installation guide](http://flask.pocoo.org/docs/0.12/installation/#virtualenv).  To install:
 
 ```
-sudo pip install virtualenv
+$ sudo pip install virtualenv
 ```
 
 ##### A good Python IDE
