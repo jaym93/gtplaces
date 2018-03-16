@@ -54,10 +54,14 @@ docs/_build/
 *.bak
 local_config.py
 static/
-example.db
 .idea/
 clients/*/swagger.json
 clients/*/dist
 
 # virtual environment
 venv
+
+# SQLite databases
+*.db
+# EXCEPTION for the sample database
+!sample.db

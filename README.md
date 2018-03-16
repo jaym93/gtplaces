@@ -6,7 +6,7 @@ Supports the [GT Places web app](https://github.gatech.edu/gtjourney/gtmobile)
 of [m.gatech.edu](https://m.gatech.edu).
 In production at https://m.gatech.edu/api/gtplaces.
 
-## Developer quick start
+## Development
 
 ### How to contribute
 
@@ -15,15 +15,90 @@ Work on all m.gatech.edu-related projects should follow
 
 Before beginning work, **please read the contribution guidelines**.
 
-### Requirements
+### Prerequisites
 
-- Python X.XX (TODO)
+##### Python and pip
+Ensure you have the latest version of [Python 3](https://www.python.org/downloads/) (>=3.6) and 
+[pip](https://packaging.python.org/key_projects/#pip) and that both are available from the command line  You can check this
+by running:
+```
+$ python --version
+$ pip --version
+```
 
-### Installation for development
+##### Virtualenv
+It's highly recommended that you use [Virtualenv](https://virtualenv.pypa.io/en/latest/) during development.  For a
+breif overview of how to work with Virtualenv and the Flask CLI, check out the 
+[Flask installation guide](http://flask.pocoo.org/docs/0.12/installation/#virtualenv).  To install:
 
-TODO: Steps required for
- * setting up the development environment
- * starting a local development instance
+```
+$ sudo pip install virtualenv
+```
+
+##### A good Python IDE
+Using an IDE like [PyCharm](https://www.jetbrains.com/pycharm) is recommended and [free for student use](https://www.jetbrains.com/student/).
+Among other benefits, the built in code analysis can help you write better code.
+
+
+### Developer quick start
+
+* Clone the repository
+  ```
+  $ git clone https://github.gatech.edu/gtjourney/gtmobile-gtplaces.git
+  $ cd gtmobile-gtplaces
+  ```
+  
+* Set up virtualenv
+  ``` 
+  $ virtualenv -p python3 venv
+  $ source venv/bin/activate
+  ```
+  
+* Install requirements
+  ```
+  (venv)$ pip install -r requirements.txt
+  ```
+  
+* Set environment variables required by the `flask` CLI
+  ```
+  (venv)$ set FLASK_APP=autoapp
+  (venv)$ set FLASK_DEBUG=true
+  ```
+  You may want to add this to your `venv/bin/activate` script.
+  
+* Setup your development SQLite database
+
+  You may either use the provided `sample.db`
+  ```
+  (venv)$ cp sample.db dev.db
+  ```
+  or initialize an empty database
+  ```
+  (venv)$ flask create_db_tables
+  ```
+  
+* Run it!
+  ```
+  (venv)$ flask run
+   * Serving Flask app "autoapp"
+   * Running on http://127.0.0.1:5000/ (Press CTRL+C to quit)
+  ```
+  You may also specify the host and port: `flask run -h localhost -p 8080`
+  
+  Point a web browser to [http://localhost:5000/apidocs](http://localhost:5000/apidocs) to test drive!
+
+* Run in your IDE
+
+  PyCharm 2018 supports executing with `flask run` out of the box.  For earlier version of PyCharm
+  or other IDEs, see [these configuration steps from the Flask docs](https://github.com/pallets/flask/blob/master/docs/cli.rst)
+
+
+### Local development database
+
+For development, Sequel Alchemy is configured by default to use a local SQLite database, `dev.db`, which is ignored by Git.
+
+The provided `sample.db` contains a dump of the production database as of 3/18/2018.  To use this sample data for
+development, copy `sample.db` and rename to `dev.db`.
 
 ### Running tests
 
@@ -69,6 +144,7 @@ TODO: Steps for production deployment
  TODO: Document environment varibles
  
 Set the following environment variables to provide configuration:
+- **ENV** - 'production'
 - **CAS_SERVER** - (optional)
 - **CAS_VALIDATE_ROUTE** - (optional)
 - **SECRET_KEY**
@@ -77,8 +153,6 @@ Set the following environment variables to provide configuration:
 - **SWAGGER_HOST**
 - **SWAGGER_BASE_PATH** - (optional)
 - **SWAGGER_SCHEMES**
-- **FLASK_HOST**
-- **FLASK_PORT**
 - **FLASK_BASE_PATH**
 
 ### TODO: Revise the following content from old README:
