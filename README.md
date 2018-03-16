@@ -121,7 +121,7 @@ library, which extracts our inline OpenAPI Spec to provide interactive
 documentation via [Swagger UI](https://swagger.io/swagger-ui/),
 perform request validation, and generate stand-alone OpenAPI Spec files.
 
-### Interactive API documentation - Swagger UI
+#### Interactive API documentation - Swagger UI
 
 To access interactive [Swagger UI](https://swagger.io/swagger-ui/)
 documentation, point a browser to:
@@ -129,55 +129,41 @@ documentation, point a browser to:
 <API_URL>/apidocs
 ```
 
-### Extracting an OpenAPI Specification file
+#### Extracting an OpenAPI Specification file
 
 To exract an OpenAPI Specification JSON file, point a browser to:
 ```
 <API_URL>/apispec_1.json
 ```
 
-## Deployment for production
+## Production deployment
 
-TODO: Steps for production deployment
+### OpenShift
+Deployment to OpenShift is supported with [OpenShift Source-to-Image](https://github.com/openshift/source-to-image),
+or S2I. For implementation details, see the [OpenShift Python S2I Container](https://github.com/sclorg/s2i-python-container).
 
-### Set environment variables
- TODO: Document environment varibles
- 
-Set the following environment variables to provide configuration:
-- **ENV** - 'production'
-- **CAS_SERVER** - (optional)
-- **CAS_VALIDATE_ROUTE** - (optional)
-- **SECRET_KEY**
-  * Secret used by Flask for any crypto.  Should be secure and randomly generated.
-- **DB_URL**
-- **SWAGGER_HOST**
-- **SWAGGER_BASE_PATH** - (optional)
-- **SWAGGER_SCHEMES**
-- **FLASK_BASE_PATH**
+When creating an OpenShift application:
+* From _Add to project_, choose `python:3.5` or later.
+* Set the required environment variables:
+  - `ENV=production`
+  - `DB_URL` - The full connection URL for the database, including DB scheme, credentials and database name, e.g.
+     `mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu/CORE_gtplaces`.  Note that special characters in credentials
+     should be URL encoded.
+  - `SECRET_KEY` - Use a cryptographic random generator to create a 24 character secret key.  Flask uses this for CAS
+    and other crypto.
+  - `SWAGGER_HOST` - The public hostname and port of the API in the form `hostname:port`.
+  - `SWAGGER_BASE_PATH` - The public base path of the API`, e.g. `/api/gtplaces`
+  - `SWAGGER_SCHEMES` - The public schemes supported by the API.  Multiple values may be space delimited,
+     e.g. `http https`
+  
+  See `places/config.py` for additional optional configuration.
 
-### TODO: Revise the following content from old README:
+### WSGI and Proxy Server
+The OpenShift container will serve the app with [Gunicorn, a Python WSGI HTTP Server](http://gunicorn.org/). The
+`gunicorn` configuration is provided by `gunicorn_config.py`.
 
-#### Important
-A Dockerfile is a **_must_** for any repositories we are currently migrating. Even if it is not used at the end, with using docker-compose instead, presence of a Dockerfile will greatly help in understanding the dependencies of the application.
+[It is highly recommended that the API lives behind a proxy server.](http://docs.gunicorn.org/en/latest/deploy.html)
 
-#### TODO:
-  * Need to fix SSH access to github.gatech.edu for pulling the codebase directly from the repository. Tested with manually adding the source code to the container.
-  * Decide on how best to pass the Environment Variables
-  * As per the code, the application is running on port 5000, so use the following to start the container (as a daemon)
-    
-    ```docker run -d -p 5000:5000 -eDB_USERNAME=<DB_USERNAME> -eDB_PASSWORD=<DB_PASSWORD> <image_name>```
-    
-  * When testing the code you have modified on the server (avoid if at all possible and use git push on development machine, git pull to pull new changes), errors will not be shown by default in the daemon mode. To see error messages, use `-it` option instead of the `-d` option.
-    
-    Note that we are passing the required environment variables for connecting to the DB service while starting the container. Could be done by mentioning them in the Dockerfile as well. Needs to be decided.
-
-
-## Development notes
-Pretty much the only file you need to modify is places_api.py if you want to modify the behavior of the API. The file contains both the Flask API endpoints and Swagger API documentation in the function documentation of each API call.
-
-MySQL operations have been replaced by SQLAlchemy ORM. The database structure is defined ORM-style at the beginning, instead of reading from MySQL database at runtime.
-
-Configurations for development and release are stored in conf.py as separate classes, edit them when you need to change any parameter you'd normally need to change. Add other parameters to it as necessary.
 
 ## History
 In Spring of 2018, this project underwent major changes:
