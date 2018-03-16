@@ -37,41 +37,41 @@ def building_row_to_json(row):
     return output
 
 
-# @api.route("/checkuser",methods=['GET'])
-# @login_required
-# def index():
-#     """
-#     Check if user is logged in, or ask user to log in
-#     Simply test to see if the user is authenticated, and return their login name
-#     ---
-#     tags:
-#         - user
-#     produces:
-# 	- application/json
-#     responses:
-#         200:
-# 	    description: User is logged in
-#             schema:
-#                 type: object
-#                 properties:
-#                     username:
-#                          type: string
-#                          description: username of the user currently logged in
-#                          required: true
-#         403:
-#             description: Unable to authenticate
-#             schema:
-#                 type: object
-#                 properties:
-#                     error:
-#                         type: string
-#                         description: unable to authenticate
-#                         required: true
-#     """
-#     try:
-#         return flask.jsonify({"username":cas.username}), 200
-#     except:
-#         return flask.jsonify({"error":"Unable to authenticate"}), 403
+@api.route("/checkuser",methods=['GET'])
+@login_required
+def index():
+    """
+    Check if user is logged in, or ask user to log in
+    Simply test to see if the user is authenticated, and return their login name
+    ---
+    tags:
+        - user
+    produces:
+	- application/json
+    responses:
+        200:
+	    description: User is logged in
+            schema:
+                type: object
+                properties:
+                    username:
+                         type: string
+                         description: username of the user currently logged in
+                         required: true
+        403:
+            description: Unable to authenticate
+            schema:
+                type: object
+                properties:
+                    error:
+                        type: string
+                        description: unable to authenticate
+                        required: true
+    """
+    try:
+        return flask.jsonify({"username":cas.username}), 200
+    except:
+        return flask.jsonify({"error":"Unable to authenticate"}), 403
 
 
 @api.route("/buildings", methods=['GET'])
