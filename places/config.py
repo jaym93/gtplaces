@@ -9,7 +9,7 @@ class BaseConfig(object):
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
     PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
 
-    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", "/")
+    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", None)
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
