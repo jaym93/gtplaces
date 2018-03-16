@@ -4,11 +4,12 @@ Application configuration classes.
 
 import os
 
+
 class BaseConfig(object):
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
     PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
 
-    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", "/gtplaces")
+    FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", "/")
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
@@ -66,6 +67,7 @@ class ProductionConfig(BaseConfig):
     # production systems should use a secure, randomly generated secret
     SECRET_KEY = os.environ.get("SECRET_KEY", None)
 
+    # DB_URL Example for MySQL: mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", None)
     SQLALCHEMY_ECHO = False
 

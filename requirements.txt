@@ -7,6 +7,9 @@ sqlalchemy
 # therefore, installing Flask-CAS directly from the github repository present until a working version is pushed
 git+https://github.com/cameronbwhite/Flask-CAS#egg=Flask-CAS
 
+# WSGI server for production deployment
+gunicorn
+
 # testing
 pytest
 pytest-flask
