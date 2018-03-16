@@ -43,3 +43,4 @@ def register_blueprints(app):
 def register_commands(app):
     """Register Click commands for the Flask CLI"""
     app.cli.add_command(commands.create_db_tables)
+    app.cli.add_command(commands.list_routes)

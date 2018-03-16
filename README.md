@@ -104,6 +104,13 @@ development, copy `sample.db` and rename to `dev.db`.
 
 TODO: Steps for running unit/integration tests
 
+### Flask commands
+
+TODO: Document Flask CLI commands
+* `flask run`
+* `flask create_db_tables`
+* `flask list_routes` - Lists all routes exposed by the Flask application
+
 ## OpenAPI / Swagger specification
 
 We use [OpenAPI Specification](https://github.com/OAI/OpenAPI-Specification)
