@@ -45,5 +45,5 @@ def list_routes():
     print(format_str("View handler", "HTTP METHODS", "URL RULE"))
     print("-" * 80)
     for endpoint in sorted(clean_map.keys()):
-        for rule, methods in sorted(clean_map[endpoint], key=lambda x: x[1]):
+        for methods, rule in sorted(clean_map[endpoint], key=lambda x: x[1]):
             print(format_str(endpoint, methods, rule))
