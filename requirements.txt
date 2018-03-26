@@ -11,3 +11,5 @@ git+https://github.com/cameronbwhite/Flask-CAS#egg=Flask-CAS
 # WSGI server for production deployment
 gunicorn==19.7.1
 
+# testing
+pytest==3.5.0

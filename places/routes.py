@@ -75,7 +75,7 @@ def index():
 
 
 @api.route("/buildings", methods=['GET'])
-def getAll():
+def getBuildings():
     """
     Returns list of all buildings with their information
     Returns list of all buildings with building id, name, address, phone, website, latitude, longtitude, map shape coordinates, image url and tags.

@@ -12,13 +12,14 @@ buildings = Table('buildings', metadata,
                   Column('api_id', Text, nullable=False),
                   Column('name', Text, nullable=False),
                   Column('address', Text, nullable=False),
+                  # TODO: should be renamed to "address2" in database - or db should have state field added.  Maybe even address1, address2 and state added?
                   Column('city', Text, nullable=False),
                   Column('zipcode', Text, nullable=False),
                   Column('image_url', Text, nullable=False),
                   Column('website_url', Text, nullable=False),
                   Column('longitude', Float, nullable=False),
                   Column('latitude', Float, nullable=False),
-                  Column('shape_coordinates', Text, nullable=False),
+                  Column('shape_coordinates', Text, nullable=True),
                   Column('phone_num', String(15), nullable=False)
                   )
 
@@ -110,6 +111,24 @@ def get_tags_for_building(b_id):
     for res in results:
         tags_ret.append(res[0])
     return tags_ret
+
+
+def create_building(b_id, api_id, name, address, city, zipcode, image_url, website_url, longitude, latitude, shape_coordinates, phone_num):
+    """Creates a new building in the database"""
+    query = buildings.insert().values(
+        b_id = b_id,
+        api_id = api_id,
+        name = name,
+        address = address,
+        city = city,
+        zipcode = zipcode,
+        image_url = image_url,
+        website_url = website_url,
+        longitude = longitude,
+        latitude = latitude,
+        shape_coordinates = shape_coordinates,
+        phone_num = phone_num)
+    db.engine.execute(query)
 
 
 def get_tags():

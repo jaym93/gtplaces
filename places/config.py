@@ -74,8 +74,17 @@ class ProductionConfig(BaseConfig):
     DEBUG = False
 
 
+class TestConfig(BaseConfig):
+    TEST_PATH = os.path.join(BaseConfig.PROJECT_ROOT, 'tests')
+    TESTING = True
+
+    # Use in-memory SQLite database for testing
+    SQLALCHEMY_DATABASE_URI = 'sqlite://'
+
+
 # Map configuration name (supplied by the ENV environment variable) to configuration class
 CONFIG_NAME_MAP = {
     'development': DevelopmentConfig,
-    'production': ProductionConfig
+    'production': ProductionConfig,
+    'test': TestConfig
 }

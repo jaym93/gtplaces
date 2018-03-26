@@ -27,6 +27,15 @@ def create_db_tables():
 
 
 @click.command()
+def test():
+    """Run the tests."""
+    import pytest
+    from places.config import TestConfig
+
+    rv = pytest.main([TestConfig.TEST_PATH, '--verbose'])
+    exit(rv)
+
+@click.command()
 @with_appcontext
 def list_routes():
     """
