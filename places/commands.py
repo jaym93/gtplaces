@@ -9,7 +9,7 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 
-from places import database
+from places.extensions import db
 
 
 @click.command()
@@ -20,7 +20,7 @@ def create_db_tables():
     """
 
     if click.confirm('Create tables in this DB? : ' + current_app.config["SQLALCHEMY_DATABASE_URI"]):
-        database.create_tables()
+        db.create_all()
         click.echo('Done.')
     else:
         click.echo('Canceled.')

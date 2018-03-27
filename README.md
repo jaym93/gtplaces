@@ -102,14 +102,19 @@ development, copy `sample.db` and rename to `dev.db`.
 
 ### Running tests
 
-TODO: Steps for running unit/integration tests
+Run tests via your IDE or with the Flask command:
+```
+$ flask test
+```
 
 ### Flask commands
 
 TODO: Document Flask CLI commands
 * `flask run`
 * `flask create_db_tables`
+* `flask test`
 * `flask list_routes` - Lists all routes exposed by the Flask application
+* `flask shell`
 
 ## OpenAPI / Swagger specification
 

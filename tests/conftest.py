@@ -1,8 +1,9 @@
+"""
+Configuration of shared pytest fixtures
+"""
 import pytest
 
-from places import create_app, database
-from places.database import create_tables
-
+from places import create_app
 
 @pytest.yield_fixture(scope='session')
 def app():
@@ -11,7 +12,7 @@ def app():
     from places.extensions import db
 
     with app.app_context():
-        create_tables()
+        db.create_all()
         yield app
         db.drop_all()
 

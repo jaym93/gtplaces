@@ -1,77 +1,57 @@
-'''
+"""
 Places API route / endpoint implementations
 
 Uses Flask Blueprints as explained here:
 http://flask.pocoo.org/docs/0.12/blueprints/#blueprints
-'''
+"""
+from http import HTTPStatus
 
 import flask
 from flask import request, Blueprint
 from flask_cas import login_required
 
-from places import database
-from places.extensions import cas
+from places.extensions import cas, db
+from places.models import Building, Tag, Category
+from places.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
 api = Blueprint('gtplaces', __name__)
 
 
-def building_row_to_json(row):
-    """
-    Encode the result of a place-related SQL query to JSON
-    """
-    output = {
-        "b_id": row[0],
-        "name": row[2],
-        "category": database.get_categories_for_building(row[0]),
-        "address": row[3],
-        "address2": row[4],
-        "zipcode": row[5],
-        "image_url": row[6],
-        "website_url": row[7],
-        "latitude": row[8],
-        "longitude": row[9],
-        "shape_coordinates": row[10],
-        "phone_num": row[11],
-        "tags": database.get_tags_for_building(row[0])
-    }
-    return output
-
-
-@api.route("/checkuser",methods=['GET'])
-@login_required
-def index():
-    """
-    Check if user is logged in, or ask user to log in
-    Simply test to see if the user is authenticated, and return their login name
-    ---
-    tags:
-        - user
-    produces:
-	- application/json
-    responses:
-        200:
-	    description: User is logged in
-            schema:
-                type: object
-                properties:
-                    username:
-                         type: string
-                         description: username of the user currently logged in
-                         required: true
-        403:
-            description: Unable to authenticate
-            schema:
-                type: object
-                properties:
-                    error:
-                        type: string
-                        description: unable to authenticate
-                        required: true
-    """
-    try:
-        return flask.jsonify({"username":cas.username}), 200
-    except:
-        return flask.jsonify({"error":"Unable to authenticate"}), 403
+# @api.route("/checkuser",methods=['GET'])
+# @login_required
+# def index():
+#     """
+#     Check if user is logged in, or ask user to log in
+#     Simply test to see if the user is authenticated, and return their login name
+#     ---
+#     tags:
+#         - user
+#     produces:
+# 	- application/json
+#     responses:
+#         200:
+# 	    description: User is logged in
+#             schema:
+#                 type: object
+#                 properties:
+#                     username:
+#                          type: string
+#                          description: username of the user currently logged in
+#                          required: true
+#         403:
+#             description: Unable to authenticate
+#             schema:
+#                 type: object
+#                 properties:
+#                     error:
+#                         type: string
+#                         description: unable to authenticate
+#                         required: true
+#     """
+#     try:
+#         return flask.jsonify({"username":cas.username}), 200
+#     except:
+#         return flask.jsonify({"error":"Unable to authenticate"}), 403
 
 
 @api.route("/buildings", methods=['GET'])
@@ -138,11 +118,8 @@ def getBuildings():
                           type: string
                         description: Tags of the building
     """
-    results = database.get_buildings()
-    response = []
-    for result in results:
-        response.append(building_row_to_json(result))
-    return flask.jsonify(response)
+    buildings = Building.query.all()
+    return buildings_schema.jsonify(buildings)
 
 
 @api.route("/buildings_id/<b_id>", methods=['GET'])
@@ -216,11 +193,11 @@ def getById(b_id):
                           type: string
                         description: Tags of the building
     """
-    results = database.get_building(b_id)
-    response = []
-    for result in results:
-        response = building_row_to_json(result)
-    return flask.jsonify(response)
+    building = Building.query.filter_by(b_id=b_id).first()
+    if not building:
+        # TODO: unified error handling solution
+        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "Not found"}), HTTPStatus.NOT_FOUND
+    return building_schema.jsonify(building)
 
 
 @api.route("/buildings/<name>", methods=['GET'])
@@ -294,11 +271,8 @@ def getByName(name):
                           type: string
                         description: Tags of the building
     """
-    results = database.get_buildings_by_name(name)
-    response = []
-    for result in results:
-        response.append(building_row_to_json(result))
-    return flask.jsonify(response)
+    buildings = Building.query.filter_by(name=name)
+    return building_schema.jsonify(buildings)
 
 
 @api.route("/categories", methods=['GET'])
@@ -322,11 +296,8 @@ def getCategories():
                   type: string
                 description: List of all categories
     """
-    response = []
-    results = database.get_categories()
-    for result in results:
-        response.append(result[0])
-    return flask.jsonify(response)
+    categories = [r.cat_name for r in db.session.query(Category.cat_name).distinct()]
+    return flask.jsonify(categories)
 
 
 @api.route("/categories", methods=['POST'])
@@ -404,13 +375,9 @@ def postCategories():
                           type: string
                         description: Tags of the building
     """
-    response = []
-    category = request.form["category"]
-    results = database.get_buildings_by_category(category)
-    response = []
-    for result in results:
-        response.append(building_row_to_json(result))
-    return flask.jsonify(response)
+    category = request.form['category']
+    buildings = Building.query.filter(Building.categories.any(cat_name=category))
+    return buildings_schema.jsonify(buildings)
 
 
 @api.route("/tags", methods=['GET'])
@@ -459,24 +426,12 @@ def getTags():
                         type: string
                         description: Number of times this tag has been flagged
     """
-    response = []
-    results = database.get_tags()
-    for result in results:
-        response.append({
-            "tag_id": result[0],
-            "b_id": result[1],
-            "tag_name": result[2],
-            "gtuser": result[3],
-            "auth": result[4],
-            "times_tag": result[5],
-            "flag_users": result[6],
-            "times_flagged": result[7]
-        })
-    return flask.jsonify(response)
+    tags = Tag.query.all()
+    return tags_schema.jsonify(tags)
 
-
+# TODO: secure
 @api.route("/tags", methods=['POST'])
-@login_required
+#@login_required
 def addTag():
     """
     Add a tag
@@ -507,12 +462,24 @@ def addTag():
         400:
             description: Bad request, Building ID ('b_id') or Tag Name ('tag') missing in POST body
     """
-    bid = request.form['b_id']
-    tag = request.form['tag']
-    if bid=="" or tag=="":
-        return flask.jsonify({"error": "Building ID or Tag Name cannot be empty!"}), 400
-    database.create_tag(bid, tag, cas.username)
-    return flask.jsonify({"status": "tag inserted"}), 201
+    b_id = request.form['b_id']
+    tag_name = request.form['tag']
+    # TODO: need unified error response solution
+    if not b_id or not tag_name:
+        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "'b_id' and 'tag' required"}), HTTPStatus.BAD_REQUEST
+
+    tag = Tag.query.filter_by(b_id=b_id, tag_name=tag_name).first()
+    if tag:
+        tag.times_tag = Tag.times_tag + 1
+    else:
+        # TODO: get user from auth token
+        gtuser = 'anonymous'
+        tag = Tag(b_id=b_id, tag_name=tag_name, gtuser=gtuser)
+        db.session.add(tag)
+
+    db.session.commit()
+
+    return tag_schema.jsonify(tag), HTTPStatus.CREATED
 
 
 @api.route("/tags/<name>", methods=['GET'])
@@ -567,28 +534,16 @@ def getByTagName(name):
                         type: string
                         description: Number of times this tag has been flagged
     """
-    response = []
-    results = database.get_tag(name)
-    for result in results:
-        response.append({
-            "tag_id": result[0],
-            "b_id": result[1],
-            "tag_name": result[2],
-            "gtuser": result[3],
-            "auth": result[4],
-            "times_tag": result[5],
-            "flag_users": result[6],
-            "times_flagged": result[7]
-        })
-    return flask.jsonify(response)
+    tag = Tag.query.filter_by(tag_name=name).first()
+    return tag_schema.jsonify(tag)
 
-
+# TODO: secure
 @api.route("/flag", methods=['POST'])
-@login_required
+#@login_required
 def flagTag():
     """
     Flag a certain tag as being incorrect
-    Send 'tag_id' (Tag ID) as form data to flag an existing tag in the database.
+    Send 'tag_name' as form data to flag an existing tag in the database.
     If Tag ID does not exist, your flag will be ignored.
     *Using this method requires you to be logged in via CAS.*
     ---
@@ -597,9 +552,9 @@ def flagTag():
     consumes:
         - application/x-www-form-urlencoded
     parameters:
-        - name: tag_id
+        - name: tag_name
           in: formData
-          description: Tag ID to flag (example, 30)
+          description: Tag name to flag (example, 'recreation')
           required: true
           type: string
     produces:
@@ -608,10 +563,25 @@ def flagTag():
         201:
             description: Tag flagged
         400:
-            description: Bad request, Tag ID ('tag_id') missing in POST body
+            description: Bad request, `tag_name` missing in POST body
     """
-    tag_id = request.form['tag_id']  # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID
-    if tag_id == "":
-        return flask.jsonify({"error": "Tag ID is required"}), 400
-    database.flag_tag(tag_id, cas.username)
-    return flask.jsonify({"status": "tag flagged"}), 201
+    # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID (Jayanth)
+    tag_name = request.form['tag_name']
+    # TODO: need unified error response solution
+    if not tag_name:
+        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "'tag' required"}), HTTPStatus.BAD_REQUEST
+
+    tag = Tag.query.filter_by(tag_name=tag_name).first()
+    if not tag:
+        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "Not found"}), HTTPStatus.NOT_FOUND
+    else:
+        # TODO: get user from auth token
+        gtuser = 'anonymous'
+        # only flag the first once per user
+        if not (gtuser in tag.flag_users.split(',')):
+            tag.times_flagged = Tag.times_flagged + 1
+            tag.flag_users = Tag.flag_users + gtuser + ','
+            db.session.commit()
+        return tag_schema.jsonify(tag)
+
+

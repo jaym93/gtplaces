@@ -77,6 +77,8 @@ class ProductionConfig(BaseConfig):
 class TestConfig(BaseConfig):
     TEST_PATH = os.path.join(BaseConfig.PROJECT_ROOT, 'tests')
     TESTING = True
+    DEBUG = False
+    SQLALCHEMY_ECHO = False
 
     # Use in-memory SQLite database for testing
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
