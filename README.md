@@ -66,6 +66,8 @@ Among other benefits, the built in code analysis can help you write better code.
   ```
   You may want to add this to your `venv/bin/activate` script.
   
+  If your `flask` commands fail after setting `FLASK_APP=autoapp`, try using the absolute path to `autoapp.py`.
+  
 * Setup your development SQLite database
 
   You may either use the provided `sample.db`
@@ -112,19 +114,25 @@ Ultimately, you should be testing against test fixtures which you should probabl
 
 ### Running tests
 
-Run tests via your IDE or with the Flask command:
+Run [pytest](https://docs.pytest.org/en/latest/) unit / integration tests via your IDE or with the Flask command:
 ```
 $ flask test
 ```
 
 ### Flask commands
 
-TODO: Document Flask CLI commands
-* `flask run`
-* `flask create_db_tables`
-* `flask test`
-* `flask list_routes` - Lists all routes exposed by the Flask application
-* `flask shell`
+The [Flask Command Line Interface](http://flask.pocoo.org/docs/0.12/cli/) is used to run the API in development mode,
+execute automated tests and perform other development-related tasks.  In addition to the built in commands, custom
+commands are implemented in `api/commands.py`.
+
+* **`flask run`** - Starts the API using Flask's built-in web server. This is not intended for production!
+* **`flask create_db_tables`** - Creates database tables if needed, using the DB provided by the current configuration.
+  To change the DB, see configuration options in `api/config.py`
+* **`flask test`** - Executes automated tests using [pytest](https://docs.pytest.org/en/latest/).
+* **`flask list_routes`** - Lists all routes exposed by the Flask application
+* **`flask shell`** - Starts [Flask's interactive shell](http://flask.pocoo.org/docs/0.12/shell/).
+
+Getting a `flask: command not found` error? Ensure that you've set `export FLASK_APP=autoapp`.
 
 ## OpenAPI / Swagger specification
 
