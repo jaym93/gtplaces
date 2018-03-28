@@ -8,7 +8,7 @@ http://docs.sqlalchemy.org/en/latest/
 from sqlalchemy import String, Text, Float, Integer, UniqueConstraint, ForeignKey, cast
 from sqlalchemy.orm import remote, foreign
 
-from places.extensions import db
+from api.extensions import db
 
 
 class Building(db.Model):

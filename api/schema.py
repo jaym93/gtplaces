@@ -5,7 +5,7 @@ See Marshmallow documentation:
 https://flask-marshmallow.readthedocs.io/en/latest/
 http://marshmallow.readthedocs.io/en/latest/
 """
-from places.extensions import ma
+from api.extensions import ma
 
 
 class TagSchema(ma.Schema):

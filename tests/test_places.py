@@ -7,7 +7,7 @@ import pytest
 
 from flask import url_for, json
 
-from places.models import Building, Tag, Category
+from api.models import Building, Tag, Category
 
 # Test data imported into db_with_data
 building1 = Building(

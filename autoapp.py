@@ -6,7 +6,7 @@ See http://flask.pocoo.org/docs/0.12/cli/
 """
 import os
 
-from places import create_app
+from api import create_app
 
 config_name = os.environ.get("ENV", "development")
 

@@ -10,10 +10,10 @@ import flask
 from flask import request, Blueprint
 from flask_cas import login_required
 
-from places.errors import NotFoundException, BadRequestException
-from places.extensions import cas, db
-from places.models import Building, Tag, Category
-from places.schema import buildings_schema, building_schema, tags_schema, tag_schema
+from api.errors import NotFoundException, BadRequestException
+from api.extensions import cas, db
+from api.models import Building, Tag, Category
+from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
 api = Blueprint('gtplaces', __name__)
 

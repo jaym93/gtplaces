@@ -9,7 +9,7 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 
-from places.extensions import db
+from api.extensions import db
 
 
 @click.command()
@@ -30,7 +30,7 @@ def create_db_tables():
 def test():
     """Run the tests."""
     import pytest
-    from places.config import TestConfig
+    from api.config import TestConfig
 
     rv = pytest.main([TestConfig.TEST_PATH, '--verbose'])
     exit(rv)
