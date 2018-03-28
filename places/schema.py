@@ -24,7 +24,7 @@ class CategorySchema(ma.Schema):
     """
     class Meta:
         # JSON fields - type will be inferred
-        fields = ['cat_name']
+        fields = ('cat_name',)
 
 
 class BuildingSchema(ma.Schema):
