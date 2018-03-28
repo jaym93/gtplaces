@@ -9,7 +9,7 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 
-from places import database
+from api.extensions import db
 
 
 @click.command()
@@ -20,11 +20,20 @@ def create_db_tables():
     """
 
     if click.confirm('Create tables in this DB? : ' + current_app.config["SQLALCHEMY_DATABASE_URI"]):
-        database.create_tables()
+        db.create_all()
         click.echo('Done.')
     else:
         click.echo('Canceled.')
 
+
+@click.command()
+def test():
+    """Run the tests."""
+    import pytest
+    from api.config import TestConfig
+
+    rv = pytest.main([TestConfig.TEST_PATH, '--verbose'])
+    exit(rv)
 
 @click.command()
 @with_appcontext
