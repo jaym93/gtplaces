@@ -4,8 +4,9 @@ Initialize the places package.
 Based on Flask Application Factory pattern: http://flask.pocoo.org/docs/patterns/appfactories/
 """
 from flask import Flask
-from places import commands, routes, extensions
+from places import commands, routes, extensions, errors
 from places.config import CONFIG_NAME_MAP
+from places.errors import register_error_handlers
 
 
 def create_app(config_name='development'):
@@ -23,7 +24,9 @@ def create_app(config_name='development'):
     app.config.from_object(CONFIG_NAME_MAP[config_name])
     register_extensions(app)
     register_blueprints(app)
+    register_error_handlers(app)
     register_commands(app)
+
 
     return app
 

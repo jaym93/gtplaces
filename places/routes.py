@@ -10,6 +10,7 @@ import flask
 from flask import request, Blueprint
 from flask_cas import login_required
 
+from places.errors import NotFoundException, BadRequestException
 from places.extensions import cas, db
 from places.models import Building, Tag, Category
 from places.schema import buildings_schema, building_schema, tags_schema, tag_schema
@@ -195,8 +196,7 @@ def getById(b_id):
     """
     building = Building.query.filter_by(b_id=b_id).first()
     if not building:
-        # TODO: unified error handling solution
-        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "Not found"}), HTTPStatus.NOT_FOUND
+        raise NotFoundException()
     return building_schema.jsonify(building)
 
 
@@ -272,7 +272,7 @@ def getByName(name):
                         description: Tags of the building
     """
     buildings = Building.query.filter_by(name=name)
-    return building_schema.jsonify(buildings)
+    return buildings_schema.jsonify(buildings)
 
 
 @api.route("/categories", methods=['GET'])
@@ -464,9 +464,8 @@ def addTag():
     """
     b_id = request.form['b_id']
     tag_name = request.form['tag']
-    # TODO: need unified error response solution
     if not b_id or not tag_name:
-        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "'b_id' and 'tag' required"}), HTTPStatus.BAD_REQUEST
+        raise BadRequestException(message="'b_id' and 'tag' required")
 
     tag = Tag.query.filter_by(b_id=b_id, tag_name=tag_name).first()
     if tag:
@@ -476,7 +475,6 @@ def addTag():
         gtuser = 'anonymous'
         tag = Tag(b_id=b_id, tag_name=tag_name, gtuser=gtuser)
         db.session.add(tag)
-
     db.session.commit()
 
     return tag_schema.jsonify(tag), HTTPStatus.CREATED
@@ -567,13 +565,12 @@ def flagTag():
     """
     # Only flag an existing tag, changing this from the legacy implementation where you could tag by building ID (Jayanth)
     tag_name = request.form['tag_name']
-    # TODO: need unified error response solution
     if not tag_name:
-        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "'tag' required"}), HTTPStatus.BAD_REQUEST
+        raise BadRequestException(message="'tag' required")
 
     tag = Tag.query.filter_by(tag_name=tag_name).first()
     if not tag:
-        return flask.jsonify({"status": HTTPStatus.BAD_REQUEST, "message": "Not found"}), HTTPStatus.NOT_FOUND
+        raise NotFoundException()
     else:
         # TODO: get user from auth token
         gtuser = 'anonymous'
