@@ -26,8 +26,6 @@ def create_app(config_name='development'):
     register_blueprints(app)
     register_error_handlers(app)
     register_commands(app)
-
-
     return app
 
 
