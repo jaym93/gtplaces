@@ -100,6 +100,16 @@ For development, Sequel Alchemy is configured by default to use a local SQLite d
 The provided `sample.db` contains a dump of the production database as of 3/18/2018.  To use this sample data for
 development, copy `sample.db` and rename to `dev.db`.
 
+##### How to create a SQLite sample database
+
+To create this sample database, [this MySQL to SQLite recipe](http://livecode.byu.edu/database/mysql-sqliteExport.php)
+was used.  Other scripts such as [dumblob/mysql2sqlite](https://github.com/dumblob/mysql2sqlite) may also be useful.
+
+In this case, the entire DB was dumped as it was fairly small--  for other projects with large databases, you may only
+need to export a subset of an existing database, or alternatively you can generate mock data for development.
+
+Ultimately, you should be testing against test fixtures which you should probably define in your test scripts.
+
 ### Running tests
 
 Run tests via your IDE or with the Flask command:
