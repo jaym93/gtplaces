@@ -61,7 +61,7 @@ Among other benefits, the built in code analysis can help you write better code.
   
 * Set environment variables required by the `flask` CLI
   ```
-  (venv)$ export FLASK_APP=autoapp
+  (venv)$ export FLASK_APP=autoapp.py
   (venv)$ export FLASK_DEBUG=true
   ```
   You may want to add this to your `venv/bin/activate` script.
