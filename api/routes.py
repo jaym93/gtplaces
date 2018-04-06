@@ -11,7 +11,7 @@ from flask import request, Blueprint
 from flask_cas import login_required
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import cas, db
+from api.extensions import cas, db, cors
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
@@ -579,6 +579,6 @@ def flagTag():
             tag.times_flagged = Tag.times_flagged + 1
             tag.flag_users = Tag.flag_users + gtuser + ','
             db.session.commit()
-        return tag_schema.jsonify(tag)
+        return tag_schema.jsonify(tag), HTTPStatus.CREATED
 
 

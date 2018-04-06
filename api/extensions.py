@@ -7,8 +7,10 @@ from flasgger import Swagger
 from flask_cas import CAS
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 
 db = SQLAlchemy()
 ma = Marshmallow()
 swagger = Swagger()
 cas = CAS()
+cors = CORS()
