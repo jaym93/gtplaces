@@ -18,7 +18,7 @@ from api.schema import buildings_schema, building_schema, tags_schema, tag_schem
 api = Blueprint('gtplaces', __name__)
 
 
-# @api.route("/checkuser",methods=['GET'])
+# @api.route("/checkuser/",methods=['GET'])
 # @login_required
 # def index():
 #     """
@@ -55,7 +55,7 @@ api = Blueprint('gtplaces', __name__)
 #         return flask.jsonify({"error":"Unable to authenticate"}), 403
 
 
-@api.route("/buildings", methods=['GET'])
+@api.route("/buildings/", methods=['GET'])
 def getBuildings():
     """
     Returns list of all buildings with their information
@@ -123,7 +123,7 @@ def getBuildings():
     return buildings_schema.jsonify(buildings)
 
 
-@api.route("/buildings_id/<b_id>", methods=['GET'])
+@api.route("/buildings_id/<b_id>/", methods=['GET'])
 def getById(b_id):
     """
     Search building by ID
@@ -200,7 +200,7 @@ def getById(b_id):
     return building_schema.jsonify(building)
 
 
-@api.route("/buildings/<name>", methods=['GET'])
+@api.route("/buildings/<name>/", methods=['GET'])
 def getByName(name):
     """
     Search building by name
@@ -275,7 +275,7 @@ def getByName(name):
     return buildings_schema.jsonify(buildings)
 
 
-@api.route("/categories", methods=['GET'])
+@api.route("/categories/", methods=['GET'])
 def getCategories():
     """
     Return lists of all categories
@@ -300,7 +300,7 @@ def getCategories():
     return flask.jsonify(categories)
 
 
-@api.route("/categories", methods=['POST'])
+@api.route("/categories/", methods=['POST'])
 def postCategories():
     """
     List all buildings in a certain category
@@ -380,7 +380,7 @@ def postCategories():
     return buildings_schema.jsonify(buildings)
 
 
-@api.route("/tags", methods=['GET'])
+@api.route("/tags/", methods=['GET'])
 def getTags():
     """
     Return lists of all tags
@@ -430,7 +430,7 @@ def getTags():
     return tags_schema.jsonify(tags)
 
 # TODO: secure
-@api.route("/tags", methods=['POST'])
+@api.route("/tags/", methods=['POST'])
 #@login_required
 def addTag():
     """
@@ -480,7 +480,7 @@ def addTag():
     return tag_schema.jsonify(tag), HTTPStatus.CREATED
 
 
-@api.route("/tags/<name>", methods=['GET'])
+@api.route("/tags/<name>/", methods=['GET'])
 def getByTagName(name):
     """
     Returns info about a particular tag
@@ -536,7 +536,7 @@ def getByTagName(name):
     return tag_schema.jsonify(tag)
 
 # TODO: secure
-@api.route("/flag", methods=['POST'])
+@api.route("/flag/", methods=['POST'])
 #@login_required
 def flagTag():
     """
