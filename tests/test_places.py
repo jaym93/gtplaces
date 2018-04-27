@@ -153,3 +153,11 @@ class TestPlacesApi:
         assert 2 == len(response_body)
         assert 'message' in response_body
         assert 'status' in response_body
+
+    def test_open_api_documentation_generation_succeeds(self, db, load_test_db, test_client):
+        # this tests that Open API specification can at least be extracted by flasgger
+        # this can catch some formatting errors
+        response = test_client.get('/apispec_1.json')
+
+        assert 200 == response.status_code
+        assert 'application/json' == response.content_type
