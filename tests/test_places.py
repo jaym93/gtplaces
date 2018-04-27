@@ -139,5 +139,17 @@ class TestPlacesApi:
         assert building1.categories[0].cat_name == response_body['categories'][0]
 
     def test_get_building_with_unknown_id_returns_404(self, db, load_test_db, test_client):
-            response = test_client.get('/buildings_id/BAD_ID')
-            assert HTTPStatus.NOT_FOUND == response.status_code
+        response = test_client.get('/buildings_id/BAD_ID')
+        assert HTTPStatus.NOT_FOUND == response.status_code
+
+    def test_internal_flask__error_handling_returns_error_json_and_error_status(self, db, load_test_db, test_client):
+        # this tests errors.py error handler registration and correctness of errors.handle_http_error()
+        response = test_client.get('/some_url_that_does_not_match_an_api_route')
+
+        assert HTTPStatus.NOT_FOUND == response.status_code
+        assert 'application/json' == response.content_type
+        response_body = json.loads(response.get_data(as_text=True))
+        assert isinstance(response_body, dict)
+        assert 2 == len(response_body)
+        assert 'message' in response_body
+        assert 'status' in response_body

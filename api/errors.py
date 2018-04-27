@@ -57,7 +57,7 @@ def handle_api_exception(api_exception):
 
 def handle_http_error(error):
     """Handle Flask-internal HTTP errors"""
-    return jsonify({'message': str(error), 'status': error.code})
+    return jsonify({'message': str(error), 'status': error.code}), error.code
 
 
 def register_error_handlers(app):
