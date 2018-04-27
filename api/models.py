@@ -64,7 +64,7 @@ class Tag(db.Model):
     gtuser = db.Column('gtuser', Text, nullable=False)
     auth = db.Column('auth', Integer, default=0)
     times_tag = db.Column('times_tag', Integer, default=1, nullable=False)
-    flag_users = db.Column('flag_users', Text, nullable=True)
+    flag_users = db.Column('flag_users', Text, default='', nullable=False)
     times_flagged = db.Column('times_flagged', Integer, default=0, nullable=False)
 
     # TODO: update when the table has a proper foreign key constraint
