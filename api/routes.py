@@ -10,7 +10,6 @@ import flask
 from flask import request, Blueprint
 from flask_cas import login_required
 from marshmallow import ValidationError
-from sqlalchemy import and_
 
 from api.errors import NotFoundException, BadRequestException
 from api.extensions import cas, db, cors
@@ -295,23 +294,23 @@ def addBuildingTag(b_id):
         400:
             description: Bad request
     """
-    # TODO: newest marshmallow changes load() to return dict and throw exception, but flask-marshmallow isn't yet compatible
-    requestBody = tag_schema.load(request.get_json())
-    if requestBody.errors:
+    try:
+        request_body = tag_schema.load(request.get_json())
+    except ValidationError as e:
         # TODO: update error JSON to include details of field errors, reported as dictionary by ValidationError
-        raise BadRequestException('Invalid request body: ' + str(requestBody.errors))
+        raise BadRequestException('Invalid request body: ' + str(e.messages))
 
-    building_exisits = Building.query.filter_by(b_id=b_id).count() == 1
-    if not building_exisits:
+    building_exists = Building.query.filter_by(b_id=b_id).count() == 1
+    if not building_exists:
         raise NotFoundException()
 
-    tag = Tag.query.filter_by(b_id=b_id, tag_name=requestBody.data['tag_name']).first()
+    tag = Tag.query.filter_by(b_id=b_id, tag_name=request_body['tag_name']).first()
     if tag:
         tag.times_tag = Tag.times_tag + 1
     else:
         # TODO: get user from auth token
         gtuser = 'anonymous'
-        tag = Tag(b_id=b_id, tag_name=requestBody.data['tag_name'], gtuser=gtuser)
+        tag = Tag(b_id=b_id, tag_name=request_body['tag_name'], gtuser=gtuser)
         db.session.add(tag)
     db.session.commit()
 
@@ -370,6 +369,7 @@ def getBuildingTags(b_id):
         raise NotFoundException()
     tags = Tag.query.filter_by(b_id=b_id)
     return tags_schema.jsonify(tags)
+
 
 @api.route("/buildings/<b_id>/tags/<tag_name>", methods=['GET'])
 def getBuildingTag(b_id, tag_name):
