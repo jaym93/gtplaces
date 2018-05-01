@@ -40,7 +40,7 @@ class BaseConfig(object):
                 "email": "rnoc-lab-staff@lists.gatech.edu",
                 "url": "http://rnoc.gatech.edu/"
             },
-            "version": "1",
+            "version": "1.5",
         },
 
         "host": SWAGGER_HOST,
