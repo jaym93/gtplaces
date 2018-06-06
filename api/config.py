@@ -19,7 +19,6 @@ class BaseConfig(object):
     # TODO: need to add base route?
     SESSION_TYPE = 'filesystem'
 
-    SQLALCHEMY_ECHO = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Swagger config defaults to lazy loading values from the Flask request
@@ -59,9 +58,12 @@ class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_NAME = os.environ.get("DB_NAME",'dev.db')
     SQLALCHEMY_DATABASE_PATH = os.path.join(BaseConfig.PROJECT_ROOT, SQLALCHEMY_DATABASE_NAME)
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", "sqlite:///{0}".format(SQLALCHEMY_DATABASE_PATH))
+    SQLALCHEMY_ECHO = True
 
 
 class ProductionConfig(BaseConfig):
+    DEBUG = False
+
     # require that production get critical configuration from environment - no defaults
 
     # production systems should use a secure, randomly generated secret
@@ -69,16 +71,12 @@ class ProductionConfig(BaseConfig):
 
     # DB_URL Example for MySQL: mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu
     SQLALCHEMY_DATABASE_URI = os.environ.get("DB_URL", None)
-    SQLALCHEMY_ECHO = False
-
-    DEBUG = False
 
 
 class TestConfig(BaseConfig):
     TEST_PATH = os.path.join(BaseConfig.PROJECT_ROOT, 'tests')
     TESTING = True
     DEBUG = False
-    SQLALCHEMY_ECHO = False
 
     # Use in-memory SQLite database for testing
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
