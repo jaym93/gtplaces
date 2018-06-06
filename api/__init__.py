@@ -26,6 +26,9 @@ def create_app(config_name='development'):
     register_blueprints(app)
     register_error_handlers(app)
     register_commands(app)
+
+    app.logger.info('Flask app created with configuration: %s', config_name)
+
     return app
 
 
