@@ -12,7 +12,7 @@ from flask_cas import login_required
 from marshmallow import ValidationError
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import cas, db, cors
+from api.extensions import cas, db
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
