@@ -8,11 +8,10 @@ from http import HTTPStatus
 
 import flask
 from flask import request, Blueprint
-from flask_cas import login_required
 from marshmallow import ValidationError
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import cas, db
+from api.extensions import db
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
@@ -259,12 +258,11 @@ def getTags():
 
 # TODO: secure
 @api.route("/buildings/<b_id>/tags/", methods=['POST'])
-#@login_required
 def addBuildingTag(b_id):
     """
     Add a tag to a building.
     Tags let users create searchable substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
-    *Using this method requires you to be logged in via CAS.*
+    *Login required.*
     ---
     tags:
         - tags
@@ -429,12 +427,11 @@ def getBuildingTag(b_id, tag_name):
 
 # TODO: secure
 @api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
-#@login_required
 def flagBuildingTag(b_id, tag_name):
     """
     Flag a building tag as being incorrect
     POST requires no body.
-    *Using this method requires you to be logged in via CAS.*
+    *Login required.*
     ---
     tags:
         - tags

@@ -50,7 +50,6 @@ def register_extensions(app):
     """Register Flask extensions"""
     extensions.db.init_app(app)
     extensions.ma.init_app(app)
-    extensions.cas.init_app(app)
     extensions.swagger.init_app(app)
 
 

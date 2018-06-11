@@ -13,12 +13,6 @@ class BaseConfig(object):
 
     SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
-    CAS_SERVER = os.environ.get("CAS_SERVER", "https://login.gatech.edu/cas")
-    CAS_VALIDATE_ROUTE = os.environ.get("CAS_VALIDATE_ROUTE", "/serviceValidate")
-    CAS_AFTER_LOGIN = ''
-    # TODO: need to add base route?
-    SESSION_TYPE = 'filesystem'
-
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Swagger config defaults to lazy loading values from the Flask request

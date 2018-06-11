@@ -7,10 +7,6 @@ flask-marshmallow==0.9.0
 marshmallow-sqlalchemy==0.13.2
 flasgger==0.8.1
 
-# the pypi distribution is not up-to-date with the latest bug fixes present on the repo.
-# therefore, installing Flask-CAS directly from the github repository present until a working version is pushed
-git+https://github.com/cameronbwhite/Flask-CAS#egg=Flask-CAS
-
 # WSGI server for production deployment
 gunicorn==19.7.1
 

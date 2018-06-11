@@ -178,7 +178,7 @@ When creating an OpenShift application:
   - `DB_URL` - The full connection URL for the database, including DB scheme, credentials and database name, e.g.
      `mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu/CORE_gtplaces`.  Note that special characters in credentials
      should be URL encoded.
-  - `SECRET_KEY` - Use a cryptographic random generator to create a 24 character secret key.  Flask uses this for CAS
+  - `SECRET_KEY` - Use a cryptographic random generator to create a 24 character secret key.
     and other crypto.
   - `SWAGGER_HOST` - The public hostname and port of the API in the form `hostname:port`.
   - `SWAGGER_BASE_PATH` - The public base path of the API`, e.g. `/api/gtplaces`
