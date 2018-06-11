@@ -175,7 +175,6 @@ or S2I. For implementation details, see the [OpenShift Python S2I Container](htt
 When creating an OpenShift application:
 * From _Add to project_, choose `python:3.5` or later.
 * Set the required environment variables:
-  - `ENV=production`
   - `DB_URL` - The full connection URL for the database, including DB scheme, credentials and database name, e.g.
      `mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu/CORE_gtplaces`.  Note that special characters in credentials
      should be URL encoded.
@@ -186,7 +185,10 @@ When creating an OpenShift application:
   - `SWAGGER_SCHEMES` - The public schemes supported by the API.  Multiple values may be space delimited,
      e.g. `http https`
   
-  See `places/config.py` for additional optional configuration.
+  See `places/config.py` for additional optional configuration. 
+  
+  Note that unchanging environment variables (e.g. `FLASK_ENV=production`) are set in `.s2i/environment` file.
+
 
 ### WSGI and Proxy Server
 The OpenShift container will serve the app with [Gunicorn, a Python WSGI HTTP Server](http://gunicorn.org/). The
