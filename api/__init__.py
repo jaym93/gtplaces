@@ -3,6 +3,8 @@ Initialize the places package.
 
 Based on Flask Application Factory pattern: http://flask.pocoo.org/docs/patterns/appfactories/
 """
+import logging
+
 from flask import Flask
 from api import commands, routes, extensions, errors
 from api.config import CONFIG_NAME_MAP
@@ -22,14 +24,26 @@ def create_app(config_name='development'):
     app = Flask(__name__)
 
     app.config.from_object(CONFIG_NAME_MAP[config_name])
+    configure_logger(app)
     register_extensions(app)
     register_blueprints(app)
     register_error_handlers(app)
     register_commands(app)
 
+    # NOTE: In debug mode, Flask may create app twice, resulting in duplicate log output
+    # In production, gunicorn will run multiple processes, creating multiple Flask apps
     app.logger.info('Flask app created with configuration: %s', config_name)
 
     return app
+
+
+def configure_logger(app):
+    if app.config['ENV'] == 'production':
+        # if running within the production gunicorn WGSI server, wire flask's logger to gunicorn log handlers
+        gunicorn_logger = logging.getLogger('gunicorn.error')
+        app.logger.handlers = gunicorn_logger.handlers
+        # set Flask log level to match the level set for gunicorn
+        app.logger.setLevel(gunicorn_logger.level)
 
 
 def register_extensions(app):

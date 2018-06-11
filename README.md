@@ -175,7 +175,6 @@ or S2I. For implementation details, see the [OpenShift Python S2I Container](htt
 When creating an OpenShift application:
 * From _Add to project_, choose `python:3.5` or later.
 * Set the required environment variables:
-  - `ENV=production`
   - `DB_URL` - The full connection URL for the database, including DB scheme, credentials and database name, e.g.
      `mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu/CORE_gtplaces`.  Note that special characters in credentials
      should be URL encoded.
@@ -186,14 +185,45 @@ When creating an OpenShift application:
   - `SWAGGER_SCHEMES` - The public schemes supported by the API.  Multiple values may be space delimited,
      e.g. `http https`
   
-  See `places/config.py` for additional optional configuration.
+  See `places/config.py` for additional optional configuration. 
+  
+  Note that unchanging environment variables (e.g. `FLASK_ENV=production`) are set in `.s2i/environment` file.
 
-### WSGI and Proxy Server
+#### Local development using the OpenShift S2I container
+
+For development / debugging of issues related to production deployment, the 
+[OpenShift Python S2I Container](https://github.com/sclorg/s2i-python-container) can be run locally in Docker.  This is
+is much faster than deploying a development build to OpenShift and will avoid consumption of server resources.
+
+* Install [Source-to-Image](https://github.com/openshift/source-to-image).  
+* Create a local file with environment variables that would be configured in OpenShift (use a `.env` extension
+  and this file will be ignored by git):
+  ```
+  SECRET_KEY=used_by_flask-no_need_to_change
+  DB_URL=mysql+pymysql://CHANGE_THIS_USER_NAME:CHANGE_THIS_PASSWORD@db0.rnoc.gatech.edu/CORE_gtplaces
+  ```
+* Build the image.  From a command prompt open to the source directory:
+  ```
+  $ s2i build . centos/python-36-centos7 gtplaces -E my.enviroment.variables.env
+  ``` 
+  
+* Run the container:
+  ```
+  $ docker run -p 8080:8080 gtplaces
+  ```
+  This will run the container with the source code that was built into the image.  
+  
+  We can also volume mount the source code and changes will be hot deployed.  This is probably what you want to do for \
+  development.
+  ```
+  $ docker run -p 8080:8080 -v /YOUR/LOCAL/SOURCE/PATH:/opt/app-root/src gtplaces
+  ```
+  
+#### WSGI and Proxy Server
 The OpenShift container will serve the app with [Gunicorn, a Python WSGI HTTP Server](http://gunicorn.org/). The
 `gunicorn` configuration is provided by `gunicorn_config.py`.
 
 [It is highly recommended that the API lives behind a proxy server.](http://docs.gunicorn.org/en/latest/deploy.html)
-
 
 ## History
 In Spring of 2018, this project underwent major changes:

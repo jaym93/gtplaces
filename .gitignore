@@ -58,6 +58,8 @@ static/
 .idea/
 clients/*/swagger.json
 clients/*/dist
+# env files for local Docker development
+*.env
 
 # virtual environment
 venv
