@@ -10,3 +10,6 @@ threads = int(os.environ.get('GUNICORN_THREADS', '1'))
 
 forwarded_allow_ips = '*'
 secure_scheme_headers = { 'X-Forwarded-Proto': 'https' }
+
+# for development using the S2I container, this provides hot reloading
+reload = True
