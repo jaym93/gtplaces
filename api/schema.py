@@ -15,7 +15,9 @@ class TagSchema(ma.Schema):
     class Meta:
         # JSON fields - type will be inferred
         # TODO: not exposing 'app_id', 'auth' fields
-        fields = ('tag_id', 'b_id', 'tag_name', 'gtuser', 'times_tag', 'flag_users', 'times_flagged')
+        fields = ('b_id', 'tag_name', 'gtuser', 'times_tag', 'flag_users', 'times_flagged')
+
+    tag_name = ma.String(required=True)
 
 
 class CategorySchema(ma.Schema):
