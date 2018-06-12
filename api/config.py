@@ -9,17 +9,14 @@ class BaseConfig(object):
     APP_DIR = os.path.abspath(os.path.dirname(__file__))
     PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
 
+    # Base path of the API - Typically not set, as the API is behind a reverse proxy / API gateway
     FLASK_BASE_PATH = os.environ.get("FLASK_BASE_PATH", None)
 
+    # Secret used by Flask for crypto - not actually used by this API, but change from default to be secure
     SECRET_KEY = os.environ.get("SECRET_KEY", "change_the_secret_key_in_production")
 
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
+    # Swagger / Open API Specification configuration
     # Swagger config defaults to lazy loading values from the Flask request
-    SWAGGER_HOST = os.environ.get("SWAGGER_HOST", "localhost:5000")
-    SWAGGER_BASE_PATH = os.environ.get("SWAGGER_BASE_PATH", FLASK_BASE_PATH)
-    # multiple schemes may be space delimited: e.g. 'http https'
-    SWAGGER_SCHEMES = os.environ.get("SWAGGER_SCHEMES", 'http')
     SWAGGER = {
         "swagger": "2.0",
         "info": {
@@ -27,22 +24,14 @@ class BaseConfig(object):
             "description": "This API will allow you to access the information of the places at Georgia Tech. It can be"
                            " used to find out information about  the offices and the buildings such as their names, "
                            "addresses, phone numbers, images, categories and GPS coordinates.",
-            "contact": {
-                "responsibleOrganization": "GT-RNOC",
-                "responsibleDeveloper": "RNOC Lab Staff",
-                "email": "rnoc-lab-staff@lists.gatech.edu",
-                "url": "http://rnoc.gatech.edu/"
-            },
+            # Version of our API
             "version": "1.5",
         },
-
-        "host": SWAGGER_HOST,
-        # not setting basePath, as flasgger is reading it from the blueprint base path
-        "basePath": SWAGGER_BASE_PATH,
-        "schemes": SWAGGER_SCHEMES,
-        # prefix for the the 'apidocs' endpoint
-        "url_prefix": SWAGGER_BASE_PATH
+        # prefix for the the '/apidocs' endpoint
+        "url_prefix": FLASK_BASE_PATH
     }
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 
 class DevelopmentConfig(BaseConfig):
