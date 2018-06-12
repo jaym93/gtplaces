@@ -20,10 +20,9 @@ class BaseConfig(object):
     SWAGGER = {
         "swagger": "2.0",
         "info": {
-            "title": "Places API",
-            "description": "This API will allow you to access the information of the places at Georgia Tech. It can be"
-                           " used to find out information about  the offices and the buildings such as their names, "
-                           "addresses, phone numbers, images, categories and GPS coordinates.",
+            "title": "GT Places API",
+            "description": "Provides information on buildings and locations on the Georgia Tech campus, including "
+                           "address, contact information, images, geocoordinates and more.",
             # Version of our API
             "version": "1.5",
         },
