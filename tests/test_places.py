@@ -4,8 +4,7 @@ pytest integration tests for places API
 from http import HTTPStatus
 
 import pytest
-
-from flask import url_for, json
+from flask import json
 
 from api.models import Building, Tag, Category
 
@@ -71,6 +70,27 @@ building3 = Building(
     website_url = "http://web.example.com/3",
     zipcode = "30308",
 )
+
+# in production the WSO2 API Manager will provide a token for endpoints requiring auth
+WSO2_AUTH_HEADER = 'X-JWT-Assertion'
+WSO2_AUTH_USER_TOKEN = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ik51NmZ6bDRiaktOOU85YnBDOTV5VERzSUNoMCJ9.eyJodHRw' \
+                       'OlwvXC93c28yLm9yZ1wvY2xhaW1zXC91c2VybmFtZSI6ImpqMTQxIiwiaHR0cDpcL1wvd3NvMi5vcmdcL2NsYWltc1wvc' \
+                       'm9sZSI6IkludGVybmFsXC9ldmVyeW9uZSIsImh0dHA6XC9cL3dzbzIub3JnXC9jbGFpbXNcL2FwcGxpY2F0aW9udGllci' \
+                       'I6IlVubGltaXRlZCIsImh0dHA6XC9cL3dzbzIub3JnXC9jbGFpbXNcL2tleXR5cGUiOiJQUk9EVUNUSU9OIiwiaHR0cDp' \
+                       'cL1wvd3NvMi5vcmdcL2NsYWltc1wvdmVyc2lvbiI6IjEuNSIsImlzcyI6IndzbzIub3JnXC9wcm9kdWN0c1wvYW0iLCJo' \
+                       'dHRwOlwvXC93c28yLm9yZ1wvY2xhaW1zXC9hcHBsaWNhdGlvbm5hbWUiOiJEZWZhdWx0QXBwbGljYXRpb24iLCJodHRwO' \
+                       'lwvXC93c28yLm9yZ1wvY2xhaW1zXC9lbmR1c2VyIjoiR0FURUNILkVEVVwvamoxNDFAY2FyYm9uLnN1cGVyIiwiaHR0cD' \
+                       'pcL1wvd3NvMi5vcmdcL2NsYWltc1wvZW5kdXNlclRlbmFudElkIjoiLTEyMzQiLCJodHRwOlwvXC93c28yLm9yZ1wvY2x' \
+                       'haW1zXC9mdWxsbmFtZSI6WyJKb2huc29uIiwiIEplcmVteSBNIl0sImh0dHA6XC9cL3dzbzIub3JnXC9jbGFpbXNcL3N1' \
+                       'YnNjcmliZXIiOiJybm9jbGFic3RhZmYiLCJodHRwOlwvXC93c28yLm9yZ1wvY2xhaW1zXC90aWVyIjoiVW5saW1pdGVkI' \
+                       'iwiaHR0cDpcL1wvd3NvMi5vcmdcL2NsYWltc1wvZW1haWxhZGRyZXNzIjoiamVyZW15QGltdGMuZ2F0ZWNoLmVkdSIsIm' \
+                       'h0dHA6XC9cL3dzbzIub3JnXC9jbGFpbXNcL2FwcGxpY2F0aW9uaWQiOiIxIiwiaHR0cDpcL1wvd3NvMi5vcmdcL2NsYWl' \
+                       'tc1wvdXNlcnR5cGUiOiJBUFBMSUNBVElPTl9VU0VSIiwiZXhwIjoxNTI5MzQyNTIzLCJodHRwOlwvXC93c28yLm9yZ1wv' \
+                       'Y2xhaW1zXC9hcGljb250ZXh0IjoiXC9ndHBsYWNlc1wvMS41In0=.SHMt/wxqfbnKSMP1XAqX5y3+ZArsaGhvuhC0qRf7' \
+                       'E82yZ9g0Yx8p/Yi4wtn30N3YscrbfTTWLtY8LlgjPkn8xnDlcH2sRUFJIrvoZDuPVXoeoOl4OH0lIvF1PZxeXtGJzKd1j' \
+                       'vA/C/dNtucSJVPYNhNvMudbtFrPLwXP9Z+Y+kOsEvcSJdrfgNuAUAYcU325k/4MMxQZF48/P555s/EZr02tjBRO/hKmA2' \
+                       'IIhZFZr3TzXa9KrLtASAtId6APUoiUQvHibXst7mOjXoCYBswjBDbH0iL0xXY7kWY1gb3PPmy9bav/Nv9rT3i2Wb4sgLp' \
+                       'IESsZ2oAv1ltlKGSLgcUFfA=='
 
 # fixture to load test data into the db
 @pytest.fixture(scope='session')
@@ -257,9 +277,12 @@ class TestPlacesApi:
         assert 'tag1' == response_body[0]['tag_name']
 
     def test_add_new_tag_to_building_succeeds(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/', content_type='application/json', data=json.dumps({
-            'tag_name': 'a_new_tag'
-        }))
+        response = test_client.post('/buildings/1/tags/', content_type='application/json',
+                                    # authenticated endpoint requires token from WSO2 API Manager
+                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
+                                    data=json.dumps({
+                                        'tag_name': 'a_new_tag'
+                                    }))
 
         assert 201 == response.status_code
 
@@ -269,11 +292,15 @@ class TestPlacesApi:
         # new tag object is returned
         assert isinstance(response_body, dict)
         assert 'a_new_tag' == response_body['tag_name']
+        assert 'jj141' == response_body['gtuser']
 
     def test_add_existing_tag_to_building_succeeds(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/', content_type='application/json', data=json.dumps({
-            'tag_name': 'tag1'
-        }))
+        response = test_client.post('/buildings/1/tags/', content_type='application/json',
+                                    # authenticated endpoint requires token from WSO2 API Manager
+                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
+                                    data=json.dumps({
+                                        'tag_name': 'tag1'
+                                    }))
 
         assert 201 == response.status_code
 
@@ -286,26 +313,56 @@ class TestPlacesApi:
         assert 2 == response_body['times_tag']
 
     def test_add_new_tag_unknown_building_returns_404(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/some_unknown_building/tags/', content_type='application/json', data=json.dumps({
-            'tag_name': 'a_new_tag'
-        }))
+        response = test_client.post('/buildings/some_unknown_building/tags/', content_type='application/json',
+                                    # authenticated endpoint requires token from WSO2 API Manager
+                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
+                                    data=json.dumps({
+                                        'tag_name': 'a_new_tag'
+                                    }))
 
         assert 404 == response.status_code
 
+    def test_add_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
+        response = test_client.post('/buildings/1/tags/', content_type='application/json',
+                                    data=json.dumps({
+                                        'tag_name': 'a_new_tag'
+                                    }))
+
+        assert 500 == response.status_code
+
     def test_flag_tag_succeeds(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/tag1/flag')
+        response = test_client.post('/buildings/1/tags/tag1/flag',
+                                    # authenticated endpoint requires token from WSO2 API Manager
+                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN})
 
         assert 201 == response.status_code
 
+        assert 'application/json' == response.content_type
+        response_body = json.loads(response.get_data(as_text=True))
+
+        # new tag object is returned
+        assert isinstance(response_body, dict)
+        assert 'jj141' + ',' == response_body['flag_users']
+        assert 1 == response_body['times_flagged']
+
     def test_flag_tag_unknown_tag_returns_404(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/some_unknown_tag/flag')
+        response = test_client.post('/buildings/1/tags/some_unknown_tag/flag',
+                                    # authenticated endpoint requires token from WSO2 API Manager
+                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN})
 
         assert 404 == response.status_code
 
     def test_flag_tag_unknown_building_returns_404(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/some_unknown_building/tags/tag1/flag')
+        response = test_client.post('/buildings/some_unknown_building/tags/tag1/flag',
+                                    # authenticated endpoint requires token from WSO2 API Manager
+                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN})
 
         assert 404 == response.status_code
+
+    def test_flag_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
+        response = test_client.post('/buildings/1/tags/tag1/flag')
+
+        assert 500 == response.status_code
 
     def test_internal_flask_error_handling_returns_error_json_and_error_status(self, db, load_test_db, test_client):
         # this tests errors.py error handler registration and correctness of errors.handle_http_error()

@@ -63,6 +63,9 @@ class TestConfig(BaseConfig):
     # Use in-memory SQLite database for testing
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
 
+    # disable verification of WSO2 auth token during testing
+    WSO2AUTH_VERIFY_TOKEN = False
+
 
 # Map configuration name (supplied by the ENV environment variable) to configuration class
 CONFIG_NAME_MAP = {

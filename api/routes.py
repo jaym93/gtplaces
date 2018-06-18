@@ -11,7 +11,7 @@ from flask import request, Blueprint
 from marshmallow import ValidationError
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import db
+from api.extensions import db, wso2auth
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
@@ -219,8 +219,8 @@ def getTags():
     return tags_schema.jsonify(tags)
 
 
-# TODO: secure
 @api.route("/buildings/<b_id>/tags/", methods=['POST'])
+@wso2auth.application_gt_user_required()
 def addBuildingTag(b_id):
     """
     Add a tag to a building.
@@ -257,6 +257,7 @@ def addBuildingTag(b_id):
         400:
             description: Bad request
     """
+
     try:
         request_body = tag_schema.load(request.get_json())
     except ValidationError as e:
@@ -271,8 +272,7 @@ def addBuildingTag(b_id):
     if tag:
         tag.times_tag = Tag.times_tag + 1
     else:
-        # TODO: get user from auth token
-        gtuser = 'anonymous'
+        gtuser = wso2auth.username
         tag = Tag(b_id=b_id, tag_name=request_body['tag_name'], gtuser=gtuser)
         db.session.add(tag)
     db.session.commit()
@@ -344,8 +344,8 @@ def getBuildingTag(b_id, tag_name):
     return tag_schema.jsonify(tag)
 
 
-# TODO: secure
 @api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
+@wso2auth.application_gt_user_required()
 def flagBuildingTag(b_id, tag_name):
     """
     Flag a building tag as being incorrect or inappropriate
@@ -377,8 +377,7 @@ def flagBuildingTag(b_id, tag_name):
     if not tag:
         raise NotFoundException()
     else:
-        # TODO: get user from auth token
-        gtuser = 'anonymous'
+        gtuser = wso2auth.username
         # only flag the first once per user
         if not (gtuser in tag.flag_users.split(',')):
             tag.times_flagged = Tag.times_flagged + 1

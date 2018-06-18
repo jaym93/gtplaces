@@ -13,6 +13,8 @@ from http import HTTPStatus
 from flask.json import jsonify
 from werkzeug.exceptions import default_exceptions
 
+from gtjourney_libs.flask_wso2apim_auth import WSO2AuthException
+
 
 class ApiException(Exception):
     status = HTTPStatus.INTERNAL_SERVER_ERROR
@@ -63,6 +65,7 @@ def handle_http_error(error):
 def register_error_handlers(app):
     """Register Flask error handler functions"""
     app.register_error_handler(ApiException, handle_api_exception)
+    app.register_error_handler(WSO2AuthException, handle_api_exception)
 
     # due to a flask bug in 0.12, we can't handle the default HTTPException.
     # this work-around registers handlers for each status code

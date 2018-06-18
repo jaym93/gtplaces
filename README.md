@@ -222,10 +222,24 @@ The OpenShift container will serve the app with [Gunicorn, a Python WSGI HTTP Se
 
 [It is highly recommended that the API lives behind a proxy server.](http://docs.gunicorn.org/en/latest/deploy.html)
 
+### WSO2 API Manager
+The API is designed to execute behind WSO2 API Manager, an API gateway.
+
+#### Consuming the API:
+Subscribe to the API through the API Store: https://portal.api.rnoc.gatech.edu/store
+
+#### Publishing changes to the API:
+* Changes to the API must be published to the WSO2 API Manager via the Publisher portal:
+  https://portal.api.rnoc.gatech.edu/publisher
+* Changes must be made using WSO2 APIM account owning the API: `rnoclabstaff`
+* API changes will require updating the Open API spec in the Publisher portal. See 
+  [Extracting an OpenAPI Specification file](#Extracting-an-OpenAPI-Specification-file).
+* When changing the API, changes should always be published using a new version number.
+
 ## History
 In Spring of 2018, this project underwent major changes:
  - API rewritten using Python / Flask
- - Production deployment moved to OpenShift
+ - Production deployment moved to OpenShift, with WSO2 API Manager as an API gateway
  - m.gatech.edu web app moved to the [gtmobile repository](https://github.gatech.edu/gtjourney/gtmobile)
 
  Branches supporting the legacy PHP application have been tagged __legacy/__ for preservation.
