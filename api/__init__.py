@@ -50,9 +50,8 @@ def register_extensions(app):
     """Register Flask extensions"""
     extensions.db.init_app(app)
     extensions.ma.init_app(app)
-    extensions.cas.init_app(app)
     extensions.swagger.init_app(app)
-    extensions.cors.init_app(app)
+    extensions.wso2auth.init_app(app)
 
 
 def register_blueprints(app):

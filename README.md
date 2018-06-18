@@ -178,14 +178,11 @@ When creating an OpenShift application:
   - `DB_URL` - The full connection URL for the database, including DB scheme, credentials and database name, e.g.
      `mysql+pymysql://USER:PASSWORD@db0.rnoc.gatech.edu/CORE_gtplaces`.  Note that special characters in credentials
      should be URL encoded.
-  - `SECRET_KEY` - Use a cryptographic random generator to create a 24 character secret key.  Flask uses this for CAS
-    and other crypto.
-  - `SWAGGER_HOST` - The public hostname and port of the API in the form `hostname:port`.
-  - `SWAGGER_BASE_PATH` - The public base path of the API`, e.g. `/api/gtplaces`
-  - `SWAGGER_SCHEMES` - The public schemes supported by the API.  Multiple values may be space delimited,
-     e.g. `http https`
+  - `SECRET_KEY` - Use a cryptographic random generator to create a 24 character secret key. Flask uses this value
+     for internal crypto operations which should not be required by this API, but change from the default to ensure
+     security.
   
-  See `places/config.py` for additional optional configuration. 
+  See `api/config.py` for additional optional configuration. 
   
   Note that unchanging environment variables (e.g. `FLASK_ENV=production`) are set in `.s2i/environment` file.
 
@@ -225,10 +222,24 @@ The OpenShift container will serve the app with [Gunicorn, a Python WSGI HTTP Se
 
 [It is highly recommended that the API lives behind a proxy server.](http://docs.gunicorn.org/en/latest/deploy.html)
 
+### WSO2 API Manager
+The API is designed to execute behind WSO2 API Manager, an API gateway.
+
+#### Consuming the API:
+Subscribe to the API through the API Store: https://portal.api.rnoc.gatech.edu/store
+
+#### Publishing changes to the API:
+* Changes to the API must be published to the WSO2 API Manager via the Publisher portal:
+  https://portal.api.rnoc.gatech.edu/publisher
+* Changes must be made using WSO2 APIM account owning the API: `rnoclabstaff`
+* API changes will require updating the Open API spec in the Publisher portal. See 
+  [Extracting an OpenAPI Specification file](#Extracting-an-OpenAPI-Specification-file).
+* When changing the API, changes should always be published using a new version number.
+
 ## History
 In Spring of 2018, this project underwent major changes:
  - API rewritten using Python / Flask
- - Production deployment moved to OpenShift
+ - Production deployment moved to OpenShift, with WSO2 API Manager as an API gateway
  - m.gatech.edu web app moved to the [gtmobile repository](https://github.gatech.edu/gtjourney/gtmobile)
 
  Branches supporting the legacy PHP application have been tagged __legacy/__ for preservation.

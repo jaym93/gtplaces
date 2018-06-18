@@ -8,11 +8,10 @@ from http import HTTPStatus
 
 import flask
 from flask import request, Blueprint
-from flask_cas import login_required
 from marshmallow import ValidationError
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import cas, db, cors
+from api.extensions import db, wso2auth
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
@@ -41,7 +40,7 @@ def getBuildings():
           description: Filter results by category.
           required: false
           type: string
-        - name: name
+        - name: tag
           in: query
           description: Filter results by tag.
           required: false
@@ -52,53 +51,7 @@ def getBuildings():
             schema:
                 type: array
                 items:
-                    type: object
-                    properties:
-                      b_id:
-                        type: string
-                        description: ID of the building
-                        required: true
-                      name:
-                        type: string
-                        description: Name of the building
-                        required: true
-                      address:
-                        type: string
-                        description: Address of the building
-                      address2:
-                        type: string
-                        description: City and state
-                      zipcode:
-                        type: string
-                        description: Zipcode of the building
-                      category:
-                        type: array
-                        items:
-                            type:string
-                        description: The categories the building belongs to
-                      image_url:
-                        type: string
-                        description: Image of the building
-                      website_url:
-                        type: string
-                        description: Website of the building
-                      phone_num:
-                        type: string
-                        description: Phone number of the building
-                      latitute:
-                        type: string
-                        description: Latitute of the building
-                      longitute:
-                        type: string
-                        description: Longitute of the building
-                      shape_coordinates:
-                        type: string
-                        description: Map poly-coordinates of the building
-                      tag_list:
-                        type: array
-                        items:
-                          type: string
-                        description: Tags of the building
+                    $ref: '#/definitions/Building'
     """
     name = request.args.get('name')
     category = request.args.get('category')
@@ -120,28 +73,18 @@ def getBuilding(b_id):
     ---
     tags:
         - buildings
-    produces:
-        - application/json
-    parameters:
-        - name: b_id
-          in: path
-          description: ID of the building.
-          required: true
-          type: string
-    responses:
-        200:
-            description: Building information
-            schema:
+    definitions:
+        Building:
+            type: array
+            items:
                 type: object
                 properties:
                   b_id:
                     type: string
                     description: ID of the building
-                    required: true
                   name:
                     type: string
                     description: Name of the building
-                    required: true
                   address:
                     type: string
                     description: Address of the building
@@ -154,7 +97,7 @@ def getBuilding(b_id):
                   category:
                     type: array
                     items:
-                        type:string
+                      type: string
                     description: The categories the building belongs to
                   image_url:
                     type: string
@@ -165,12 +108,12 @@ def getBuilding(b_id):
                   phone_num:
                     type: string
                     description: Phone number of the building
-                  latitute:
+                  latitude:
                     type: string
-                    description: Latitute of the building
-                  longitute:
+                    description: Latitude of the building
+                  longitude:
                     type: string
-                    description: Longitute of the building
+                    description: Longitude of the building
                   shape_coordinates:
                     type: string
                     description: Map poly-coordinates of the building
@@ -179,6 +122,22 @@ def getBuilding(b_id):
                     items:
                       type: string
                     description: Tags of the building
+                required:
+                  - b_id
+                  - name
+    produces:
+        - application/json
+    parameters:
+        - name: b_id
+          in: path
+          description: ID of the building.
+          required: true
+          type: string
+    responses:
+        200:
+            description: Building information
+            schema:
+                $ref: '#/definitions/Building'
     """
     building = Building.query.filter_by(b_id=b_id).first()
     if not building:
@@ -214,57 +173,59 @@ def getCategories():
 @api.route("/tags/", methods=['GET'])
 def getTags():
     """
-    Return lists of all tags
-    Lists all the tags in the GTPlaces database, with the associated information (Tag ID, Building ID it is associated with, User who created it, number of times it has been tagged or flagged).
-    Tags let users search by substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
+    Return list of all tags
+    Lists all building tags, with the associated metadata.
+    Tags provide additional keywords to to improve building searches.
     ---
     tags:
         - tags
+    definitions:
+        TagWithMetadata:
+            type: object
+            properties:
+              b_id:
+                type: string
+                description: ID of the building with which this the tag is associated
+              tag_name:
+                type: string
+                description: Name of the tag
+              gtuser:
+                type: string
+                description: User who created the tag
+              auth:
+                type: string
+                description: Present for legacy compatibility, not used.
+              times_tag:
+                type: string
+                description: Number of times the tag has been applied to this building
+              flag_users:
+                type: string
+                description: Users who have flagged this tag as incorrect or inappropriate
+              times_flagged:
+                type: string
+                description: Number of times this tag has been flagged
     produces:
         - application/json
     responses:
         200:
-            description: List of all gtplaces tags
+            description: List of all tags with associated metadata
             schema:
                 type: array
                 items:
-                    type: object
-                    properties:
-                      b_id:
-                        type: string
-                        required: true
-                        description: ID of the building the tag is associated with
-                      tag_name:
-                        type: string
-                        description: Tag label
-                      gtuser:
-                        type: string
-                        description: User who created the tag (First user, in case of multiple times tagged)
-                      auth:
-                        type: string
-                        description: (only here for compatibility reasons, not used)
-                      times_tag:
-                        type: string
-                        description: Number of times this building has been tagged (possibly by different users)
-                      flag_users:
-                        type: string
-                        description: Users who have flagged this tag (First user, in case of multiple times tagged)
-                      times_flagged:
-                        type: string
-                        description: Number of times this tag has been flagged
+                    $ref: '#/definitions/TagWithMetadata'
+
     """
     tags = Tag.query.all()
     return tags_schema.jsonify(tags)
 
 
-# TODO: secure
 @api.route("/buildings/<b_id>/tags/", methods=['POST'])
-#@login_required
+@wso2auth.application_gt_user_required()
 def addBuildingTag(b_id):
     """
     Add a tag to a building.
     Tags let users create searchable substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
-    *Using this method requires you to be logged in via CAS.*
+    *Login required.*
     ---
     tags:
         - tags
@@ -278,22 +239,25 @@ def addBuildingTag(b_id):
           type: string
         - in: body
           name: body
-          description: Tag object
+          description: Tag
           required: true
           schema:
             type: object
             properties:
               tag_name:
                 type: string
-                description: Tag name
+                description: Name of the tag
     produces:
         - application/json
     responses:
         201:
-            description: Tag inserted
+            description: Created tag with associated metadata
+            schema:
+                $ref: '#/definitions/TagWithMetadata'
         400:
             description: Bad request
     """
+
     try:
         request_body = tag_schema.load(request.get_json())
     except ValidationError as e:
@@ -308,8 +272,7 @@ def addBuildingTag(b_id):
     if tag:
         tag.times_tag = Tag.times_tag + 1
     else:
-        # TODO: get user from auth token
-        gtuser = 'anonymous'
+        gtuser = wso2auth.username
         tag = Tag(b_id=b_id, tag_name=request_body['tag_name'], gtuser=gtuser)
         db.session.add(tag)
     db.session.commit()
@@ -321,7 +284,7 @@ def addBuildingTag(b_id):
 def getBuildingTags(b_id):
     """
     Returns all tags for the given building
-    Returns all tags and tag information for the given building.
+    Returns all tags with their metadata for the given building.
     ---
     tags:
         - tags
@@ -335,34 +298,11 @@ def getBuildingTags(b_id):
         - application/json
     responses:
         200:
-            description: Get
+            description: List of tags with associated metadata for the building
             schema:
                 type: array
                 items:
-                    type: object
-                    properties:
-                      b_id:
-                        type: string
-                        required: true
-                        description: ID of the building the tag is associated with
-                      tag_name:
-                        type: string
-                        description: Tag label
-                      gtuser:
-                        type: string
-                        description: User who created the tag (First user, in case of multiple times tagged)
-                      auth:
-                        type: string
-                        description: (only here for compatibility reasons, not used)
-                      times_tag:
-                        type: string
-                        description: Number of times this building has been tagged (possibly by different users)
-                      flag_users:
-                        type: string
-                        description: Users who have flagged this tag (First user, in case of multiple times tagged)
-                      times_flagged:
-                        type: string
-                        description: Number of times this tag has been flagged
+                    $ref: '#/definitions/TagWithMetadata'
     """
     building_exisits = Building.query.filter_by(b_id=b_id).count() == 1
     if not building_exisits:
@@ -374,8 +314,8 @@ def getBuildingTags(b_id):
 @api.route("/buildings/<b_id>/tags/<tag_name>", methods=['GET'])
 def getBuildingTag(b_id, tag_name):
     """
-    Returns information about a particular tag
-    Returns all the information (Tag ID, Building ID it is associated with, User who created it, number of times it has been tagged or flagged) associated with the tag.
+    Returns the specific building tag with metadata
+    Returns the tag with metadata for the given building tag.
     ---
     tags:
         - tags
@@ -394,32 +334,9 @@ def getBuildingTag(b_id, tag_name):
         - application/json
     responses:
         200:
-            description: Get
+            description: Tag with associated metadata
             schema:
-                type: object
-                properties:
-                  b_id:
-                    type: string
-                    required: true
-                    description: ID of the building the tag is associated with
-                  tag_name:
-                    type: string
-                    description: Tag label
-                  gtuser:
-                    type: string
-                    description: User who created the tag (First user, in case of multiple times tagged)
-                  auth:
-                    type: string
-                    description: (only here for compatibility reasons, not used)
-                  times_tag:
-                    type: string
-                    description: Number of times this building has been tagged (possibly by different users)
-                  flag_users:
-                    type: string
-                    description: Users who have flagged this tag (First user, in case of multiple times tagged)
-                  times_flagged:
-                    type: string
-                    description: Number of times this tag has been flagged
+                $ref: '#/definitions/TagWithMetadata'
     """
     tag = Tag.query.filter_by(b_id=b_id, tag_name=tag_name).first()
     if not tag:
@@ -427,14 +344,13 @@ def getBuildingTag(b_id, tag_name):
     return tag_schema.jsonify(tag)
 
 
-# TODO: secure
 @api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
-#@login_required
+@wso2auth.application_gt_user_required()
 def flagBuildingTag(b_id, tag_name):
     """
-    Flag a building tag as being incorrect
-    POST requires no body.
-    *Using this method requires you to be logged in via CAS.*
+    Flag a building tag as being incorrect or inappropriate
+    Flag a building tag as being incorrect or inappropriate.  POST requires no body.
+    *Login required.*
     ---
     tags:
         - tags
@@ -453,14 +369,15 @@ def flagBuildingTag(b_id, tag_name):
         - application/json
     responses:
         201:
-            description: Tag flagged
+            description: Flagged tag with associated metadata
+            schema:
+                $ref: '#/definitions/TagWithMetadata'
     """
     tag = Tag.query.filter_by(b_id=b_id, tag_name=tag_name).first()
     if not tag:
         raise NotFoundException()
     else:
-        # TODO: get user from auth token
-        gtuser = 'anonymous'
+        gtuser = wso2auth.username
         # only flag the first once per user
         if not (gtuser in tag.flag_users.split(',')):
             tag.times_flagged = Tag.times_flagged + 1
