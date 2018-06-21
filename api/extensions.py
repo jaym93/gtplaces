@@ -6,7 +6,7 @@ Each extension is initialized in the app factory, located in auth.py.
 from flasgger import Swagger
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
-from gtjourney_libs.flask_wso2apim_auth import GTWSO2Auth
+from flask_wso2apim_auth import GTWSO2Auth
 
 db = SQLAlchemy()
 ma = Marshmallow()
