@@ -6,7 +6,7 @@ Supports the [GT Places web app](https://github.gatech.edu/gtjourney/gtmobile)
 of [m.gatech.edu](https://m.gatech.edu).
 In production at https://m.gatech.edu/api/gtplaces.
 
-PLEASE NOTE: wso2 authentication has been removed, as well as endpoints that allow "writes", due to removal of authentication  in the current iteration of the API.
+**PLEASE NOTE: wso2 authentication has been removed, as well as endpoints that allow "writes", due to removal of authentication  in the current iteration of the API.**
 
 ## Development
 
