@@ -276,6 +276,9 @@ class TestPlacesApi:
         assert 1 == len(response_body)
         assert 'tag1' == response_body[0]['tag_name']
 
+
+# DISABLED TESTING for wso2
+
     # def test_add_new_tag_to_building_succeeds(self, db, load_test_db, test_client):
     #     response = test_client.post('/buildings/1/tags/', content_type='application/json',
     #                                 # authenticated endpoint requires token from WSO2 API Manager
@@ -293,6 +296,8 @@ class TestPlacesApi:
     #     assert isinstance(response_body, dict)
     #     assert 'a_new_tag' == response_body['tag_name']
     #     assert 'jj141' == response_body['gtuser']
+
+# DISABLED TESTING for wso2
 
     # def test_add_existing_tag_to_building_succeeds(self, db, load_test_db, test_client):
     #     response = test_client.post('/buildings/1/tags/', content_type='application/json',
@@ -312,6 +317,8 @@ class TestPlacesApi:
     #     assert 'tag1' == response_body['tag_name']
     #     assert 2 == response_body['times_tag']
 
+# DISABLED TESTING for wso2
+
     # def test_add_new_tag_unknown_building_returns_404(self, db, load_test_db, test_client):
     #     response = test_client.post('/buildings/some_unknown_building/tags/', content_type='application/json',
     #                                 # authenticated endpoint requires token from WSO2 API Manager
@@ -322,6 +329,8 @@ class TestPlacesApi:
 
     #     assert 404 == response.status_code
 
+# DISABLED TESTING for wso2
+
     # def test_add_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
     #     response = test_client.post('/buildings/1/tags/', content_type='application/json',
     #                                 data=json.dumps({
@@ -329,6 +338,8 @@ class TestPlacesApi:
     #                                 }))
 
     #     assert 500 == response.status_code
+
+# DISABLED TESTING for wso2
 
     # def test_flag_tag_succeeds(self, db, load_test_db, test_client):
     #     response = test_client.post('/buildings/1/tags/tag1/flag',
@@ -358,6 +369,8 @@ class TestPlacesApi:
                                     headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN})
 
         assert 404 == response.status_code
+
+# DISABLED TESTING for wso2
 
     # def test_flag_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
     #     response = test_client.post('/buildings/1/tags/tag1/flag')
