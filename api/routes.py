@@ -11,7 +11,7 @@ from flask import request, Blueprint
 from marshmallow import ValidationError
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import db, wso2auth
+from api.extensions import db #, wso2auth
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
