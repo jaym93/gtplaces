@@ -219,6 +219,8 @@ def getTags():
     return tags_schema.jsonify(tags)
 
 
+# DISABLING ENDPOINTS that allow writes due to removal of authentication.
+
 # @api.route("/buildings/<b_id>/tags/", methods=['POST'])
 # @wso2auth.application_gt_user_required()
 # def addBuildingTag(b_id):
@@ -343,6 +345,8 @@ def getBuildingTag(b_id, tag_name):
         raise NotFoundException()
     return tag_schema.jsonify(tag)
 
+
+# DISABLING ENDPOINTS that allow writes due to removal of authentication.
 
 # @api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
 # @wso2auth.application_gt_user_required()
