@@ -11,7 +11,7 @@ from flask import request, Blueprint
 from marshmallow import ValidationError
 
 from api.errors import NotFoundException, BadRequestException
-from api.extensions import db, wso2auth
+from api.extensions import db #, wso2auth
 from api.models import Building, Tag, Category
 from api.schema import buildings_schema, building_schema, tags_schema, tag_schema
 
@@ -219,65 +219,67 @@ def getTags():
     return tags_schema.jsonify(tags)
 
 
-@api.route("/buildings/<b_id>/tags/", methods=['POST'])
-@wso2auth.application_gt_user_required()
-def addBuildingTag(b_id):
-    """
-    Add a tag to a building.
-    Tags let users create searchable substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
-    *Login required.*
-    ---
-    tags:
-        - tags
-    consumes:
-        - application/json
-    parameters:
-        - name: b_id
-          in: path
-          description: ID of the building
-          required: true
-          type: string
-        - in: body
-          name: body
-          description: Tag
-          required: true
-          schema:
-            type: object
-            properties:
-              tag_name:
-                type: string
-                description: Name of the tag
-    produces:
-        - application/json
-    responses:
-        201:
-            description: Created tag with associated metadata
-            schema:
-                $ref: '#/definitions/TagWithMetadata'
-        400:
-            description: Bad request
-    """
+# DISABLING ENDPOINTS that allow writes due to removal of authentication.
 
-    try:
-        request_body = tag_schema.load(request.get_json())
-    except ValidationError as e:
-        # TODO: update error JSON to include details of field errors, reported as dictionary by ValidationError
-        raise BadRequestException('Invalid request body: ' + str(e.messages))
+# @api.route("/buildings/<b_id>/tags/", methods=['POST'])
+# @wso2auth.application_gt_user_required()
+# def addBuildingTag(b_id):
+#     """
+#     Add a tag to a building.
+#     Tags let users create searchable substrings associated with abbreviations, acronyms, aliases or sometimes even events inside a building. For example, Office of International Education is inside the Savant building, and Tags exists so there can be a mapping from "OIE" to "Savant building" so it appears in the search results.
+#     *Login required.*
+#     ---
+#     tags:
+#         - tags
+#     consumes:
+#         - application/json
+#     parameters:
+#         - name: b_id
+#           in: path
+#           description: ID of the building
+#           required: true
+#           type: string
+#         - in: body
+#           name: body
+#           description: Tag
+#           required: true
+#           schema:
+#             type: object
+#             properties:
+#               tag_name:
+#                 type: string
+#                 description: Name of the tag
+#     produces:
+#         - application/json
+#     responses:
+#         201:
+#             description: Created tag with associated metadata
+#             schema:
+#                 $ref: '#/definitions/TagWithMetadata'
+#         400:
+#             description: Bad request
+#     """
 
-    building_exists = Building.query.filter_by(b_id=b_id).count() == 1
-    if not building_exists:
-        raise NotFoundException()
+#     try:
+#         request_body = tag_schema.load(request.get_json())
+#     except ValidationError as e:
+#         # TODO: update error JSON to include details of field errors, reported as dictionary by ValidationError
+#         raise BadRequestException('Invalid request body: ' + str(e.messages))
 
-    tag = Tag.query.filter_by(b_id=b_id, tag_name=request_body['tag_name']).first()
-    if tag:
-        tag.times_tag = Tag.times_tag + 1
-    else:
-        gtuser = wso2auth.username
-        tag = Tag(b_id=b_id, tag_name=request_body['tag_name'], gtuser=gtuser)
-        db.session.add(tag)
-    db.session.commit()
+#     building_exists = Building.query.filter_by(b_id=b_id).count() == 1
+#     if not building_exists:
+#         raise NotFoundException()
 
-    return tag_schema.jsonify(tag), HTTPStatus.CREATED
+#     tag = Tag.query.filter_by(b_id=b_id, tag_name=request_body['tag_name']).first()
+#     if tag:
+#         tag.times_tag = Tag.times_tag + 1
+#     else:
+#         gtuser = wso2auth.username
+#         tag = Tag(b_id=b_id, tag_name=request_body['tag_name'], gtuser=gtuser)
+#         db.session.add(tag)
+#     db.session.commit()
+
+#     return tag_schema.jsonify(tag), HTTPStatus.CREATED
 
 
 @api.route("/buildings/<b_id>/tags/", methods=['GET'])
@@ -344,45 +346,47 @@ def getBuildingTag(b_id, tag_name):
     return tag_schema.jsonify(tag)
 
 
-@api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
-@wso2auth.application_gt_user_required()
-def flagBuildingTag(b_id, tag_name):
-    """
-    Flag a building tag as being incorrect or inappropriate
-    Flag a building tag as being incorrect or inappropriate.  POST requires no body.
-    *Login required.*
-    ---
-    tags:
-        - tags
-    parameters:
-        - name: b_id
-          in: path
-          description: ID of the building
-          required: true
-          type: string
-        - name: tag_name
-          in: path
-          description: Tag to flag
-          required: true
-          type: string
-    produces:
-        - application/json
-    responses:
-        201:
-            description: Flagged tag with associated metadata
-            schema:
-                $ref: '#/definitions/TagWithMetadata'
-    """
-    tag = Tag.query.filter_by(b_id=b_id, tag_name=tag_name).first()
-    if not tag:
-        raise NotFoundException()
-    else:
-        gtuser = wso2auth.username
-        # only flag the first once per user
-        if not (gtuser in tag.flag_users.split(',')):
-            tag.times_flagged = Tag.times_flagged + 1
-            tag.flag_users = Tag.flag_users + gtuser + ','
-            db.session.commit()
-        return tag_schema.jsonify(tag), HTTPStatus.CREATED
+# DISABLING ENDPOINTS that allow writes due to removal of authentication.
+
+# @api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
+# @wso2auth.application_gt_user_required()
+# def flagBuildingTag(b_id, tag_name):
+#     """
+#     Flag a building tag as being incorrect or inappropriate
+#     Flag a building tag as being incorrect or inappropriate.  POST requires no body.
+#     *Login required.*
+#     ---
+#     tags:
+#         - tags
+#     parameters:
+#         - name: b_id
+#           in: path
+#           description: ID of the building
+#           required: true
+#           type: string
+#         - name: tag_name
+#           in: path
+#           description: Tag to flag
+#           required: true
+#           type: string
+#     produces:
+#         - application/json
+#     responses:
+#         201:
+#             description: Flagged tag with associated metadata
+#             schema:
+#                 $ref: '#/definitions/TagWithMetadata'
+#     """
+#     tag = Tag.query.filter_by(b_id=b_id, tag_name=tag_name).first()
+#     if not tag:
+#         raise NotFoundException()
+#     else:
+#         gtuser = wso2auth.username
+#         # only flag the first once per user
+#         if not (gtuser in tag.flag_users.split(',')):
+#             tag.times_flagged = Tag.times_flagged + 1
+#             tag.flag_users = Tag.flag_users + gtuser + ','
+#             db.session.commit()
+#         return tag_schema.jsonify(tag), HTTPStatus.CREATED
 
 

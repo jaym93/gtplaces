@@ -276,74 +276,85 @@ class TestPlacesApi:
         assert 1 == len(response_body)
         assert 'tag1' == response_body[0]['tag_name']
 
-    def test_add_new_tag_to_building_succeeds(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/', content_type='application/json',
-                                    # authenticated endpoint requires token from WSO2 API Manager
-                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
-                                    data=json.dumps({
-                                        'tag_name': 'a_new_tag'
-                                    }))
 
-        assert 201 == response.status_code
+# DISABLED TESTING for wso2
 
-        assert 'application/json' == response.content_type
-        response_body = json.loads(response.get_data(as_text=True))
+    # def test_add_new_tag_to_building_succeeds(self, db, load_test_db, test_client):
+    #     response = test_client.post('/buildings/1/tags/', content_type='application/json',
+    #                                 # authenticated endpoint requires token from WSO2 API Manager
+    #                                 headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
+    #                                 data=json.dumps({
+    #                                     'tag_name': 'a_new_tag'
+    #                                 }))
 
-        # new tag object is returned
-        assert isinstance(response_body, dict)
-        assert 'a_new_tag' == response_body['tag_name']
-        assert 'jj141' == response_body['gtuser']
+    #     assert 201 == response.status_code
 
-    def test_add_existing_tag_to_building_succeeds(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/', content_type='application/json',
-                                    # authenticated endpoint requires token from WSO2 API Manager
-                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
-                                    data=json.dumps({
-                                        'tag_name': 'tag1'
-                                    }))
+    #     assert 'application/json' == response.content_type
+    #     response_body = json.loads(response.get_data(as_text=True))
 
-        assert 201 == response.status_code
+    #     # new tag object is returned
+    #     assert isinstance(response_body, dict)
+    #     assert 'a_new_tag' == response_body['tag_name']
+    #     assert 'jj141' == response_body['gtuser']
 
-        assert 'application/json' == response.content_type
-        response_body = json.loads(response.get_data(as_text=True))
+# DISABLED TESTING for wso2
 
-        # tag object is returned, tag count incremented
-        assert isinstance(response_body, dict)
-        assert 'tag1' == response_body['tag_name']
-        assert 2 == response_body['times_tag']
+    # def test_add_existing_tag_to_building_succeeds(self, db, load_test_db, test_client):
+    #     response = test_client.post('/buildings/1/tags/', content_type='application/json',
+    #                                 # authenticated endpoint requires token from WSO2 API Manager
+    #                                 headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
+    #                                 data=json.dumps({
+    #                                     'tag_name': 'tag1'
+    #                                 }))
 
-    def test_add_new_tag_unknown_building_returns_404(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/some_unknown_building/tags/', content_type='application/json',
-                                    # authenticated endpoint requires token from WSO2 API Manager
-                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
-                                    data=json.dumps({
-                                        'tag_name': 'a_new_tag'
-                                    }))
+    #     assert 201 == response.status_code
 
-        assert 404 == response.status_code
+    #     assert 'application/json' == response.content_type
+    #     response_body = json.loads(response.get_data(as_text=True))
 
-    def test_add_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/', content_type='application/json',
-                                    data=json.dumps({
-                                        'tag_name': 'a_new_tag'
-                                    }))
+    #     # tag object is returned, tag count incremented
+    #     assert isinstance(response_body, dict)
+    #     assert 'tag1' == response_body['tag_name']
+    #     assert 2 == response_body['times_tag']
 
-        assert 500 == response.status_code
+# DISABLED TESTING for wso2
 
-    def test_flag_tag_succeeds(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/tag1/flag',
-                                    # authenticated endpoint requires token from WSO2 API Manager
-                                    headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN})
+    # def test_add_new_tag_unknown_building_returns_404(self, db, load_test_db, test_client):
+    #     response = test_client.post('/buildings/some_unknown_building/tags/', content_type='application/json',
+    #                                 # authenticated endpoint requires token from WSO2 API Manager
+    #                                 headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN},
+    #                                 data=json.dumps({
+    #                                     'tag_name': 'a_new_tag'
+    #                                 }))
 
-        assert 201 == response.status_code
+    #     assert 404 == response.status_code
 
-        assert 'application/json' == response.content_type
-        response_body = json.loads(response.get_data(as_text=True))
+# DISABLED TESTING for wso2
 
-        # new tag object is returned
-        assert isinstance(response_body, dict)
-        assert 'jj141' + ',' == response_body['flag_users']
-        assert 1 == response_body['times_flagged']
+    # def test_add_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
+    #     response = test_client.post('/buildings/1/tags/', content_type='application/json',
+    #                                 data=json.dumps({
+    #                                     'tag_name': 'a_new_tag'
+    #                                 }))
+
+    #     assert 500 == response.status_code
+
+# DISABLED TESTING for wso2
+
+    # def test_flag_tag_succeeds(self, db, load_test_db, test_client):
+    #     response = test_client.post('/buildings/1/tags/tag1/flag',
+    #                                 # authenticated endpoint requires token from WSO2 API Manager
+    #                                 headers={WSO2_AUTH_HEADER: WSO2_AUTH_USER_TOKEN})
+
+    #     assert 201 == response.status_code
+
+    #     assert 'application/json' == response.content_type
+    #     response_body = json.loads(response.get_data(as_text=True))
+
+    #     # new tag object is returned
+    #     assert isinstance(response_body, dict)
+    #     assert 'jj141' + ',' == response_body['flag_users']
+    #     assert 1 == response_body['times_flagged']
 
     def test_flag_tag_unknown_tag_returns_404(self, db, load_test_db, test_client):
         response = test_client.post('/buildings/1/tags/some_unknown_tag/flag',
@@ -359,10 +370,12 @@ class TestPlacesApi:
 
         assert 404 == response.status_code
 
-    def test_flag_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
-        response = test_client.post('/buildings/1/tags/tag1/flag')
+# DISABLED TESTING for wso2
 
-        assert 500 == response.status_code
+    # def test_flag_tag_without_wso2_auth_fails(self, db, load_test_db, test_client):
+    #     response = test_client.post('/buildings/1/tags/tag1/flag')
+
+    #     assert 500 == response.status_code
 
     def test_internal_flask_error_handling_returns_error_json_and_error_status(self, db, load_test_db, test_client):
         # this tests errors.py error handler registration and correctness of errors.handle_http_error()
