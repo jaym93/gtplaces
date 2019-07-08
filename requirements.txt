@@ -9,7 +9,8 @@ flasgger==0.8.1
 
 # lib providing common components for GT Journey APIs
 # mirrored from GT GitHub Ent to GitHub.com for anon git access
-git+https://github.com/gtrnoc/gtjourney-api-lib-python.git@0.1.0
+# git+https://github.com/gtrnoc/gtjourney-api-lib-python.git@0.1.0
+git+https://github.com/pypa/pip.git@19.1.1
 
 # WSGI server for production deployment
 gunicorn==19.7.1
