@@ -1,48 +1,17 @@
-#Flask==1.0.2
-#Flask-SQLAlchemy==2.3.2
-#SQLAlchemy==1.2.5
-#PyMySQL==0.8.0
-#marshmallow==3.0.0b9
-#flask-marshmallow==0.9.0
-#marshmallow-sqlalchemy==0.13.2
-#flasgger==0.8.1
-
-asn1crypto==0.24.0
-attrs==19.1.0
-cffi==1.12.3
-Click==7.0
-cryptography==2.7
-flasgger==0.8.1
 Flask==1.0.2
-flask-marshmallow==0.9.0
 Flask-SQLAlchemy==2.3.2
-#gtjourney-api-lib-python==0.1.0
-gunicorn==19.7.1
-itsdangerous==1.1.0
-Jinja2==2.10.1
-jsonschema==3.0.1
-MarkupSafe==1.1.1
-marshmallow==3.0.0b9
-marshmallow-sqlalchemy==0.13.2
-mistune==0.8.4
-more-itertools==7.0.0
-pluggy==0.6.0
-psycopg2-binary==2.8.3
-py==1.8.0
-pycparser==2.19
-PyJWT==1.7.1
-PyMySQL==0.8.0
-pyrsistent==0.15.2
-pytest==3.5.0
-PyYAML==5.1
-six==1.12.0
 SQLAlchemy==1.2.5
-Werkzeug==0.15.4
-
+PyMySQL==0.8.0
+marshmallow==3.0.0b9
+flask-marshmallow==0.9.0
+marshmallow-sqlalchemy==0.13.2
+flasgger==0.8.1
+psycopg2-binary==2.8.3
 
 # lib providing common components for GT Journey APIs
 # mirrored from GT GitHub Ent to GitHub.com for anon git access
-git+https://github.com/gtrnoc/gtjourney-api-lib-python.git@0.1.0
+# git+https://github.com/gtrnoc/gtjourney-api-lib-python.git@0.1.0
+git+https://github.com/pypa/pip.git@19.1.1
 
 # WSGI server for production deployment
 gunicorn==19.7.1
