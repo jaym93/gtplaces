@@ -13,7 +13,7 @@ from http import HTTPStatus
 from flask.json import jsonify
 from werkzeug.exceptions import default_exceptions
 
-from flask_wso2apim_auth import WSO2AuthException
+#from flask_wso2apim_auth import WSO2AuthException
 
 
 class ApiException(Exception):
