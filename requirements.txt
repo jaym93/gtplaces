@@ -6,6 +6,7 @@ marshmallow==3.0.0b9
 flask-marshmallow==0.9.0
 marshmallow-sqlalchemy==0.13.2
 flasgger==0.8.1
+psycopg2-binary==2.8.3
 
 # lib providing common components for GT Journey APIs
 # mirrored from GT GitHub Ent to GitHub.com for anon git access
