@@ -18,7 +18,7 @@ from api.schema import buildings_schema, building_schema, tags_schema, tag_schem
 api = Blueprint('gtplaces', __name__)
 
 
-@api.route("/buildings/", methods=['GET'])
+@api.route("/api/gtplaces/buildings/", methods=['GET'])
 def getBuildings():
     """
     Returns all buildings with optional filtering
@@ -65,7 +65,7 @@ def getBuildings():
     return buildings_schema.jsonify(query.all())
 
 
-@api.route("/buildings/<b_id>", methods=['GET'])
+@api.route("/api/gtplaces/buildings/<b_id>", methods=['GET'])
 def getBuilding(b_id):
     """
     Gets building with the given ID
@@ -145,7 +145,7 @@ def getBuilding(b_id):
     return building_schema.jsonify(building)
 
 
-@api.route("/categories/", methods=['GET'])
+@api.route("/api/gtplaces/categories/", methods=['GET'])
 def getCategories():
     """
     Return list of all categories
@@ -170,7 +170,7 @@ def getCategories():
     return flask.jsonify(categories)
 
 
-@api.route("/tags/", methods=['GET'])
+@api.route("/api/gtplaces/tags/", methods=['GET'])
 def getTags():
     """
     Return list of all tags
@@ -221,7 +221,7 @@ def getTags():
 
 # DISABLING ENDPOINTS that allow writes due to removal of authentication.
 
-# @api.route("/buildings/<b_id>/tags/", methods=['POST'])
+# @api.route("/api/gtplaces/buildings/<b_id>/tags/", methods=['POST'])
 # @wso2auth.application_gt_user_required()
 # def addBuildingTag(b_id):
 #     """
@@ -282,7 +282,7 @@ def getTags():
 #     return tag_schema.jsonify(tag), HTTPStatus.CREATED
 
 
-@api.route("/buildings/<b_id>/tags/", methods=['GET'])
+@api.route("/api/gtplaces/buildings/<b_id>/tags/", methods=['GET'])
 def getBuildingTags(b_id):
     """
     Returns all tags for the given building
@@ -313,7 +313,7 @@ def getBuildingTags(b_id):
     return tags_schema.jsonify(tags)
 
 
-@api.route("/buildings/<b_id>/tags/<tag_name>", methods=['GET'])
+@api.route("/api/gtplaces/buildings/<b_id>/tags/<tag_name>", methods=['GET'])
 def getBuildingTag(b_id, tag_name):
     """
     Returns the specific building tag with metadata
@@ -348,7 +348,7 @@ def getBuildingTag(b_id, tag_name):
 
 # DISABLING ENDPOINTS that allow writes due to removal of authentication.
 
-# @api.route("/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
+# @api.route("/api/gtplaces/buildings/<b_id>/tags/<tag_name>/flag", methods=['POST'])
 # @wso2auth.application_gt_user_required()
 # def flagBuildingTag(b_id, tag_name):
 #     """
